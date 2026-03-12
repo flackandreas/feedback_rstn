@@ -1,0 +1,1196 @@
+/* app_styles_v3.css - Calm & Organic Design */
+
+/* --- VARIABLEN & BASISEINSTELLUNGEN --- */
+:root {
+    /* (DEFAULT = Light Mode) */
+
+    /* NEU: Blau als Primärfarbe (Professional Blue) */
+    --primary-color: #2B6CB0;
+    /* Kräftiges Blau */
+    --primary-dark: #2C5282;
+    /* Dunkleres Blau */
+    --primary-color-rgb: 43, 108, 176;
+
+    /* NEU: Kühle, professionelle Hintergründe */
+    --bg-main: #F7FAFC;
+    /* Kühles Hellgrau/Weiß */
+    --bg-content: #ffffff;
+
+    /* NEU: Navigation nutzt dunkles Blau */
+    --bg-nav: #2C5282;
+
+    /* NEU: Kühlerer Text */
+    --text-dark: #2D3748;
+    /* Dunkles Schiefergrau */
+    --text-light: #ffffff;
+
+    /* NEU: Kühle Ränder */
+    --border-color: #E2E8F0;
+    --bg-table-header: #F7FAFC;
+    --bg-table-row-even: #EDF2F7;
+
+    /* NEU: Kühle Schatten */
+    --shadow-soft: 0 2px 5px rgba(45, 55, 72, 0.08);
+    --shadow-medium: 0 4px 12px rgba(45, 55, 72, 0.1);
+
+    /* Standard-Farben (angepasst) */
+    --text-muted: #718096;
+    /* Kühles Grau */
+    --primary-bg-light: #EBF8FF;
+    /* Sehr helles Blau */
+    --danger-color: #E53E3E;
+    --danger-color-dark: #C53030;
+    --danger-bg: #FFF5F5;
+    --danger-bg-light: #FFF5F5;
+    --success-color: #38A169;
+    --warning-color: #D69E2E;
+    --warning-color-dark: #B7791F;
+}
+
+body.dark-mode {
+    --primary-color: #63B3ED;
+    /* Helles Blau */
+    --primary-dark: #4299E1;
+
+    /* Dunkle, kühle Hintergründe */
+    --bg-main: #1A202C;
+    /* Sehr dunkles Blau-Grau */
+    --bg-content: #2D3748;
+
+    --bg-nav: #2D3748;
+
+    --text-dark: #F7FAFC;
+    /* Helles Grau/Weiß */
+    --text-light: #1A202C;
+
+    --border-color: #4A5568;
+    --bg-table-header: #2D3748;
+    --bg-table-row-even: #283141;
+
+    --shadow-soft: 0 2px 5px rgba(0, 0, 0, 0.2);
+    --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+    --text-muted: #A0AEC0;
+    --primary-bg-light: #2C5282;
+    --danger-color: #FC8181;
+    --danger-color-dark: #FEB2B2;
+    --danger-bg: #742A2A;
+    --danger-bg-light: #742A2A;
+    --success-color: #68D391;
+}
+
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    background-color: var(--bg-main);
+    color: var(--text-dark);
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+/* --- ENDE BASISEINSTELLUNGEN --- */
+
+
+/* --- LAYOUT & STRUKTUR --- */
+.app-layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    min-height: 100vh;
+    transition: grid-template-columns 0.3s ease;
+}
+
+.sidebar {
+    background-color: var(--bg-nav);
+    color: var(--text-light);
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-medium);
+    z-index: 100;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.sidebar-title {
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.sidebar-schule {
+    display: block;
+    font-size: 0.85em;
+    font-weight: 300;
+    color: var(--text-muted);
+    line-height: 1.2;
+    margin-top: 2px;
+}
+
+#nav-toggle {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    font-size: 1.5em;
+    cursor: pointer;
+    /* display: none; /* Nur für Mobile (später) oder Collapsed */
+}
+
+.nav-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex-grow: 1;
+}
+
+.nav-item a {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    text-decoration: none;
+    color: #f0ebe6;
+    border-radius: 6px;
+    margin: 3px 0;
+    transition: background-color 0.2s;
+}
+
+.nav-item a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-icon {
+    font-size: 1.1em;
+    width: 20px;
+    text-align: center;
+    margin-right: 15px;
+}
+
+.nav-text {
+    font-size: 0.9em;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+}
+
+.nav-separator {
+    height: 1px;
+    background-color: var(--border-color);
+    opacity: 0.2;
+    margin: 10px 0;
+}
+
+.nav-label {
+    font-size: 0.9em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 10px 12px;
+    letter-spacing: 0.5px;
+}
+
+.main-content {
+    padding: 25px;
+    overflow: auto;
+}
+
+/* Collapsed Sidebar */
+.app-layout.collapsed {
+    grid-template-columns: 60px 1fr;
+}
+
+.app-layout.collapsed .sidebar-header {
+    justify-content: center;
+}
+
+.app-layout.collapsed .sidebar-header>div:first-child {
+    display: none;
+}
+
+.app-layout.collapsed .nav-text,
+.app-layout.collapsed .nav-label {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+}
+
+/* --- ENDE LAYOUT --- */
+
+
+/* --- TEXT & FORMULARE --- */
+h1 {
+    font-size: 2em;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+h2 {
+    font-size: 1.5em;
+    font-weight: 600;
+    margin-top: 25px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 5px;
+}
+
+p {
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+a.link-delete {
+    color: var(--danger-color);
+}
+
+button.link-button {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--primary-color);
+    text-decoration: underline;
+    cursor: pointer;
+    font: inherit;
+}
+
+button.link-button:hover {
+    color: var(--primary-dark);
+}
+
+.form-group {
+    margin-bottom: 10px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.9em;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--bg-content);
+    color: var(--text-dark);
+    font-size: 1em;
+}
+
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+    background-color: var(--bg-main);
+    border-color: var(--border-color-dark);
+    color: var(--text-dark);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--primary-bg-light);
+}
+
+button,
+.button-primary {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    border: none;
+    padding: 10px 15px;
+    font-size: 1em;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+button:hover,
+.button-primary:hover {
+    background-color: var(--primary-dark);
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.button-danger {
+    background-color: var(--danger-color);
+}
+
+.button-danger:hover {
+    background-color: var(--danger-color-dark);
+}
+
+.button-secondary {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    border: none;
+    padding: 10px 15px;
+    font-size: 1em;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.button-secondary:hover {
+    background-color: var(--text-dark);
+}
+
+.inline-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-end;
+}
+
+.inline-form .form-group {
+    flex-grow: 1;
+    margin-bottom: 0;
+}
+
+.form-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.form-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.form-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.form-grid-checkboxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 10px;
+}
+
+.form-grid-checkboxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.form-grid-checkboxes div {
+    display: flex;
+    align-items: center;
+    background-color: var(--bg-main);
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+body.dark-mode .form-grid-checkboxes div {
+    background-color: var(--bg-card-dark);
+    border-color: var(--border-color-dark);
+}
+
+.form-grid-checkboxes input[type="checkbox"] {
+    width: auto;
+    margin-right: 10px;
+}
+
+.form-grid-checkboxes label {
+    margin-bottom: 0;
+    font-weight: 500;
+}
+
+/* --- ENDE FORMULARE --- */
+
+
+
+/* --- STATUSMELDUNGEN & BOXEN --- */
+.status {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    /* Softer rounded corners */
+    font-weight: 500;
+}
+
+.status.success {
+    background-color: var(--primary-bg-light);
+    color: var(--primary-dark);
+    border: 1px solid var(--primary-color);
+}
+
+.status.error {
+    background-color: var(--danger-bg);
+    color: var(--danger-color-dark);
+    border: 1px solid var(--danger-color);
+}
+
+.status.info {
+    background-color: #e6f7ff;
+    color: #0056b3;
+    border: 1px solid #b3e0ff;
+}
+
+.content-box {
+    background-color: var(--bg-content);
+    border: 1px solid transparent;
+    /* Remove harsh border for cleaner look */
+    border-radius: 12px;
+    /* More rounded */
+    padding: 25px;
+    /* More breathing room */
+    margin-bottom: 25px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    /* Modern shadow */
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.content-box:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.content-box h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.25rem;
+    color: var(--text-dark);
+    border-bottom: 1px solid var(--bg-main);
+    /* Subtler divider */
+    padding-bottom: 10px;
+}
+
+
+/* --- ENDE STATUS & BOXEN --- */
+
+
+/* --- TABELLEN --- */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.data-table th,
+.data-table td {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    text-align: left;
+    vertical-align: top;
+}
+
+.data-table th {
+    background-color: var(--bg-table-header);
+    font-size: 0.9em;
+    font-weight: 600;
+}
+
+.data-table tbody tr:nth-child(even) {
+    background-color: var(--bg-table-row-even);
+}
+
+.data-table.simple th {
+    font-size: 0.85em;
+    padding: 8px 10px;
+}
+
+.data-table.simple td {
+    font-size: 0.9em;
+    padding: 8px 10px;
+    vertical-align: middle;
+}
+
+/* --- ENDE TABELLEN --- */
+
+
+/* --- MODALS & OVERLAYS --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 998;
+}
+
+.modal-box {
+    /* NEU: Hintergrund, Padding und Rand von .content-box übernommen */
+    background-color: var(--bg-content);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: var(--shadow-medium);
+    /* Stärkerer Schatten als .content-box */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 999;
+    width: 90%;
+    max-width: 600px;
+    max-height: 85vh;
+    /* Höhe leicht angepasst */
+    overflow-y: auto;
+}
+
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.8em;
+    font-weight: 300;
+    color: var(--text-muted);
+    cursor: pointer;
+    line-height: 1;
+}
+
+.modal-close:hover {
+    color: var(--text-dark);
+}
+
+.hidden {
+    display: none;
+}
+
+.wizard-preview-box {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    background-color: #f9f9f9;
+}
+
+body.dark-mode .wizard-preview-box {
+    background-color: var(--bg-main);
+    border-color: var(--border-color-dark);
+}
+
+.wizard-preview-box p {
+    margin: 0;
+    font-size: 0.9em;
+}
+
+#detail-modal {
+    max-width: 95%;
+}
+
+#detail-modal-content {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+/* --- ENDE MODALS --- */
+
+
+/* =================================================================
+ * KPI GRID STYLES (Dashboard)
+ * =================================================================
+ */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 10px;
+    margin-top: 20px;
+}
+
+
+.kpi-box {
+    padding: 20px;
+    background-color: var(--bg-card, #ffffff);
+    /* border: 1px solid var(--border-color, #e1e1e1); remove border */
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.kpi-box:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.kpi-box span {
+    font-size: 0.9em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted, #6c757d);
+    margin-bottom: 10px;
+}
+
+.kpi-box strong {
+    font-size: 2em;
+    font-weight: 700;
+    color: var(--primary-color);
+    /* Use primary color for numbers */
+}
+
+.kpi-box.positiv {
+    border-left: 5px solid var(--success-color, #28a745);
+}
+
+.kpi-box.negativ {
+    border-left: 5px solid var(--danger-color, #dc3545);
+}
+
+body.dark-mode .kpi-box {
+    background-color: var(--bg-card-dark, #2d2d30);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+
+/* =================================================================
+ * STATS-BOXEN (z.B. auf detail_person.php)
+ * =================================================================
+ */
+.stats-boxen {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.stat-box {
+    padding: 10px 15px;
+    background-color: var(--bg-card, #ffffff);
+    border: 1px solid var(--border-color, #e1e1e1);
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.stat-box span {
+    font-size: 0.85em;
+    color: var(--text-muted, #6c757d);
+    display: block;
+    margin-bottom: 2px;
+}
+
+.stat-box strong {
+    font-size: 1.6em;
+    font-weight: 700;
+    color: var(--text-dark, #343a40);
+    display: block;
+}
+
+.stat-box.positiv strong {
+    color: var(--success-color, #28a745);
+}
+
+.stat-box.negativ strong {
+    color: var(--danger-color, #dc3545);
+}
+
+body.dark-mode .stat-box {
+    background-color: var(--bg-card-dark, #2d2d30);
+    border: 1px solid var(--border-color-dark, #444);
+}
+
+
+/* =================================================================
+ * INTERAKTIVE MATRIX (uebersicht_detail.php)
+ * =================================================================
+ */
+
+/* =================================================================
+ * 1. STICKY HEADER FÜR MATRIX & FIXED FIRST COLUMN
+ * =================================================================
+ */
+.matrix-table-container {
+    overflow: auto;
+    max-height: 80vh;
+}
+
+.matrix-table th {
+    position: -webkit-sticky;
+    /* Safari-Support */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: var(--bg-table-header, #FBFBF9);
+    border-bottom: 2px solid var(--primary-color, #4A7856);
+}
+
+body.dark-mode .matrix-table th {
+    background-color: var(--bg-card-dark, #2d2d30);
+    border-bottom: 2px solid var(--primary-color, #4A7856);
+}
+
+.matrix-table th:first-child {
+    z-index: 11;
+}
+
+/* Fixierte erste Spalte (Klasse) */
+.matrix-table th:first-child,
+.matrix-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background-color: var(--bg-content);
+    /* Nutzt CSS-Variable für Dark Mode */
+    width: 60px;
+    min-width: 60px;
+    border-right: 1px solid var(--border-color);
+    box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
+}
+
+.matrix-table th:first-child {
+    background-color: var(--bg-table-header);
+    /* Header spezifischer Hintergrund */
+    z-index: 11;
+}
+
+body.dark-mode .matrix-table th:first-child,
+body.dark-mode .matrix-table td:first-child {
+    background-color: var(--bg-content);
+    /* Oder spezifischer: var(--bg-card-dark) */
+    box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.5);
+    /* Etwas stärkerer Schatten im Dark Mode */
+}
+
+body.dark-mode .matrix-table th:first-child {
+    background-color: var(--bg-table-header);
+}
+
+/* =================================================================
+ * 2. NEUE MATRIX-ZELLEN STYLES (Version 2: Lehrer-Zentriert)
+ * =================================================================
+ */
+.matrix-zelle[data-clickable="true"] {
+    cursor: pointer;
+    transition: background-color 0.2s;
+    text-align: center;
+    vertical-align: middle;
+    padding: 4px;
+}
+
+.matrix-zelle[data-clickable="true"]:hover {
+    background-color: var(--primary-bg-light, #e6f2ff);
+}
+
+body.dark-mode .matrix-zelle[data-clickable="true"]:hover {
+    background-color: var(--primary-color-dark-hover, #3a3a3a);
+}
+
+.matrix-lehrer-kuerzel {
+    font-size: 0.8em;
+    font-weight: 700;
+    color: var(--text-dark, #343a40);
+    display: block;
+    line-height: 1.1;
+}
+
+body.dark-mode .matrix-lehrer-kuerzel {
+    color: var(--text-light, #f8f9fa);
+}
+
+.matrix-stunden-block {
+    display: flex;
+    justify-content: space-evenly;
+    font-size: 0.8em;
+    color: var(--text-muted, #6c757d);
+    margin-top: 2px;
+    gap: 5px;
+}
+
+/* Spezifische Farben für Soll und Ist */
+.matrix-stunden-soll {
+    color: var(--text-muted, #6c757d);
+}
+
+.matrix-stunden-ist {
+    color: var(--text-dark, #343a40);
+    font-weight: 500;
+}
+
+body.dark-mode .matrix-stunden-ist {
+    color: var(--text-light, #f8f9fa);
+}
+
+/* =================================================================
+ * 3. FARBLICHE HERVORHEBUNG SUMMEN-SPALTEN
+ * =================================================================
+ */
+.summe-header {
+    background-color: var(--primary-bg-light, #e6f2ff) !important;
+}
+
+.summen-zelle {
+    background-color: var(--bg-main, #FBFBF9);
+    font-weight: bold;
+}
+
+body.dark-mode .summe-header {
+    background-color: #2a3a4a !important;
+}
+
+body.dark-mode .summen-zelle {
+    background-color: var(--bg-card-dark, #2d2d30);
+}
+
+
+/* =================================================================
+ * 4. FARBLICHE HERVORHEBUNG LÜCKEN (Soll > Ist)
+ * =================================================================
+ */
+.data-table td.luecke-zelle,
+.luecke-zelle {
+    background-color: #d9534f;
+    border-color: #c9302c;
+}
+
+.data-table td.luecke-zelle .matrix-lehrer-kuerzel,
+.luecke-zelle .matrix-lehrer-kuerzel {
+    color: #ffffff;
+}
+
+.data-table td.luecke-zelle .matrix-stunden-block,
+.data-table td.luecke-zelle .matrix-stunden-soll,
+.data-table td.luecke-zelle .matrix-stunden-ist,
+.luecke-zelle .matrix-stunden-block,
+.luecke-zelle .matrix-stunden-soll,
+.luecke-zelle .matrix-stunden-ist {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+body.dark-mode .data-table td.luecke-zelle,
+body.dark-mode .luecke-zelle {
+    background-color: #a94442;
+    border-color: #843534;
+}
+
+body.dark-mode .data-table td.luecke-zelle .matrix-lehrer-kuerzel,
+body.dark-mode .data-table td.luecke-zelle .matrix-stunden-block,
+body.dark-mode .data-table td.luecke-zelle .matrix-stunden-soll,
+body.dark-mode .data-table td.luecke-zelle .matrix-stunden-ist,
+body.dark-mode .luecke-zelle .matrix-lehrer-kuerzel,
+body.dark-mode .luecke-zelle .matrix-stunden-block,
+body.dark-mode .luecke-zelle .matrix-stunden-soll,
+body.dark-mode .luecke-zelle .matrix-stunden-ist {
+    color: #ffffff;
+}
+
+/* =================================================================
+ * 4.b FARBLICHE HERVORHEBUNG ÜBERBELEGUNG (Ist > Soll)
+ * =================================================================
+ */
+.data-table td.ueber-zelle,
+.ueber-zelle {
+    background-color: #5cb85c;
+    border-color: #4cae4c;
+}
+
+.data-table td.ueber-zelle .matrix-lehrer-kuerzel,
+.ueber-zelle .matrix-lehrer-kuerzel {
+    color: #ffffff;
+}
+
+.data-table td.ueber-zelle .matrix-stunden-block,
+.data-table td.ueber-zelle .matrix-stunden-soll,
+.data-table td.ueber-zelle .matrix-stunden-ist,
+.ueber-zelle .matrix-stunden-block,
+.ueber-zelle .matrix-stunden-soll,
+.ueber-zelle .matrix-stunden-ist {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+body.dark-mode .data-table td.ueber-zelle,
+body.dark-mode .ueber-zelle {
+    background-color: #3c763d;
+    border-color: #2b542c;
+}
+
+body.dark-mode .data-table td.ueber-zelle .matrix-lehrer-kuerzel,
+body.dark-mode .data-table td.ueber-zelle .matrix-stunden-block,
+body.dark-mode .data-table td.ueber-zelle .matrix-stunden-soll,
+body.dark-mode .data-table td.ueber-zelle .matrix-stunden-ist,
+body.dark-mode .ueber-zelle .matrix-lehrer-kuerzel,
+body.dark-mode .ueber-zelle .matrix-stunden-block,
+body.dark-mode .ueber-zelle .matrix-stunden-soll,
+body.dark-mode .ueber-zelle .matrix-stunden-ist {
+    color: #ffffff;
+}
+
+/* =================================================================
+ * NEUES MATRIX-EDIT-MODAL
+ * =================================================================
+ */
+#matrix-edit-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 998;
+}
+
+#matrix-edit-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 999;
+    width: 90%;
+    max-width: 500px;
+}
+
+#matrix-modal-info {
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-bottom: 15px;
+    display: block;
+}
+
+#matrix-edit-form .form-group {
+    margin-bottom: 15px;
+}
+
+#matrix-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+}
+
+/* =================================================================
+ * STYLES FÜR DIE EDITIERBARE STUNDENTAFEL-MATRIX
+ * =================================================================
+ */
+
+.stundentafel-zelle-edit {
+    padding: 0 !important;
+    /* Zellen-Padding entfernen */
+    height: 35px;
+
+    /* === NEU: Feste, schmale Breite erzwingen === */
+    width: 45px;
+    min-width: 45px;
+    max-width: 45px;
+}
+
+.stundentafel-input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    text-align: center;
+    background-color: transparent;
+    font-size: 1.0em;
+    /* Schrift etwas kleiner für bessere Passform */
+    font-weight: 500;
+    color: var(--text-dark);
+    padding: 0;
+    /* Padding reduziert */
+    box-sizing: border-box;
+
+    /* === NEU: Standard-Pfeile (Spinner) ausblenden für cleanen Look === */
+    /* -moz-appearance: textfield; */
+    /* Firefox */
+}
+
+/* Für Chrome, Safari, Edge, Opera: Pfeile ausblenden */
+.stundentafel-input::-webkit-outer-spin-button,
+.stundentafel-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.stundentafel-input:focus {
+    background-color: #fff;
+    box-shadow: inset 0 0 0 2px var(--primary-color);
+    outline: none;
+}
+
+/* Leere Inputs dezent darstellen */
+.stundentafel-input:placeholder-shown {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Optional: Header auch schmaler machen, damit es bündig wirkt */
+.matrix-table th {
+    font-size: 0.8em;
+    /* Kleinere Schrift im Header */
+    padding: 4px 2px;
+    /* Weniger seitliches Padding */
+}
+
+/* =================================================================
+ * BADGES (Labels, z.B. für Klassenlehrer)
+ * =================================================================
+ */
+.badge {
+    display: inline-block;
+    padding: 0.25em 0.4em;
+    font-size: 75%;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+}
+
+.badge-primary {
+    color: #fff;
+    background-color: var(--primary-color);
+}
+
+.badge-secondary {
+    color: #fff;
+    background-color: var(--text-muted);
+}
+
+/* =================================================================
+ * WUNSCHZETTEL ROWS
+ * =================================================================
+ */
+.fort-row {
+    display: grid;
+    grid-template-columns: 2fr 2fr 1fr;
+    gap: 10px;
+    margin-bottom: 5px;
+    padding: 10px;
+    background-color: var(--bg-table-row-even);
+    /* Neutral background */
+    border-radius: 6px;
+    /* Slightly more rounded */
+    align-items: end;
+    border: 1px solid var(--border-color);
+    /* Subtle border */
+}
+
+.sonder-row {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    gap: 10px;
+    margin-bottom: 5px;
+    padding: 10px;
+    background-color: var(--bg-table-row-even);
+    border-radius: 6px;
+    align-items: end;
+    border: 1px solid var(--border-color);
+}
+
+body.dark-mode .fort-row,
+body.dark-mode .sonder-row {
+    background-color: var(--bg-card-dark, #2d2d30);
+    border-color: var(--border-color-dark, #444);
+}
+
+/* =================================================================
+ * SCORING SYSTEM DETAILS (Zuweisungs-Assistent)
+ * =================================================================
+ */
+.scoring-details {
+    margin-bottom: 20px;
+    background: var(--bg-table-row-even);
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+}
+
+.scoring-summary {
+    cursor: pointer;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+body.dark-mode .scoring-details {
+    background-color: var(--bg-card-dark);
+    border-color: var(--border-color-dark);
+}
+
+body.dark-mode .scoring-summary {
+    color: var(--primary-color);
+    /* Already adapted via variable */
+}
+
+body.dark-mode .stat-box.highlight {
+    background-color: var(--bg-card-dark);
+    border-color: var(--border-color-dark);
+}
+
+body.dark-mode .stat-box.highlight strong {
+    color: var(--text-light);
+    /* Helle Schrift im Dark Mode */
+}
+
+/* =================================================================
+ * DANGER ZONE (System-Seite)
+ * =================================================================
+ */
+.danger-zone {
+    grid-column: span 2;
+    border: 2px solid var(--danger-color);
+    background-color: var(--danger-bg-light);
+}
+
+.danger-zone h2 {
+    color: var(--danger-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.danger-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.danger-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: var(--bg-content);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+body.dark-mode .danger-zone {
+    background-color: rgba(220, 53, 69, 0.15);
+    /* Transparenter roter Hintergrund */
+    border-color: var(--danger-color);
+}
+
+body.dark-mode .danger-option {
+    background-color: var(--bg-card-dark);
+    border-color: var(--border-color-dark);
+}

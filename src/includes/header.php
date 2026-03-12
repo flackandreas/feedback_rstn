@@ -65,6 +65,28 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <span class="nav-text">Krankmeldung</span>
                 </a>
             </li>
+
+            <div class="nav-separator"></div>
+
+            <li class="nav-label">Übersicht</li>
+            <li class="nav-item">
+                <a href="/meine_antraege.php" class="<?= $current_page == 'meine_antraege.php' ? 'active' : '' ?>">
+                    <span class="nav-icon">📂</span>
+                    <span class="nav-text">Meine Anträge</span>
+                </a>
+            </li>
+            
+            <?php if (is_current_user_admin()): ?>
+            <div class="nav-separator"></div>
+            
+            <li class="nav-label" style="color: var(--danger-color-dark);">Administration</li>
+            <li class="nav-item">
+                <a href="/admin_dashboard.php" class="<?= $current_page == 'admin_dashboard.php' ? 'active' : '' ?>">
+                    <span class="nav-icon">🛡️</span>
+                    <span class="nav-text">Verwaltung</span>
+                </a>
+            </li>
+            <?php endif; ?>
             
             <div class="nav-separator"></div>
             

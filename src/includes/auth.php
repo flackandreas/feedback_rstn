@@ -29,6 +29,18 @@ function get_current_user_kuerzel() {
     return $_SESSION['user_kuerzel'] ?? null;
 }
 
+function is_current_user_admin() {
+    return isset($_SESSION['is_admin']) && $_SESSION['is_admin'] == 1;
+}
+
+function require_admin() {
+    require_login();
+    if (!is_current_user_admin()) {
+        header("Location: /index.php");
+        exit;
+    }
+}
+
 /**
  * Validates a Kürzel and Password against the database.
  * Returns user data on success, false on failure.
@@ -38,7 +50,7 @@ function authenticate_user($conn, $kuerzel, $password) {
         return false;
     }
 
-    $stmt = $conn->prepare("SELECT id, kuerzel, passwort_hash, name FROM teachers WHERE kuerzel = :kuerzel LIMIT 1");
+    $stmt = $conn->prepare("SELECT id, kuerzel, is_admin, passwort_hash, name FROM teachers WHERE kuerzel = :kuerzel LIMIT 1");
     $stmt->execute([':kuerzel' => $kuerzel]);
     $user = $stmt->fetch();
 

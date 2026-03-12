@@ -1,0 +1,192 @@
+{% extends "base.twig" %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2>Zentrale Verwaltung (Schulleitung)</h2>
+</div>
+
+<!-- Section 1: Krankmeldungen -->
+<div class="content-box">
+    <h3 style="border-left: 4px solid var(--danger-color); padding-left: 10px;">Krankmeldungen</h3>
+    {% if sick_leaves is empty %}
+        <p style="color: var(--text-muted);">Keine Krankmeldungen vorhanden.</p>
+    {% else %}
+        <div style="overflow-x: auto;">
+            <table class="data-table simple">
+                <thead>
+                    <tr>
+                        <th>Eingang</th>
+                        <th>Lehrkraft</th>
+                        <th>Von</th>
+                        <th>Bis</th>
+                        <th>Notizen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in sick_leaves %}
+                        <tr>
+                            <td style="font-size: 0.85em; color: var(--text-muted);">{{ r.created_at|date('d.m.y H:i') }}</td>
+                            <td style="font-weight: 600;">{{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span></td>
+                            <td>{{ r.date_main|date('d.m.Y') }}</td>
+                            <td>{{ r.date_to|date('d.m.Y') }}</td>
+                            <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.details }}">{{ r.details|default('-') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Section 2: Freistellungen -->
+<div class="content-box">
+    <h3 style="border-left: 4px solid var(--warning-color); padding-left: 10px;">Anträge auf Freistellung</h3>
+    {% if exempt_requests is empty %}
+        <p style="color: var(--text-muted);">Keine Anträge auf Freistellung vorhanden.</p>
+    {% else %}
+        <div style="overflow-x: auto;">
+            <table class="data-table simple">
+                <thead>
+                    <tr>
+                        <th>Eingang</th>
+                        <th>Lehrkraft</th>
+                        <th>Von</th>
+                        <th>Bis</th>
+                        <th>Grund</th>
+                        <th>Aktion/Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in exempt_requests %}
+                        <tr style="{{ r.status != 'pending' ? 'opacity: 0.7;' : '' }}">
+                            <td style="font-size: 0.85em; color: var(--text-muted);">{{ r.created_at|date('d.m.y H:i') }}</td>
+                            <td style="font-weight: 600;">{{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span></td>
+                            <td>{{ r.date_main|date('d.m.Y') }}</td>
+                            <td>{{ r.date_to|date('d.m.Y') }}</td>
+                            <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.details }}">{{ r.details }}</td>
+                            <td>
+                                {% if r.status == 'pending' %}
+                                    <form method="POST" action="/admin_action.php" style="display:inline-block; margin:0;" class="admin-action-form">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                        <input type="hidden" name="id" value="{{ r.id }}">
+                                        <input type="hidden" name="type" value="freistellung">
+                                        <button type="button" class="button-primary btn-approve" style="background-color: var(--success-color); padding: 5px 10px; font-size: 0.85em; margin-right: 5px;" title="Genehmigen">✓</button>
+                                        <button type="button" class="button-danger btn-reject" style="padding: 5px 10px; font-size: 0.85em;" title="Ablehnen">✗</button>
+                                        <input type="hidden" name="action" value="" class="action-input">
+                                    </form>
+                                {% else %}
+                                    {% set statusColor = (r.status == 'approved') ? 'var(--success-color)' : 'var(--danger-color)' %}
+                                    {% set statusText = (r.status == 'approved') ? 'GENEHMIGT' : 'ABGELEHNT' %}
+                                    <span style="color: {{ statusColor }}; font-weight: 600; font-size: 0.85em;">{{ statusText }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Section 3: Ausflüge (Außerunterrichtlich) -->
+<div class="content-box">
+    <h3 style="border-left: 4px solid var(--primary-color); padding-left: 10px;">Außerunterrichtliche Veranstaltungen</h3>
+    {% if extra_requests is empty %}
+        <p style="color: var(--text-muted);">Keine Anträge auf außerunterrichtliche Veranstaltungen vorhanden.</p>
+    {% else %}
+        <div style="overflow-x: auto;">
+            <table class="data-table simple">
+                <thead>
+                    <tr>
+                        <th>Eingang</th>
+                        <th>Lehrkraft</th>
+                        <th>Datum</th>
+                        <th>Klasse</th>
+                        <th>Ziel</th>
+                        <th>Aktion/Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in extra_requests %}
+                        <tr style="{{ r.status != 'pending' ? 'opacity: 0.7;' : '' }}">
+                            <td style="font-size: 0.85em; color: var(--text-muted);">{{ r.created_at|date('d.m.y H:i') }}</td>
+                            <td style="font-weight: 600;">{{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span></td>
+                            <td>{{ r.date_main|date('d.m.Y') }}</td>
+                            <td>{{ r.class }}</td>
+                            <td>{{ r.details }}</td>
+                            <td>
+                                {% if r.status == 'pending' %}
+                                    <form method="POST" action="/admin_action.php" style="display:inline-block; margin:0;" class="admin-action-form">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                        <input type="hidden" name="id" value="{{ r.id }}">
+                                        <input type="hidden" name="type" value="ausflug">
+                                        <button type="button" class="button-primary btn-approve" style="background-color: var(--success-color); padding: 5px 10px; font-size: 0.85em; margin-right: 5px;" title="Genehmigen">✓</button>
+                                        <button type="button" class="button-danger btn-reject" style="padding: 5px 10px; font-size: 0.85em;" title="Ablehnen">✗</button>
+                                        <input type="hidden" name="action" value="" class="action-input">
+                                    </form>
+                                {% else %}
+                                    {% set statusColor = (r.status == 'approved') ? 'var(--success-color)' : 'var(--danger-color)' %}
+                                    {% set statusText = (r.status == 'approved') ? 'GENEHMIGT' : 'ABGELEHNT' %}
+                                    <span style="color: {{ statusColor }}; font-weight: 600; font-size: 0.85em;">{{ statusText }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Handle approve buttons
+        document.querySelectorAll('.btn-approve').forEach(button => {
+            button.addEventListener('click', function(e) {
+                const form = this.closest('form');
+                form.querySelector('.action-input').value = 'approve';
+                
+                Swal.fire({
+                    title: 'Genehmigen?',
+                    text: "Soll dieser Antrag wirklich genehmigt werden?",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: 'var(--success-color)',
+                    cancelButtonColor: 'var(--text-muted)',
+                    confirmButtonText: 'Ja, genehmigen',
+                    cancelButtonText: 'Abbrechen'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+
+        // Handle reject buttons
+        document.querySelectorAll('.btn-reject').forEach(button => {
+            button.addEventListener('click', function(e) {
+                const form = this.closest('form');
+                form.querySelector('.action-input').value = 'reject';
+
+                Swal.fire({
+                    title: 'Ablehnen?',
+                    text: "Soll dieser Antrag wirklich abgelehnt werden? Dies kann nicht rückgängig gemacht werden.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: 'var(--danger-color)',
+                    cancelButtonColor: 'var(--text-muted)',
+                    confirmButtonText: 'Ja, ablehnen',
+                    cancelButtonText: 'Abbrechen'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

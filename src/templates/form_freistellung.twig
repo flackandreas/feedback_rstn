@@ -1,0 +1,66 @@
+{% extends "base.twig" %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2>Antrag auf Freistellung</h2>
+    <a href="/index.php" class="button-secondary" style="text-decoration:none;">&larr; Zurück</a>
+</div>
+
+<div class="content-box">
+    <form method="POST" action="/antrag_freistellung.php">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="form-grid-2">
+            <div class="form-group">
+                <label for="date_from">Von (Datum) *</label>
+                <input type="date" id="date_from" name="date_from" required>
+            </div>
+
+            <div class="form-group">
+                <label for="date_to">Bis (Datum) *</label>
+                <input type="date" id="date_to" name="date_to" required>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 15px;">
+            <label for="reason">Begründung *</label>
+            <textarea id="reason" name="reason" rows="4" required placeholder="Bitte geben Sie hier Ihre Gründe an..."></textarea>
+        </div>
+
+        <div style="margin-top: 25px; text-align: right;">
+            <button type="submit" class="button-primary">Antrag einreichen</button>
+        </div>
+    </form>
+</div>
+
+<!-- History log preview -->
+<div class="content-box">
+    <h3>Ihre letzten Anträge</h3>
+    {% if requests is empty %}
+        <p style='color: var(--text-muted);'>Noch keine Anträge gestellt.</p>
+    {% else %}
+        <table class='data-table simple'>
+            <thead>
+                <tr>
+                    <th>Von</th>
+                    <th>Bis</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in requests %}
+                    {% set statusColor = (r.status == 'pending') ? 'var(--warning-color)' : ((r.status == 'approved') ? 'var(--success-color)' : 'var(--danger-color)') %}
+                    {% set statusText %}
+                        {% if r.status == 'pending' %}AUSSTEHEND{% elseif r.status == 'approved' %}GENEHMIGT{% elseif r.status == 'rejected' %}ABGELEHNT{% else %}{{ r.status|upper }}{% endif %}
+                    {% endset %}
+                    <tr>
+                        <td>{{ r.date_from|date('d.m.Y') }}</td>
+                        <td>{{ r.date_to|date('d.m.Y') }}</td>
+                        <td><span style='color: {{ statusColor }}; font-weight: 600;'>{{ statusText|trim }}</span></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "base.twig" %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2>Krankmeldung</h2>
+    <a href="/index.php" class="button-secondary" style="text-decoration:none;">&larr; Zurück</a>
+</div>
+
+<div class="content-box">
+    <!-- Notice about AU document requirement could go here -->
+    <div class="status info" style="margin-bottom: 20px;">
+        <strong>Hinweis:</strong> Ab dem 3. Krankheitstag bitten wir um das Hochladen oder Nachreichen einer Arbeitsunfähigkeitsbescheinigung (AU).
+    </div>
+
+    <form method="POST" action="/krankmeldung.php">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="form-grid-2">
+            <div class="form-group">
+                <label for="date_from">Voraussichtlich Krank von *</label>
+                <input type="date" id="date_from" name="date_from" required value="{{ 'now'|date('Y-m-d') }}">
+            </div>
+
+            <div class="form-group">
+                <label for="date_to">Bis (geschätzt) *</label>
+                <input type="date" id="date_to" name="date_to" required value="{{ '+2 days'|date('Y-m-d') }}">
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 15px;">
+            <label for="notes">Zusätzliche Notizen (Optional)</label>
+            <textarea id="notes" name="notes" rows="3" placeholder="z.B. Vertretungsmaterial liegt im Lehrerzimmer..."></textarea>
+        </div>
+
+        <div style="margin-top: 25px; text-align: right;">
+            <button type="submit" class="button-danger">Meldung abgeben</button>
+        </div>
+    </form>
+</div>
+
+<!-- History log preview -->
+<div class="content-box">
+    <h3>Ihre letzten Krankmeldungen</h3>
+    {% if requests is empty %}
+        <p style='color: var(--text-muted);'>Keine Meldungen in letzter Zeit.</p>
+    {% else %}
+        <table class='data-table simple'>
+            <thead>
+                <tr>
+                    <th>Von</th>
+                    <th>Bis</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in requests %}
+                    <tr>
+                        <td>{{ r.date_from|date('d.m.Y') }}</td>
+                        <td>{{ r.date_to|date('d.m.Y') }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+{% endblock %}

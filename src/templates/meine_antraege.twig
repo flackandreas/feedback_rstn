@@ -1,0 +1,73 @@
+{% extends "base.twig" %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2>Meine Anträge & Meldungen</h2>
+    
+    <!-- Filter Dropdown -->
+    <form method="GET" action="/meine_antraege.php" style="display: flex; gap: 10px; align-items: center;">
+        <label for="statusFilter" style="font-weight: 500; font-size: 0.9em;">Status:</label>
+        <select name="status" id="statusFilter" onchange="this.form.submit()" style="padding: 5px 10px; width: auto;">
+            <option value="all" {{ filter_status == 'all' ? 'selected' : '' }}>Alle</option>
+            <option value="pending" {{ filter_status == 'pending' ? 'selected' : '' }}>Ausstehend</option>
+            <option value="approved" {{ filter_status == 'approved' ? 'selected' : '' }}>Genehmigt / Bestätigt</option>
+            <option value="rejected" {{ filter_status == 'rejected' ? 'selected' : '' }}>Abgelehnt</option>
+        </select>
+    </form>
+</div>
+
+<div class="content-box">
+    {% if requests is empty %}
+        <p style="text-align: center; color: var(--text-muted); padding: 40px 0;">
+            Sie haben bisher keine Anträge gestellt, die diesem Filter entsprechen.
+        </p>
+    {% else %}
+        <div style="overflow-x: auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Datum</th>
+                        <th>Typ</th>
+                        <th>Details/Grund</th>
+                        <th>Gesendet am</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in requests %}
+                        {% set statusColor = (r.status == 'pending') ? 'var(--warning-color-dark)' : ((r.status == 'approved') ? 'var(--success-color)' : 'var(--danger-color)') %}
+                        
+                        {% set statusText %}
+                            {% if r.status == 'pending' %}AUSSTEHEND{% elseif r.status == 'approved' %}GENEHMIGT{% elseif r.status == 'rejected' %}ABGELEHNT{% else %}{{ r.status|upper }}{% endif %}
+                        {% endset %}
+                        
+                        <tr>
+                            <td style="font-weight: 500;">{{ r.date_main|date('d.m.Y') }}</td>
+                            <td>
+                                {% if r.type == 'Ausflug' %}
+                                    🚌 {{ r.type }}
+                                {% elseif r.type == 'Freistellung' %}
+                                    🏖️ {{ r.type }}
+                                {% else %}
+                                    🤒 {{ r.type }}
+                                {% endif %}
+                            </td>
+                            <td style="color: var(--text-muted);">
+                                {{ r.details|slice(0, 50) }}{% if r.details|length > 50 %}...{% endif %}
+                            </td>
+                            <td style="font-size: 0.85em; color: var(--text-muted);">
+                                {{ r.created_at|date('d.m.y H:i') }}
+                            </td>
+                            <td>
+                                <span style="display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.8em; font-weight: 600; color: white; background-color: {{ statusColor }};">
+                                    {{ statusText|trim }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

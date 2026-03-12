@@ -39,7 +39,7 @@ $stmt_extra = $conn->query("
 $extra_requests = $stmt_extra->fetchAll();
 
 $csrf_token = get_csrf_token();
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/twig_setup.php';
 
 // Flash Messages
 $flash_success = $_SESSION['flash_success'] ?? null;
@@ -50,138 +50,14 @@ if (isset($_GET['error']) && $_GET['error'] === 'csrf') {
     $flash_error = "Sicherheitsfehler: Bitte Aktion erneut ausführen.";
 }
 
-// Helper function to render action buttons
-function render_action_buttons($req_id, $req_type, $status, $csrf_token) {
-    if ($status === 'pending') {
-        return '
-        <form method="POST" action="/admin_action.php" style="display:inline-block; margin:0;">
-            <input type="hidden" name="csrf_token" value="' . htmlspecialchars($csrf_token) . '">
-            <input type="hidden" name="id" value="' . $req_id . '">
-            <input type="hidden" name="type" value="' . $req_type . '">
-            <button type="submit" name="action" value="approve" class="button-primary" style="background-color: var(--success-color); padding: 5px 10px; font-size: 0.85em; margin-right: 5px;" title="Genehmigen">✓</button>
-            <button type="submit" name="action" value="reject" class="button-danger" style="padding: 5px 10px; font-size: 0.85em;" title="Ablehnen" onclick="return confirm(\'Möchten Sie diesen Antrag wirklich ablehnen?\');">✗</button>
-        </form>';
-    } else {
-        $statusColor = $status == 'approved' ? 'var(--success-color)' : 'var(--danger-color)';
-        $statusText = $status == 'approved' ? 'GENEHMIGT' : 'ABGELEHNT';
-        return '<span style="color: ' . $statusColor . '; font-weight: 600; font-size: 0.85em;">' . $statusText . '</span>';
-    }
-}
-?>
-
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <h2>Zentrale Verwaltung (Schulleitung)</h2>
-</div>
-
-<?php if ($flash_success): ?>
-    <div class="status success"><?= htmlspecialchars($flash_success) ?></div>
-<?php endif; ?>
-
-<?php if ($flash_error): ?>
-    <div class="status error"><?= htmlspecialchars($flash_error) ?></div>
-<?php endif; ?>
-
-<!-- Section 1: Krankmeldungen -->
-<div class="content-box">
-    <h3 style="border-left: 4px solid var(--danger-color); padding-left: 10px;">Krankmeldungen</h3>
-    <?php if (empty($sick_leaves)): ?>
-        <p style="color: var(--text-muted);">Keine Krankmeldungen vorhanden.</p>
-    <?php else: ?>
-        <div style="overflow-x: auto;">
-            <table class="data-table simple">
-                <thead>
-                    <tr>
-                        <th>Eingang</th>
-                        <th>Lehrkraft</th>
-                        <th>Von</th>
-                        <th>Bis</th>
-                        <th>Notizen</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($sick_leaves as $r): ?>
-                        <tr>
-                            <td style="font-size: 0.85em; color: var(--text-muted);"><?= date('d.m.y H:i', strtotime($r['created_at'])) ?></td>
-                            <td style="font-weight: 600;"><?= htmlspecialchars($r['teacher_name']) ?> <span style="font-size: 0.8em; color: var(--text-muted);">(<?= htmlspecialchars($r['kuerzel']) ?>)</span></td>
-                            <td><?= date('d.m.Y', strtotime($r['date_main'])) ?></td>
-                            <td><?= date('d.m.Y', strtotime($r['date_to'])) ?></td>
-                            <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?= htmlspecialchars($r['details']) ?>"><?= htmlspecialchars($r['details']) ?: '-' ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-    <?php endif; ?>
-</div>
-
-<!-- Section 2: Freistellungen -->
-<div class="content-box">
-    <h3 style="border-left: 4px solid var(--warning-color); padding-left: 10px;">Anträge auf Freistellung</h3>
-    <?php if (empty($exempt_requests)): ?>
-        <p style="color: var(--text-muted);">Keine Anträge auf Freistellung vorhanden.</p>
-    <?php else: ?>
-        <div style="overflow-x: auto;">
-            <table class="data-table simple">
-                <thead>
-                    <tr>
-                        <th>Eingang</th>
-                        <th>Lehrkraft</th>
-                        <th>Von</th>
-                        <th>Bis</th>
-                        <th>Grund</th>
-                        <th>Aktion/Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($exempt_requests as $r): ?>
-                        <tr style="<?= $r['status'] !== 'pending' ? 'opacity: 0.7;' : '' ?>">
-                            <td style="font-size: 0.85em; color: var(--text-muted);"><?= date('d.m.y H:i', strtotime($r['created_at'])) ?></td>
-                            <td style="font-weight: 600;"><?= htmlspecialchars($r['teacher_name']) ?> <span style="font-size: 0.8em; color: var(--text-muted);">(<?= htmlspecialchars($r['kuerzel']) ?>)</span></td>
-                            <td><?= date('d.m.Y', strtotime($r['date_main'])) ?></td>
-                            <td><?= date('d.m.Y', strtotime($r['date_to'])) ?></td>
-                            <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?= htmlspecialchars($r['details']) ?>"><?= htmlspecialchars($r['details']) ?></td>
-                            <td><?= render_action_buttons($r['id'], 'freistellung', $r['status'], $csrf_token) ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-    <?php endif; ?>
-</div>
-
-<!-- Section 3: Ausflüge (Außerunterrichtlich) -->
-<div class="content-box">
-    <h3 style="border-left: 4px solid var(--primary-color); padding-left: 10px;">Außerunterrichtliche Veranstaltungen</h3>
-    <?php if (empty($extra_requests)): ?>
-        <p style="color: var(--text-muted);">Keine Anträge auf außerunterrichtliche Veranstaltungen vorhanden.</p>
-    <?php else: ?>
-        <div style="overflow-x: auto;">
-            <table class="data-table simple">
-                <thead>
-                    <tr>
-                        <th>Eingang</th>
-                        <th>Lehrkraft</th>
-                        <th>Datum</th>
-                        <th>Klasse</th>
-                        <th>Ziel</th>
-                        <th>Aktion/Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($extra_requests as $r): ?>
-                        <tr style="<?= $r['status'] !== 'pending' ? 'opacity: 0.7;' : '' ?>">
-                            <td style="font-size: 0.85em; color: var(--text-muted);"><?= date('d.m.y H:i', strtotime($r['created_at'])) ?></td>
-                            <td style="font-weight: 600;"><?= htmlspecialchars($r['teacher_name']) ?> <span style="font-size: 0.8em; color: var(--text-muted);">(<?= htmlspecialchars($r['kuerzel']) ?>)</span></td>
-                            <td><?= date('d.m.Y', strtotime($r['date_main'])) ?></td>
-                            <td><?= htmlspecialchars($r['class']) ?></td>
-                            <td><?= htmlspecialchars($r['details']) ?></td>
-                            <td><?= render_action_buttons($r['id'], 'ausflug', $r['status'], $csrf_token) ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-    <?php endif; ?>
-</div>
-
-<?php require_once __DIR__ . '/includes/footer.php'; ?>
+echo $twig->render('admin_dashboard.twig', [
+    'csrf_token' => $csrf_token,
+    'flash_success' => $flash_success,
+    'flash_error' => $flash_error,
+    'sick_leaves' => $sick_leaves,
+    'exempt_requests' => $exempt_requests,
+    'extra_requests' => $extra_requests,
+    'current_user_name' => get_current_user_name(),
+    'is_admin' => is_current_user_admin(),
+    'is_logged_in' => true
+]);

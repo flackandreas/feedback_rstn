@@ -36,56 +36,14 @@ try {
     $pending_extra = $pending_exemptions = $recent_sick = 0;
 }
 
-require_once __DIR__ . '/includes/header.php';
-?>
+require_once __DIR__ . '/includes/twig_setup.php';
 
-<div style="display: flex; justify-content: space-between; align-items: center;">
-    <h1>Willkommen, <?= htmlspecialchars($user_name) ?></h1>
-    <span style="color: var(--text-muted); font-size: 0.9em;"><?= date('d.m.Y') ?></span>
-</div>
-
-<p style="color: var(--text-muted); margin-bottom: 30px;">Hier verwalten Sie Ihre Anträge und Meldungen.</p>
-
-<div class="kpi-grid">
-    <div class="kpi-box">
-        <span>Austehende außerunterr. Anträge</span>
-        <strong><?= (int)$pending_extra ?></strong>
-    </div>
-    <div class="kpi-box">
-        <span>Ausstehende Freistellungen</span>
-        <strong><?= (int)$pending_exemptions ?></strong>
-    </div>
-    <div class="kpi-box">
-        <span>Krankmeldungen (Letzte 30 Tage)</span>
-        <strong><?= (int)$recent_sick ?></strong>
-    </div>
-</div>
-
-<div class="content-box" style="margin-top: 30px;">
-    <h2>Schnellzugriff</h2>
-    
-    <div class="form-grid-3">
-        <a href="/antrag_ausserunterrichtlich.php" style="text-decoration: none;">
-            <div class="kpi-box" style="cursor: pointer; border-left: 5px solid var(--primary-color);">
-                <div style="font-size: 2em; margin-bottom: 15px;">🚌</div>
-                <span style="color: var(--text-dark); margin: 0;">Neuer Antrag:<br>Außerunterrichtliche Veranstaltung</span>
-            </div>
-        </a>
-
-        <a href="/antrag_freistellung.php" style="text-decoration: none;">
-            <div class="kpi-box" style="cursor: pointer; border-left: 5px solid var(--warning-color);">
-                <div style="font-size: 2em; margin-bottom: 15px;">🏖️</div>
-                <span style="color: var(--text-dark); margin: 0;">Neuer Antrag:<br>Freistellung</span>
-            </div>
-        </a>
-
-        <a href="/krankmeldung.php" style="text-decoration: none;">
-            <div class="kpi-box" style="cursor: pointer; border-left: 5px solid var(--danger-color);">
-                <div style="font-size: 2em; margin-bottom: 15px;">🤒</div>
-                <span style="color: var(--text-dark); margin: 0;">Neue Meldung:<br>Krankmeldung</span>
-            </div>
-        </a>
-    </div>
-</div>
-
-<?php require_once __DIR__ . '/includes/footer.php'; ?>
+echo $twig->render('dashboard.twig', [
+    'current_user_name' => $user_name,
+    'current_date' => date('d.m.Y'),
+    'pending_extra' => (int)$pending_extra,
+    'pending_exemptions' => (int)$pending_exemptions,
+    'recent_sick' => (int)$recent_sick,
+    'is_admin' => is_current_user_admin(),
+    'is_logged_in' => true
+]);

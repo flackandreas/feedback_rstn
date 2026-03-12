@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Efficiency Tool</title>
+    <link rel="stylesheet" href="/css/app_styles.css">
+    <!-- Quick external font fallback to match the app style vibes -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/js/app.js" defer></script>
+    <style>
+        /* Fallback quick fixes if app_styles.css isn't perfectly carrying over all resets */
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+{% if is_logged_in %}
+<div class="app-layout" id="appLayout">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div>
+                <div class="sidebar-title">Verwaltung</div>
+                <span class="sidebar-schule">E-Anträge</span>
+            </div>
+            <button id="nav-toggle" aria-label="Toggle menu">☰</button>
+        </div>
+        
+        <ul class="nav-menu">
+            <li class="nav-label">Main</li>
+            <li class="nav-item">
+                <a href="/index.php" class="{{ is_current_page('index.php') ? 'active' : '' }}">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+            </li>
+            
+            <li class="nav-label">Anträge</li>
+            <li class="nav-item">
+                <a href="/antrag_ausserunterrichtlich.php" class="{{ is_current_page('antrag_ausserunterrichtlich.php') ? 'active' : '' }}">
+                    <span class="nav-icon">🚌</span>
+                    <span class="nav-text">Außerunterrichtlich</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/antrag_freistellung.php" class="{{ is_current_page('antrag_freistellung.php') ? 'active' : '' }}">
+                    <span class="nav-icon">🏖️</span>
+                    <span class="nav-text">Freistellung</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/krankmeldung.php" class="{{ is_current_page('krankmeldung.php') ? 'active' : '' }}">
+                    <span class="nav-icon">🤒</span>
+                    <span class="nav-text">Krankmeldung</span>
+                </a>
+            </li>
+
+            <div class="nav-separator"></div>
+
+            <li class="nav-label">Übersicht</li>
+            <li class="nav-item">
+                <a href="/meine_antraege.php" class="{{ is_current_page('meine_antraege.php') ? 'active' : '' }}">
+                    <span class="nav-icon">📂</span>
+                    <span class="nav-text">Meine Anträge</span>
+                </a>
+            </li>
+            
+            {% if is_admin %}
+            <div class="nav-separator"></div>
+            
+            <li class="nav-label" style="color: var(--danger-color-dark);">Administration</li>
+            <li class="nav-item">
+                <a href="/admin_dashboard.php" class="{{ is_current_page('admin_dashboard.php') ? 'active' : '' }}">
+                    <span class="nav-icon">🛡️</span>
+                    <span class="nav-text">Verwaltung</span>
+                </a>
+            </li>
+            {% endif %}
+            
+            <div class="nav-separator"></div>
+            
+            <li class="nav-label">Benutzer</li>
+            <li class="nav-item">
+                <div style="padding: 10px 12px; color: var(--text-muted); font-size: 0.9em; display:flex; align-items:center;">
+                    <span class="nav-icon">👤</span>
+                    <span class="nav-text">{{ current_user_name }}</span>
+                </div>
+            </li>
+            <li class="nav-item">
+                <a href="/logout.php">
+                    <span class="nav-icon">🚪</span>
+                    <span class="nav-text">Abmelden</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    
+    <!-- Main Content Area -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+</div> <!-- End app-layout -->
+
+{% else %}
+    <!-- Full page for login and other public routes -->
+    <main class="login-layout" style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: var(--bg-main);">
+        {% block content_public %}{% endblock %}
+    </main>
+{% endif %}
+
+<!-- SweetAlert2 Flash Messages handler -->
+{% if flash_success or flash_error %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        {% if flash_success %}
+        Swal.fire({
+            icon: 'success',
+            title: 'Erfolg!',
+            text: '{{ flash_success|escape('js') }}',
+            confirmButtonColor: 'var(--success-color)'
+        });
+        {% endif %}
+        
+        {% if flash_error %}
+        Swal.fire({
+            icon: 'error',
+            title: 'Fehler!',
+            text: '{{ flash_error|escape('js') }}',
+            confirmButtonColor: 'var(--danger-color)'
+        });
+        {% endif %}
+    });
+</script>
+{% endif %}
+
+{% block extra_scripts %}{% endblock %}
+
+</body>
+</html>

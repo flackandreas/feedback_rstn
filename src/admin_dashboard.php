@@ -11,6 +11,70 @@ require_admin();
 
 $conn = db_connect();
 
+// Handle CSV Upload
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['teacher_csv'])) {
+    $csrf_token = $_POST['csrf_token'] ?? '';
+    if (!verify_csrf_token($csrf_token)) {
+        $_SESSION['flash_error'] = "Sicherheitsfehler: CSRF Token ungültig.";
+        header("Location: /admin_dashboard.php");
+        exit;
+    }
+    
+    $file = $_FILES['teacher_csv'];
+    if ($file['error'] === UPLOAD_ERR_OK) {
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        if ($ext === 'csv') {
+            $handle = fopen($file['tmp_name'], 'r');
+            if ($handle !== false) {
+                // Determine delimiter by reading first line
+                $first_line = fgets($handle);
+                $delimiter = (strpos($first_line, ';') !== false) ? ';' : ',';
+                rewind($handle);
+                
+                // Skip header row
+                fgetcsv($handle, 1000, $delimiter);
+                
+                $success_count = 0;
+                $skip_count = 0;
+                
+                $stmt = $conn->prepare("INSERT IGNORE INTO teachers (kuerzel, name, email, passwort_hash) VALUES (?, ?, ?, ?)");
+                $default_pw_hash = password_hash('lehrer', PASSWORD_DEFAULT);
+                
+                while (($data = fgetcsv($handle, 1000, $delimiter)) !== false) {
+                    // Expect: kuerzel, name, email
+                    if (count($data) >= 2) {
+                        $kuerzel = trim($data[0]);
+                        $name = trim($data[1]);
+                        $email = isset($data[2]) ? trim($data[2]) : null;
+                        
+                        if (!empty($kuerzel) && !empty($name)) {
+                            // Empty email could be string 'null' or empty string depending on csv, treat as null for db
+                            if ($email === '') $email = null;
+                            
+                            $stmt->execute([$kuerzel, $name, $email, $default_pw_hash]);
+                            if ($stmt->rowCount() > 0) {
+                                $success_count++;
+                            } else {
+                                $skip_count++;
+                            }
+                        }
+                    }
+                }
+                fclose($handle);
+                $_SESSION['flash_success'] = "Import abgeschlossen: $success_count hinzugefügt, $skip_count übersprungen (bereits vorhanden).";
+            } else {
+                $_SESSION['flash_error'] = "Fehler beim Lesen der hochgeladenen Datei.";
+            }
+        } else {
+            $_SESSION['flash_error'] = "Nur .csv Dateien sind erlaubt.";
+        }
+    } else {
+        $_SESSION['flash_error'] = "Fehler beim Hochladen der Datei.";
+    }
+    header("Location: /admin_dashboard.php");
+    exit;
+}
+
 // 1. Sick leaves (Krankmeldungen)
 $stmt_sick = $conn->query("
     SELECT r.id, 'Krankmeldung' as type, r.notes as details, r.date_from as date_main, r.date_to, 'Info' as status, r.created_at, t.name as teacher_name, t.kuerzel

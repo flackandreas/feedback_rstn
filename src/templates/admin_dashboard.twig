@@ -137,6 +137,27 @@
         </div>
     {% endif %}
 </div>
+
+<!-- Section 4: Lehrerverwaltung (CSV Import) -->
+<div class="content-box" style="margin-top: 2rem;">
+    <h3 style="border-left: 4px solid #8e44ad; padding-left: 10px;">Lehrerverwaltung (CSV Import)</h3>
+    <p style="color: var(--text-muted); margin-bottom: 15px;">
+        Importiere Lehrkräfte aus einer CSV-Datei. Erwartetes Format: <strong>Kürzel;Name;Email</strong> (erste Zeile wird als Überschrift ignoriert). Bei bereits existierenden Kürzeln werden Einträge übersprungen.
+    </p>
+    
+    <form method="POST" action="/admin_dashboard.php" enctype="multipart/form-data" class="modern-form" style="max-width: 500px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        
+        <div class="form-group">
+            <label for="teacher_csv" class="form-label">CSV-Datei auswählen:</label>
+            <input type="file" name="teacher_csv" id="teacher_csv" accept=".csv" required class="form-control" style="padding: 10px; border: 1px dashed var(--border-color); width: 100%;">
+        </div>
+        
+        <div style="margin-top: 15px;">
+            <button type="submit" class="button-primary" style="background-color: #8e44ad; width: auto;">📤 Importieren</button>
+        </div>
+    </form>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}

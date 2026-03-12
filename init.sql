@@ -7,6 +7,7 @@ USE db_feedback;
 CREATE TABLE IF NOT EXISTS teachers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     kuerzel VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(255) DEFAULT NULL,
     passwort_hash VARCHAR(255) NOT NULL,
     is_admin TINYINT(1) DEFAULT 0,
     name VARCHAR(100) NOT NULL,
@@ -50,9 +51,9 @@ CREATE TABLE IF NOT EXISTS sick_leave_reports (
 
 -- Insert a test admin user (Password: admin)
 -- The password_hash is generated using password_hash('admin', PASSWORD_DEFAULT);
-INSERT IGNORE INTO teachers (kuerzel, passwort_hash, is_admin, name) 
-VALUES ('admin', '$2y$10$4aI/.pBlZUV.ltYBK1wJ..fwPLdyzvNHsotVWcZ8HcVdoOOprSOH.', 1, 'Administrator');
+INSERT IGNORE INTO teachers (kuerzel, email, passwort_hash, is_admin, name) 
+VALUES ('admin', 'admin@example.local', '$2y$10$4aI/.pBlZUV.ltYBK1wJ..fwPLdyzvNHsotVWcZ8HcVdoOOprSOH.', 1, 'Administrator');
 
 -- Insert a normal test teacher (Password: lehrer)
-INSERT IGNORE INTO teachers (kuerzel, passwort_hash, name) 
-VALUES ('test', '$2y$10$K7M3J4s/n/U.t.G9W636r.P/bZq3w/I.w9I.K.2/J7.3K.2.h.QyC', 'Test Lehrer');
+INSERT IGNORE INTO teachers (kuerzel, email, passwort_hash, name) 
+VALUES ('test', 'lehrer@example.local', '$2y$10$K7M3J4s/n/U.t.G9W636r.P/bZq3w/I.w9I.K.2/J7.3K.2.h.QyC', 'Test Lehrer');

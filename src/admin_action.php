@@ -6,6 +6,7 @@
 
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/mailer.php';
 
 require_admin(); // Security block
 
@@ -28,9 +29,50 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $table = ($request_type === 'ausflug') ? 'extracurricular_requests' : 'exemption_requests';
         
         try {
+            // First, get teacher email, name, and request details
+            $details_query = "";
+            if ($table === 'extracurricular_requests') {
+                $details_query = "SELECT t.email, t.name as teacher_name, r.class_name, r.event_date, r.destination 
+                                  FROM extracurricular_requests r 
+                                  JOIN teachers t ON r.teacher_id = t.id 
+                                  WHERE r.id = ?";
+            } else {
+                $details_query = "SELECT t.email, t.name as teacher_name, r.date_from, r.date_to, r.reason 
+                                  FROM exemption_requests r 
+                                  JOIN teachers t ON r.teacher_id = t.id 
+                                  WHERE r.id = ?";
+            }
+            
+            $stmt_details = $conn->prepare($details_query);
+            $stmt_details->execute([$request_id]);
+            $request_details = $stmt_details->fetch(PDO::FETCH_ASSOC);
+
+            // Update status
             $stmt = $conn->prepare("UPDATE {$table} SET status = ? WHERE id = ?");
             if ($stmt->execute([$status, $request_id])) {
                 $_SESSION['flash_success'] = "Antrag erfolgreich bearbeitet.";
+                
+                // Send email notification
+                if ($request_details && !empty($request_details['email'])) {
+                    $status_text = ($status === 'approved') ? 'genehmigt' : 'abgelehnt';
+                    $request_type_text = ($table === 'extracurricular_requests') ? 'außerunterrichtliche Veranstaltung' : 'Freistellung';
+                    
+                    $subject = "Update zu deinem Antrag auf $request_type_text";
+                    $body = "<p>Hallo {$request_details['teacher_name']},</p>";
+                    $body .= "<p>dein Antrag auf $request_type_text wurde soeben <strong>{$status_text}</strong>.</p>";
+                    
+                    if ($table === 'extracurricular_requests') {
+                        $body .= "<p>Details: {$request_details['class_name']} nach {$request_details['destination']} am " . date('d.m.Y', strtotime($request_details['event_date'])) . "</p>";
+                    } else {
+                        $body .= "<p>Details: Zeitraum vom " . date('d.m.Y', strtotime($request_details['date_from'])) . " bis " . date('d.m.Y', strtotime($request_details['date_to'])) . "</p>";
+                    }
+                    
+                    $body .= "<p>Viele Grüße,<br>Dein Feedback-System Team</p>";
+
+                    if (!send_notification_email($request_details['email'], $subject, $body)) {
+                        $_SESSION['flash_error'] = "Status gespeichert, aber E-Mail konnte nicht gesendet werden.";
+                    }
+                }
             } else {
                 $_SESSION['flash_error'] = "Verarbeitung fehlgeschlagen.";
             }

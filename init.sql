@@ -50,8 +50,8 @@ CREATE TABLE IF NOT EXISTS sick_leave_reports (
 
 -- Insert a test admin user (Password: admin)
 -- The password_hash is generated using password_hash('admin', PASSWORD_DEFAULT);
-INSERT IGNORE INTO teachers (kuerzel, passwort_hash, name) 
-VALUES ('admin', '$2y$10$w0f./h3bVOh4y/d/LzXN0e2OEXlqY4ZlZ7l3k4h.Kx6Y7eZbS.51q', 'Administrator');
+INSERT IGNORE INTO teachers (kuerzel, passwort_hash, is_admin, name) 
+VALUES ('admin', '$2y$10$4aI/.pBlZUV.ltYBK1wJ..fwPLdyzvNHsotVWcZ8HcVdoOOprSOH.', 1, 'Administrator');
 
 -- Insert a normal test teacher (Password: lehrer)
 INSERT IGNORE INTO teachers (kuerzel, passwort_hash, name) 

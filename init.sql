@@ -33,6 +33,12 @@ CREATE TABLE IF NOT EXISTS exemption_requests (
     date_from DATE NOT NULL,
     date_to DATE NOT NULL,
     reason TEXT NOT NULL,
+    days_of_week VARCHAR(255) DEFAULT NULL,
+    classes VARCHAR(255) DEFAULT NULL,
+    hourly_exemption TINYINT(1) DEFAULT 0,
+    hour_from INT DEFAULT NULL,
+    hour_to INT DEFAULT NULL,
+    reason_type VARCHAR(100) DEFAULT NULL,
     status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE CASCADE

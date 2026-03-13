@@ -22,13 +22,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $date_to = $_POST['date_to'] ?? '';
         $reason = trim($_POST['reason'] ?? '');
         
-        if (empty($date_from) || empty($date_to) || empty($reason)) {
+        $days_of_week = isset($_POST['days_of_week']) && is_array($_POST['days_of_week']) ? implode(', ', $_POST['days_of_week']) : null;
+        $classes = trim($_POST['classes'] ?? '');
+        $hourly_exemption = isset($_POST['hourly_exemption']) ? 1 : 0;
+        $hour_from = !empty($_POST['hour_from']) ? (int)$_POST['hour_from'] : null;
+        $hour_to = !empty($_POST['hour_to']) ? (int)$_POST['hour_to'] : null;
+        $reason_type = $_POST['reason_type'] ?? null;
+        
+        if (empty($date_from) || empty($date_to) || empty($reason) || empty($reason_type)) {
             $_SESSION['flash_error'] = "Bitte füllen Sie alle Pflichtfelder aus.";
         } else {
             try {
                 $conn = db_connect();
-                $stmt = $conn->prepare("INSERT INTO exemption_requests (teacher_id, date_from, date_to, reason) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$user_id, $date_from, $date_to, $reason]);
+                $stmt = $conn->prepare("INSERT INTO exemption_requests (teacher_id, date_from, date_to, reason, days_of_week, classes, hourly_exemption, hour_from, hour_to, reason_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$user_id, $date_from, $date_to, $reason, $days_of_week, $classes, $hourly_exemption, $hour_from, $hour_to, $reason_type]);
                 
                 $_SESSION['flash_success'] = "Ihr Antrag wurde erfolgreich eingereicht.";
             } catch (PDOException $e) {

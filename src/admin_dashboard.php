@@ -7,6 +7,9 @@
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
 
+// Temporary hook to run DB migration
+require_once __DIR__ . '/run_alter.php';
+
 require_admin();
 
 $conn = db_connect();
@@ -86,7 +89,15 @@ $sick_leaves = $stmt_sick->fetchAll();
 
 // 2. Exemption requests (Freistellungen)
 $stmt_exempt = $conn->query("
-    SELECT r.id, 'Freistellung' as type, r.reason as details, r.date_from as date_main, r.date_to, r.status, r.created_at, t.name as teacher_name, t.kuerzel 
+    SELECT r.id, 'Freistellung' as type, 
+           CONCAT_WS('<br>', 
+               IF(r.reason_type IS NOT NULL, CONCAT('<strong>Art:</strong> ', r.reason_type), NULL),
+               IF(r.days_of_week IS NOT NULL AND r.days_of_week != '', CONCAT('<strong>Tage:</strong> ', r.days_of_week), NULL),
+               IF(r.classes IS NOT NULL AND r.classes != '', CONCAT('<strong>Klassen:</strong> ', r.classes), NULL),
+               IF(r.hourly_exemption = 1, CONCAT('<strong>Stunden:</strong> ', r.hour_from, ' bis ', r.hour_to), NULL),
+               CONCAT('<strong>Begründung:</strong> ', r.reason)
+           ) as details, 
+           r.date_from as date_main, r.date_to, r.status, r.created_at, t.name as teacher_name, t.kuerzel 
     FROM exemption_requests r 
     JOIN teachers t ON r.teacher_id = t.id 
     ORDER BY FIELD(r.status, 'pending') DESC, r.created_at DESC

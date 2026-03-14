@@ -7,9 +7,6 @@
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
 
-// Temporary hook to run DB migration
-require_once __DIR__ . '/run_alter.php';
-
 require_admin();
 
 $conn = db_connect();

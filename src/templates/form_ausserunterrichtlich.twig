@@ -2,32 +2,127 @@
 
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <h2>Antrag auf außerunterrichtliche Veranstaltung</h2>
+    <h2>Antrag auf Durchführung einer außerunterrichtlichen Veranstaltung</h2>
     <a href="/index.php" class="button-secondary" style="text-decoration:none;">&larr; Zurück</a>
 </div>
+<p style="color: var(--text-muted); margin-bottom: 20px; font-style: italic;">Spätestens 3 Tage vor der Durchführung bei der SL zu stellen.</p>
 
 <div class="content-box">
     <form method="POST" action="/antrag_ausserunterrichtlich.php">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
-        <div class="form-grid-2">
-            <div class="form-group">
-                <label for="class_name">Klasse(n) *</label>
-                <input type="text" id="class_name" name="class_name" required placeholder="z.B. 8a, 8b">
-            </div>
+        {# Zeile 1: Rolle #}
+        <div class="form-group">
+            <label for="role">Ich/wir beabsichtige(n) als</label>
+            <input type="text" id="role" name="role" placeholder="z.B. Klassenlehrer/in, Fachlehrer/in, ...">
+        </div>
 
+        {# Zeile 2: Klassenlehrerin + Begleitperson #}
+        <div class="form-grid-2" style="margin-top: 15px;">
             <div class="form-group">
-                <label for="event_date">Datum der Veranstaltung *</label>
-                <input type="date" id="event_date" name="event_date" required>
+                <label for="class_name">Klassenlehrerin / -lehrer *</label>
+                <input type="text" id="class_name" name="class_name" required placeholder="Name der Lehrkraft">
+            </div>
+            <div class="form-group">
+                <label for="companion">Begleitperson</label>
+                <input type="text" id="companion" name="companion" placeholder="Name der Begleitperson">
             </div>
         </div>
 
+        {# Zeile 3: Datum #}
         <div class="form-group" style="margin-top: 15px;">
-            <label for="destination">Reiseziel / Ort *</label>
-            <input type="text" id="destination" name="destination" required placeholder="Wohin geht der Ausflug?">
+            <label for="event_date">am (Datum) *</label>
+            <input type="date" id="event_date" name="event_date" required>
         </div>
 
-        <div style="margin-top: 25px; text-align: right;">
+        {# Zeile 4: Veranstaltungsname #}
+        <div class="form-group" style="margin-top: 15px;">
+            <label for="event_name">einen … durchzuführen (Veranstaltungsname)</label>
+            <input type="text" id="event_name" name="event_name" placeholder="z.B. Theaterbesuch, Exkursion Bodensee, ...">
+        </div>
+
+        {# Zeile 5: Ziel / Strecke #}
+        <div class="form-group" style="margin-top: 15px;">
+            <label for="destination">Ziel bzw. Strecke sind *</label>
+            <input type="text" id="destination" name="destination" required placeholder="z.B. Freiburg, Bodensee – Konstanz">
+        </div>
+
+        {# Zeile 6: Kosten + Verkehrsmittel #}
+        <div class="form-grid-2" style="margin-top: 15px;">
+            <div class="form-group">
+                <label for="costs">Die Kosten belaufen sich auf ca.</label>
+                <input type="text" id="costs" name="costs" placeholder="z.B. 12 €">
+            </div>
+            <div class="form-group">
+                <label for="transport">Folgende Verkehrsmittel werden eingesetzt</label>
+                <textarea id="transport" name="transport" rows="2" placeholder="z.B. Schulbus, Bahn, zu Fuß, ..."></textarea>
+            </div>
+        </div>
+
+        {# Zeile 7: Beginn und Rückkehr #}
+        <div style="margin-top: 20px; padding: 15px; background: var(--bg-color, #f8f8f8); border-radius: 6px; border: 1px solid var(--border-color);">
+            <div class="form-grid-2">
+                <div>
+                    <p style="font-weight: 600; margin-bottom: 10px;">Beginn</p>
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="start_time">Uhrzeit</label>
+                            <input type="time" id="start_time" name="start_time">
+                        </div>
+                        <div class="form-group">
+                            <label for="start_location">Ort</label>
+                            <input type="text" id="start_location" name="start_location" placeholder="z.B. Schulhof">
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <p style="font-weight: 600; margin-bottom: 10px;">Rückkehr</p>
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="return_time">Uhrzeit</label>
+                            <input type="time" id="return_time" name="return_time">
+                        </div>
+                        <div class="form-group">
+                            <label for="return_location">Ort</label>
+                            <input type="text" id="return_location" name="return_location" placeholder="z.B. Schulhof">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Zeile 8: Heimfahrt geregelt #}
+        <div class="form-group" style="margin-top: 15px;">
+            <label style="font-weight: normal;">
+                <input type="checkbox" name="return_trip_arranged" value="1">
+                <strong>Die Heimfahrtmöglichkeiten für die Schüler sind geregelt.</strong>
+            </label>
+        </div>
+
+        {# Zeile 9: Aufsicht #}
+        <div class="form-group" style="margin-top: 15px;">
+            <label for="supervisors">Zur Aufsicht ist / sind eingesetzt</label>
+            <textarea id="supervisors" name="supervisors" rows="2" placeholder="Namen der Aufsichtspersonen ..."></textarea>
+        </div>
+
+        {# Zeile 10: Einverständniserklärung #}
+        <div class="form-group" style="margin-top: 15px;">
+            <label>Eine Einverständniserklärung liegt vor</label>
+            <div style="display: flex; gap: 20px; margin-top: 8px;">
+                <label style="font-weight: normal;"><input type="radio" name="consent_form" value="ja"> Ja</label>
+                <label style="font-weight: normal;"><input type="radio" name="consent_form" value="nein"> Nein</label>
+            </div>
+        </div>
+
+        {# Zeile 11: Stundenplan benachrichtigt #}
+        <div class="form-group" style="margin-top: 15px;">
+            <label style="font-weight: normal;">
+                <input type="checkbox" name="schedule_notified" value="1">
+                <strong>Der Stundenplan ist benachrichtigt.</strong>
+            </label>
+        </div>
+
+        <div style="margin-top: 30px; text-align: right;">
             <button type="submit" class="button-primary">Antrag einreichen</button>
         </div>
     </form>
@@ -51,11 +146,9 @@
             <tbody>
                 {% for r in requests %}
                     {% set statusColor = (r.status == 'pending') ? 'var(--warning-color)' : ((r.status == 'approved') ? 'var(--success-color)' : 'var(--danger-color)') %}
-                    
                     {% set statusText %}
                         {% if r.status == 'pending' %}AUSSTEHEND{% elseif r.status == 'approved' %}GENEHMIGT{% elseif r.status == 'rejected' %}ABGELEHNT{% else %}{{ r.status|upper }}{% endif %}
                     {% endset %}
-                    
                     <tr>
                         <td>{{ r.class_name }}</td>
                         <td>{{ r.destination }}</td>

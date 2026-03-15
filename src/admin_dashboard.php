@@ -86,29 +86,26 @@ $sick_leaves = $stmt_sick->fetchAll();
 
 // 2. Exemption requests (Freistellungen)
 $stmt_exempt = $conn->query("
-    SELECT r.id, 'Freistellung' as type, 
-           CONCAT_WS('<br>', 
-               IF(r.reason_type IS NOT NULL, CONCAT('<strong>Art:</strong> ', r.reason_type), NULL),
-               IF(r.days_of_week IS NOT NULL AND r.days_of_week != '', CONCAT('<strong>Tage:</strong> ', r.days_of_week), NULL),
-               IF(r.classes IS NOT NULL AND r.classes != '', CONCAT('<strong>Klassen:</strong> ', r.classes), NULL),
-               IF(r.hourly_exemption = 1, CONCAT('<strong>Stunden:</strong> ', r.hour_from, ' bis ', r.hour_to), NULL),
-               CONCAT('<strong>Begründung:</strong> ', r.reason)
-           ) as details, 
-           r.date_from as date_main, r.date_to, r.status, r.created_at, t.name as teacher_name, t.kuerzel 
+    SELECT r.id, r.reason_type, r.days_of_week, r.classes, r.hourly_exemption, r.hour_from, r.hour_to, r.reason,
+           r.date_from, r.date_to, r.status, r.created_at, t.name as teacher_name, t.kuerzel 
     FROM exemption_requests r 
     JOIN teachers t ON r.teacher_id = t.id 
     ORDER BY FIELD(r.status, 'pending') DESC, r.created_at DESC
 ");
-$exempt_requests = $stmt_exempt->fetchAll();
+$exempt_requests = $stmt_exempt->fetchAll(PDO::FETCH_ASSOC);
 
-// 3. Extracurricular requests (Ausflüge)
+// 3. Extracurricular requests (Ausfluege)
 $stmt_extra = $conn->query("
-    SELECT r.id, 'Ausflug' as type, r.class_name as class, r.destination as details, r.event_date as date_main, r.status, r.created_at, t.name as teacher_name, t.kuerzel 
+    SELECT r.id, r.class_name, r.event_date, r.destination, r.status, r.created_at, 
+           t.name as teacher_name, t.kuerzel,
+           r.role, r.companion, r.event_name, r.costs, r.transport,
+           r.start_time, r.start_location, r.return_time, r.return_location,
+           r.return_trip_arranged, r.supervisors, r.consent_form, r.schedule_notified
     FROM extracurricular_requests r 
     JOIN teachers t ON r.teacher_id = t.id 
     ORDER BY FIELD(r.status, 'pending') DESC, r.created_at DESC
 ");
-$extra_requests = $stmt_extra->fetchAll();
+$extra_requests = $stmt_extra->fetchAll(PDO::FETCH_ASSOC);
 
 $csrf_token = get_csrf_token();
 require_once __DIR__ . '/includes/twig_setup.php';

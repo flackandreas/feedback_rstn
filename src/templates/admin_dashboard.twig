@@ -5,7 +5,22 @@
     <h2>Zentrale Verwaltung (Schulleitung)</h2>
 </div>
 
-<!-- Section 1: Krankmeldungen -->
+{# =====================================================================
+   SLIDE-IN DETAIL PANEL (shared for all request types)
+   ===================================================================== #}
+<div id="detail-overlay" onclick="closeDetailPanel()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:1000;"></div>
+<div id="detail-panel" style="display:none; position:fixed; top:0; right:0; width:min(480px,95vw); height:100vh; background:var(--card-bg, #fff); box-shadow:-4px 0 24px rgba(0,0,0,0.18); z-index:1001; overflow-y:auto; padding:30px 28px; transition: transform 0.3s ease; transform: translateX(100%);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h3 id="panel-title" style="margin:0;">Antrag Details</h3>
+        <button onclick="closeDetailPanel()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);">&times;</button>
+    </div>
+    <div id="panel-body"></div>
+    <div id="panel-actions" style="margin-top:24px; border-top:1px solid var(--border-color); padding-top:16px;"></div>
+</div>
+
+{# =====================================================================
+   SECTION 1: Krankmeldungen
+   ===================================================================== #}
 <div class="content-box">
     <h3 style="border-left: 4px solid var(--danger-color); padding-left: 10px;">Krankmeldungen</h3>
     {% if sick_leaves is empty %}
@@ -38,7 +53,9 @@
     {% endif %}
 </div>
 
-<!-- Section 2: Freistellungen -->
+{# =====================================================================
+   SECTION 2: Freistellungen
+   ===================================================================== #}
 <div class="content-box">
     <h3 style="border-left: 4px solid var(--warning-color); padding-left: 10px;">Anträge auf Freistellung</h3>
     {% if exempt_requests is empty %}
@@ -52,19 +69,37 @@
                         <th>Lehrkraft</th>
                         <th>Von</th>
                         <th>Bis</th>
-                        <th>Grund</th>
-                        <th>Aktion/Status</th>
+                        <th>Art</th>
+                        <th>Aktion</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for r in exempt_requests %}
-                        <tr style="{{ r.status != 'pending' ? 'opacity: 0.7;' : '' }}">
+                        {% set data = {
+                            type: 'freistellung',
+                            id: r.id,
+                            teacher: r.teacher_name ~ ' (' ~ r.kuerzel ~ ')',
+                            date_from: r.date_from|date('d.m.Y'),
+                            date_to: r.date_to|date('d.m.Y'),
+                            reason_type: r.reason_type|default(''),
+                            days_of_week: r.days_of_week|default(''),
+                            classes: r.classes|default(''),
+                            hourly: r.hourly_exemption,
+                            hour_from: r.hour_from|default(''),
+                            hour_to: r.hour_to|default(''),
+                            reason: r.reason|default(''),
+                            status: r.status
+                        } %}
+                        <tr style="{{ r.status != 'pending' ? 'opacity: 0.65;' : '' }} cursor:pointer;" 
+                            class="detail-row" 
+                            data-info="{{ data|json_encode|e('html_attr') }}"
+                            title="Klicken für Details">
                             <td style="font-size: 0.85em; color: var(--text-muted);">{{ r.created_at|date('d.m.y H:i') }}</td>
                             <td style="font-weight: 600;">{{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span></td>
-                            <td>{{ r.date_main|date('d.m.Y') }}</td>
+                            <td>{{ r.date_from|date('d.m.Y') }}</td>
                             <td>{{ r.date_to|date('d.m.Y') }}</td>
-                            <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.details }}">{{ r.details }}</td>
-                            <td>
+                            <td>{{ r.reason_type|default('—') }}</td>
+                            <td onclick="event.stopPropagation();">
                                 {% if r.status == 'pending' %}
                                     <form method="POST" action="/admin_action.php" style="display:inline-block; margin:0;" class="admin-action-form">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -88,7 +123,9 @@
     {% endif %}
 </div>
 
-<!-- Section 3: Ausflüge (Außerunterrichtlich) -->
+{# =====================================================================
+   SECTION 3: Außerunterrichtliche Veranstaltungen
+   ===================================================================== #}
 <div class="content-box">
     <h3 style="border-left: 4px solid var(--primary-color); padding-left: 10px;">Außerunterrichtliche Veranstaltungen</h3>
     {% if extra_requests is empty %}
@@ -101,20 +138,45 @@
                         <th>Eingang</th>
                         <th>Lehrkraft</th>
                         <th>Datum</th>
-                        <th>Klasse</th>
+                        <th>Klasse(n)</th>
                         <th>Ziel</th>
-                        <th>Aktion/Status</th>
+                        <th>Aktion</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for r in extra_requests %}
-                        <tr style="{{ r.status != 'pending' ? 'opacity: 0.7;' : '' }}">
+                        {% set data = {
+                            type: 'ausflug',
+                            id: r.id,
+                            teacher: r.teacher_name ~ ' (' ~ r.kuerzel ~ ')',
+                            event_date: r.event_date|date('d.m.Y'),
+                            class_name: r.class_name|default(''),
+                            destination: r.destination|default(''),
+                            role: r.role|default(''),
+                            companion: r.companion|default(''),
+                            event_name: r.event_name|default(''),
+                            costs: r.costs|default(''),
+                            transport: r.transport|default(''),
+                            start_time: r.start_time|default(''),
+                            start_location: r.start_location|default(''),
+                            return_time: r.return_time|default(''),
+                            return_location: r.return_location|default(''),
+                            return_trip_arranged: r.return_trip_arranged,
+                            supervisors: r.supervisors|default(''),
+                            consent_form: r.consent_form|default(''),
+                            schedule_notified: r.schedule_notified,
+                            status: r.status
+                        } %}
+                        <tr style="{{ r.status != 'pending' ? 'opacity: 0.65;' : '' }} cursor:pointer;"
+                            class="detail-row"
+                            data-info="{{ data|json_encode|e('html_attr') }}"
+                            title="Klicken für Details">
                             <td style="font-size: 0.85em; color: var(--text-muted);">{{ r.created_at|date('d.m.y H:i') }}</td>
                             <td style="font-weight: 600;">{{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span></td>
-                            <td>{{ r.date_main|date('d.m.Y') }}</td>
-                            <td>{{ r.class }}</td>
-                            <td>{{ r.details }}</td>
-                            <td>
+                            <td>{{ r.event_date|date('d.m.Y') }}</td>
+                            <td>{{ r.class_name }}</td>
+                            <td>{{ r.destination }}</td>
+                            <td onclick="event.stopPropagation();">
                                 {% if r.status == 'pending' %}
                                     <form method="POST" action="/admin_action.php" style="display:inline-block; margin:0;" class="admin-action-form">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -138,21 +200,20 @@
     {% endif %}
 </div>
 
-<!-- Section 4: Lehrerverwaltung (CSV Import) -->
+{# =====================================================================
+   SECTION 4: Lehrerverwaltung
+   ===================================================================== #}
 <div class="content-box" style="margin-top: 2rem;">
     <h3 style="border-left: 4px solid #8e44ad; padding-left: 10px;">Lehrerverwaltung (CSV Import)</h3>
     <p style="color: var(--text-muted); margin-bottom: 15px;">
         Importiere Lehrkräfte aus einer CSV-Datei. Erwartetes Format: <strong>Kürzel;Name;Email</strong> (erste Zeile wird als Überschrift ignoriert). Bei bereits existierenden Kürzeln werden Einträge übersprungen.
     </p>
-    
     <form method="POST" action="/admin_dashboard.php" enctype="multipart/form-data" class="modern-form" style="max-width: 500px;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        
         <div class="form-group">
             <label for="teacher_csv" class="form-label">CSV-Datei auswählen:</label>
             <input type="file" name="teacher_csv" id="teacher_csv" accept=".csv" required class="form-control" style="padding: 10px; border: 1px dashed var(--border-color); width: 100%;">
         </div>
-        
         <div style="margin-top: 15px;">
             <button type="submit" class="button-primary" style="background-color: #8e44ad; width: auto;">📤 Importieren</button>
         </div>
@@ -162,52 +223,132 @@
 
 {% block extra_scripts %}
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        // Handle approve buttons
-        document.querySelectorAll('.btn-approve').forEach(button => {
-            button.addEventListener('click', function(e) {
-                const form = this.closest('form');
-                form.querySelector('.action-input').value = 'approve';
-                
-                Swal.fire({
-                    title: 'Genehmigen?',
-                    text: "Soll dieser Antrag wirklich genehmigt werden?",
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: 'var(--success-color)',
-                    cancelButtonColor: 'var(--text-muted)',
-                    confirmButtonText: 'Ja, genehmigen',
-                    cancelButtonText: 'Abbrechen'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        form.submit();
-                    }
-                });
-            });
+// ── Helper to build a detail row ────────────────────────────────────────────
+function row(label, value) {
+    if (!value && value !== 0) return '';
+    return `<div style="display:grid;grid-template-columns:140px 1fr;gap:6px;padding:8px 0;border-bottom:1px solid var(--border-color,#eee);">
+        <span style="font-size:0.8em;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">${label}</span>
+        <span>${value}</span>
+    </div>`;
+}
+
+function badge(ok) {
+    return ok ? `<span style="color:var(--success-color);font-weight:600;">✓ Ja</span>` : `<span style="color:var(--text-muted);">– Nein</span>`;
+}
+
+// ── Open panel ───────────────────────────────────────────────────────────────
+function openDetailPanel(d) {
+    let title = 'Freistellungsantrag';
+    let body = '';
+
+    if (d.type === 'freistellung') {
+        title = 'Antrag auf Freistellung';
+        body += row('Lehrkraft', d.teacher);
+        body += row('Zeitraum', `${d.date_from} – ${d.date_to}`);
+        body += row('Art / Grund', d.reason_type);
+        body += row('Tage', d.days_of_week);
+        body += row('Klassen', d.classes);
+        if (d.hourly) {
+            body += row('Stundenweise', `${d.hour_from}. bis ${d.hour_to}. Stunde`);
+        }
+        body += row('Begründung', d.reason);
+    } else {
+        title = 'Außerunterrichtliche Veranstaltung';
+        body += row('Lehrkraft', d.teacher);
+        body += row('Als', d.role);
+        body += row('Klasse(n)', d.class_name);
+        body += row('Begleitperson', d.companion);
+        body += row('Datum', d.event_date);
+        body += row('Veranstaltung', d.event_name);
+        body += row('Ziel / Strecke', d.destination);
+        body += row('Kosten ca.', d.costs);
+        body += row('Verkehrsmittel', d.transport);
+        if (d.start_time) body += row('Beginn', `${d.start_time} Uhr, ${d.start_location||'—'}`);
+        if (d.return_time) body += row('Rückkehr', `${d.return_time} Uhr, ${d.return_location||'—'}`);
+        body += row('Heimfahrt geregelt', badge(d.return_trip_arranged));
+        body += row('Aufsicht', d.supervisors);
+        body += row('Einverständniserklärung', d.consent_form ? `<strong>${d.consent_form.toUpperCase()}</strong>` : '—');
+        body += row('Stundenplan benachrichtigt', badge(d.schedule_notified));
+    }
+
+    const statusColor = d.status === 'approved' ? 'var(--success-color)' : (d.status === 'rejected' ? 'var(--danger-color)' : 'var(--warning-color)');
+    const statusText = d.status === 'approved' ? 'GENEHMIGT' : (d.status === 'rejected' ? 'ABGELEHNT' : 'AUSSTEHEND');
+    body += row('Status', `<span style="color:${statusColor};font-weight:700;">${statusText}</span>`);
+
+    document.getElementById('panel-title').textContent = title;
+    document.getElementById('panel-body').innerHTML = body;
+    document.getElementById('panel-actions').innerHTML = '';
+
+    const panel = document.getElementById('detail-panel');
+    const overlay = document.getElementById('detail-overlay');
+    panel.style.display = 'block';
+    overlay.style.display = 'block';
+    requestAnimationFrame(() => { panel.style.transform = 'translateX(0)'; });
+}
+
+function closeDetailPanel() {
+    const panel = document.getElementById('detail-panel');
+    panel.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+        panel.style.display = 'none';
+        document.getElementById('detail-overlay').style.display = 'none';
+    }, 300);
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    // Click on any detail row → open panel
+    document.querySelectorAll('.detail-row').forEach(row => {
+        row.style.cursor = 'pointer';
+        row.addEventListener('click', function() {
+            const d = JSON.parse(this.dataset.info);
+            openDetailPanel(d);
         });
+    });
 
-        // Handle reject buttons
-        document.querySelectorAll('.btn-reject').forEach(button => {
-            button.addEventListener('click', function(e) {
-                const form = this.closest('form');
-                form.querySelector('.action-input').value = 'reject';
-
-                Swal.fire({
-                    title: 'Ablehnen?',
-                    text: "Soll dieser Antrag wirklich abgelehnt werden? Dies kann nicht rückgängig gemacht werden.",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: 'var(--danger-color)',
-                    cancelButtonColor: 'var(--text-muted)',
-                    confirmButtonText: 'Ja, ablehnen',
-                    cancelButtonText: 'Abbrechen'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        form.submit();
-                    }
-                });
+    // Handle approve buttons
+    document.querySelectorAll('.btn-approve').forEach(button => {
+        button.addEventListener('click', function(e) {
+            const form = this.closest('form');
+            form.querySelector('.action-input').value = 'approve';
+            Swal.fire({
+                title: 'Genehmigen?',
+                text: "Soll dieser Antrag wirklich genehmigt werden?",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--success-color)',
+                cancelButtonColor: 'var(--text-muted)',
+                confirmButtonText: 'Ja, genehmigen',
+                cancelButtonText: 'Abbrechen'
+            }).then((result) => {
+                if (result.isConfirmed) { form.submit(); }
             });
         });
     });
+
+    // Handle reject buttons
+    document.querySelectorAll('.btn-reject').forEach(button => {
+        button.addEventListener('click', function(e) {
+            const form = this.closest('form');
+            form.querySelector('.action-input').value = 'reject';
+            Swal.fire({
+                title: 'Ablehnen?',
+                text: "Soll dieser Antrag wirklich abgelehnt werden? Dies kann nicht rückgängig gemacht werden.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--danger-color)',
+                cancelButtonColor: 'var(--text-muted)',
+                confirmButtonText: 'Ja, ablehnen',
+                cancelButtonText: 'Abbrechen'
+            }).then((result) => {
+                if (result.isConfirmed) { form.submit(); }
+            });
+        });
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeDetailPanel();
+    });
+});
 </script>
 {% endblock %}

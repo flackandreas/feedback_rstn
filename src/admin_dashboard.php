@@ -1,6 +1,6 @@
 <?php
 /**
- * src/admin_dashboard.php test
+ * src/admin_dashboard.php
  * Dashboard for Schulleitung to manage incoming requests separately.
  */
 

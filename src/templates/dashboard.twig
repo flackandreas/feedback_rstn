@@ -23,6 +23,52 @@
     </div>
 </div>
 
+<div class="content-box" style="margin-top: 30px; border-top: 4px solid var(--primary-color);">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+            <h2 style="margin-top: 0;">⚡ Schüler-Feedback</h2>
+            <p style="color: var(--text-muted);">Starten Sie eine Live-Feedback-Runde für Ihre aktuelle Stunde.</p>
+        </div>
+        {% if active_session %}
+            <span class="badge" style="background-color: var(--success-color); color: white; padding: 5px 10px; border-radius: 4px;">Sitzung Aktiv</span>
+        {% endif %}
+    </div>
+
+    {% if active_session %}
+        <div style="display: flex; gap: 30px; align-items: center; background: #f9f9f9; padding: 20px; border-radius: 8px;">
+            <div style="text-align: center;">
+                {# Using a public QR generator for the demo link #}
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ host_url }}/student_feedback.php?t={{ active_session.token }}" alt="QR Code" style="border: 10px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                <div style="margin-top: 10px; font-size: 0.8em; color: var(--text-muted);">Scan mich!</div>
+            </div>
+            <div style="flex: 1;">
+                <h3 style="margin: 0 0 10px 0;">{{ active_session.klasse }} - {{ active_session.fach }}</h3>
+                <p style="margin: 0 0 20px 0; font-size: 0.9em;">Schüler können jetzt unter folgendem Link abstimmen:</p>
+                <code style="display: block; background: #eee; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 0.8em;">{{ host_url }}/student_feedback.php?t={{ active_session.token }}</code>
+                
+                <form action="/feedback_action.php" method="POST">
+                    <input type="hidden" name="action" value="stop">
+                    <button type="submit" class="btn btn-danger" style="background-color: var(--danger-color); color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Sitzung Beenden</button>
+                    <a href="/feedback_view.php?id={{ active_session.id }}" class="btn" style="margin-left: 10px; text-decoration: none; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 9px 20px; border-radius: 4px;">Ergebnisse ansehen</a>
+                </form>
+            </div>
+        </div>
+    {% else %}
+        <form action="/feedback_action.php" method="POST" class="form-grid-3" style="grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: flex-end;">
+            <input type="hidden" name="action" value="start">
+            <div class="form-group" style="margin: 0;">
+                <label style="display: block; margin-bottom: 5px; font-size: 0.9em;">Klasse</label>
+                <input type="text" name="klasse" placeholder="z.B. 8a" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            <div class="form-group" style="margin: 0;">
+                <label style="display: block; margin-bottom: 5px; font-size: 0.9em;">Fach</label>
+                <input type="text" name="fach" placeholder="z.B. Mathe" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            <button type="submit" class="btn btn-primary" style="background-color: var(--primary-color); color: white; border: none; padding: 11px 25px; border-radius: 4px; cursor: pointer;">Feedback-Runde starten</button>
+        </form>
+    {% endif %}
+</div>
+
 <div class="content-box" style="margin-top: 30px;">
     <h2>Schnellzugriff</h2>
     

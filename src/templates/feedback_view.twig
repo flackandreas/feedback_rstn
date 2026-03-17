@@ -1,0 +1,99 @@
+{% extends "base.twig" %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <div>
+        <a href="/index.php" style="text-decoration: none; color: var(--text-muted); font-size: 0.9em;">← Zurück zum Dashboard</a>
+        <h1>Ergebnisse: {{ session.klasse }} - {{ session.fach }}</h1>
+        <p style="color: var(--text-muted);">Sitzung vom {{ session.created_at|date('d.m.Y H:i') }} | 👥 <strong>{{ total_votes }}</strong> Teilnehmer</p>
+    </div>
+    <div style="text-align: right;">
+        {% if session.is_active %}
+            <span class="badge" style="background-color: var(--success-color); color: white; padding: 5px 12px; border-radius: 4px;">Sitzung läuft noch</span>
+        {% else %}
+            <span class="badge" style="background-color: var(--text-muted); color: white; padding: 5px 12px; border-radius: 4px;">Abgeschlossen</span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+    <!-- Lesson Score -->
+    <div class="content-box">
+        <h3>Wie war die heutige Stunde?</h3>
+        <div style="height: 250px;">
+            <canvas id="chartLesson"></canvas>
+        </div>
+    </div>
+
+    <!-- Climate Score -->
+    <div class="content-box">
+        <h3>Wie ist aktuell das Klassenklima?</h3>
+        <div style="height: 250px;">
+            <canvas id="chartClimate"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="content-box" style="margin-top: 30px;">
+    <h3>Details & Interpretation</h3>
+    <p>Die Diagramme zeigen die Verteilung der Emoji-Stimmen von 1 (😫) bis 5 (😄).</p>
+    <ul>
+        <li><strong>Stunden-Qualität:</strong> Ein Schwerpunkt bei 4 und 5 deutet auf eine erfolgreiche Vermittlung hin.</li>
+        <li><strong>Klassenklima:</strong> Achten Sie auf Ausreißer nach unten (1-2), um potenzielle Konflikte frühzeitig zu erkennen.</li>
+    </ul>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const labels = ['😫', '🙁', '😐', '🙂', '😄'];
+    const colors = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#27ae60'];
+
+    // Lesson Chart
+    new Chart(document.getElementById('chartLesson'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Stimmen',
+                data: [{{ data.lesson[1] }}, {{ data.lesson[2] }}, {{ data.lesson[3] }}, {{ data.lesson[4] }}, {{ data.lesson[5] }}],
+                backgroundColor: colors,
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+
+    // Climate Chart
+    new Chart(document.getElementById('chartClimate'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Stimmen',
+                data: [{{ data.climate[1] }}, {{ data.climate[2] }}, {{ data.climate[3] }}, {{ data.climate[4] }}, {{ data.climate[5] }}],
+                backgroundColor: colors,
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -31,9 +31,15 @@ try {
     $stmt3->execute([$user_id]);
     $recent_sick = $stmt3->fetchColumn();
 
+    // Active Feedback Session
+    $stmt_session = $conn->prepare("SELECT * FROM feedback_sessions WHERE teacher_id = ? AND is_active = 1 AND (expires_at IS NULL OR expires_at > NOW()) LIMIT 1");
+    $stmt_session->execute([$user_id]);
+    $active_session = $stmt_session->fetch(PDO::FETCH_ASSOC);
+
 } catch (PDOException $e) {
     // If table doesn't exist yet, we catch the error gracefully
     $pending_extra = $pending_exemptions = $recent_sick = 0;
+    $active_session = null;
 }
 
 require_once __DIR__ . '/includes/twig_setup.php';
@@ -44,6 +50,8 @@ echo $twig->render('dashboard.twig', [
     'pending_extra' => (int)$pending_extra,
     'pending_exemptions' => (int)$pending_exemptions,
     'recent_sick' => (int)$recent_sick,
+    'active_session' => $active_session,
+    'host_url' => (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]",
     'is_admin' => is_current_user_admin(),
     'is_logged_in' => true
 ]);

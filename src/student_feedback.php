@@ -19,7 +19,12 @@ if (!$session) {
     die("Ungültiger oder abgelaufener Feedback-Link. Bitte fragen Sie Ihre Lehrkraft.");
 }
 
-// 2. Check for "already voted" cookie for this specific session
+// 2. Fetch questions for this session
+$stmt_q = $conn->prepare("SELECT * FROM feedback_questions WHERE session_id = ? ORDER BY sort_order ASC");
+$stmt_q->execute([$session['id']]);
+$questions = $stmt_q->fetchAll(PDO::FETCH_ASSOC);
+
+// 3. Check for "already voted" cookie for this specific session
 $voted_cookie = "voted_" . $session['id'];
 $success = false;
 
@@ -27,16 +32,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_COOKIE[$voted_cookie])) {
         $error = "Du hast für diese Stunde bereits abgestimmt. Vielen Dank!";
     } else {
-        $lesson_score = (int)($_POST['lesson_score'] ?? 3);
-        $climate_score = (int)($_POST['climate_score'] ?? 3);
-
-        // Sanitize scores
-        $lesson_score = max(1, min(5, $lesson_score));
-        $climate_score = max(1, min(5, $climate_score));
-
-        // Insert responses
-        $stmt_ins = $conn->prepare("INSERT INTO feedback_responses (session_id, category, score) VALUES (?, 'lesson', ?), (?, 'climate', ?)");
-        $stmt_ins->execute([$session['id'], $lesson_score, $session['id'], $climate_score]);
+        $scores = $_POST['scores'] ?? [];
+        
+        $stmt_ins = $conn->prepare("INSERT INTO feedback_responses (session_id, question_id, score) VALUES (?, ?, ?)");
+        
+        foreach ($questions as $q) {
+            $q_id = $q['id'];
+            $score = isset($scores[$q_id]) ? (int)$scores[$q_id] : 3;
+            $score = max(1, min(5, $score));
+            
+            $stmt_ins->execute([$session['id'], $q_id, $score]);
+        }
 
         // Set cookie to prevent double voting (expires in 1 hour)
         setcookie($voted_cookie, "1", time() + 3600, "/");
@@ -156,32 +162,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <p class="subtitle"><?php echo htmlspecialchars($session['klasse'] . " - " . $session['fach']); ?></p>
         
         <form method="POST">
-            <div class="question-box">
-                <span class="question-label">Wie war die heutige Stunde?</span>
-                <div class="emoji-group">
-                    <?php 
-                    $emojis = ['😫', '🙁', '😐', '🙂', '😄'];
-                    foreach($emojis as $i => $emoji): $val = $i + 1; ?>
-                        <div class="emoji-item">
-                            <input type="radio" name="lesson_score" id="l<?php echo $val; ?>" value="<?php echo $val; ?>" <?php echo $val == 3 ? 'checked' : ''; ?>>
-                            <label for="l<?php echo $val; ?>"><?php echo $emoji; ?></label>
-                        </div>
-                    <?php endforeach; ?>
+            <?php foreach ($questions as $q): ?>
+                <div class="question-box">
+                    <span class="question-label"><?php echo htmlspecialchars($q['question_text']); ?></span>
+                    <div class="emoji-group">
+                        <?php 
+                        $emojis = ['😫', '🙁', '😐', '🙂', '😄'];
+                        foreach($emojis as $i => $emoji): $val = $i + 1; ?>
+                            <div class="emoji-item">
+                                <input type="radio" name="scores[<?php echo $q['id']; ?>]" id="q<?php echo $q['id']; ?>_<?php echo $val; ?>" value="<?php echo $val; ?>" <?php echo $val == 3 ? 'checked' : ''; ?>>
+                                <label for="q<?php echo $q['id']; ?>_<?php echo $val; ?>"><?php echo $emoji; ?></label>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="question-box">
-                <span class="question-label">Wie ist aktuell das Klassenklima?</span>
-                <div class="emoji-group">
-                    <?php 
-                    foreach($emojis as $i => $emoji): $val = $i + 1; ?>
-                        <div class="emoji-item">
-                            <input type="radio" name="climate_score" id="c<?php echo $val; ?>" value="<?php echo $val; ?>" <?php echo $val == 3 ? 'checked' : ''; ?>>
-                            <label for="c<?php echo $val; ?>"><?php echo $emoji; ?></label>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
+            <?php endforeach; ?>
             
             <button type="submit" class="btn-send">Feedback senden</button>
         </form>

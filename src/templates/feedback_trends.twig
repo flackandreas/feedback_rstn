@@ -51,8 +51,7 @@
             <tr style="text-align: left; border-bottom: 2px solid #eee;">
                 <th style="padding: 10px;">Datum</th>
                 <th style="padding: 10px;">Klasse/Fach</th>
-                <th style="padding: 10px;">Unterricht (ø)</th>
-                <th style="padding: 10px;">Klima (ø)</th>
+                <th style="padding: 10px;">Fragen & Durchschnittswerte</th>
                 <th style="padding: 10px;">Aktion</th>
             </tr>
         </thead>
@@ -62,10 +61,12 @@
                     <td style="padding: 10px;">{{ s.created_at|date('d.m.y') }}</td>
                     <td style="padding: 10px;">{{ s.klasse }} ({{ s.fach }})</td>
                     <td style="padding: 10px;">
-                        <span style="display: inline-block; width: 40px; font-weight: 600;">{{ s.avg_lesson|number_format(1) }}</span>
-                    </td>
-                    <td style="padding: 10px;">
-                        <span style="display: inline-block; width: 40px; font-weight: 600;">{{ s.avg_climate|number_format(1) }}</span>
+                        {% for q in s.questions %}
+                            <div style="font-size: 0.85em; margin-bottom: 4px;">
+                                <span style="font-weight: 600; color: var(--primary-color);">{{ q.avg|number_format(1) }}</span> 
+                                <span style="color: var(--text-muted);">{{ q.text }}</span>
+                            </div>
+                        {% endfor %}
                     </td>
                     <td style="padding: 10px;">
                         <a href="/feedback_view.php?id={{ s.id }}" style="text-decoration: none; font-size: 0.9em; color: var(--primary-color);">Details →</a>
@@ -89,28 +90,35 @@ document.addEventListener("DOMContentLoaded", function() {
         {% endfor %}
     ];
 
+    // Data structure to hold scores per question text
+    const datasetsMap = {};
+    const colors = ['#4a90e2', '#27ae60', '#f39c12', '#9b59b6', '#e74c3c'];
+
+    {% for s in history %}
+        {% for q in s.questions %}
+            if (!datasetsMap['{{ q.text|escape('js') }}']) {
+                datasetsMap['{{ q.text|escape('js') }}'] = new Array({{ history|length }}).fill(null);
+            }
+            datasetsMap['{{ q.text|escape('js') }}'][{{ loop.parent.loop.index0 }}] = {{ q.avg ?? 'null' }};
+        {% endfor %}
+    {% endfor %}
+
+    const datasets = Object.keys(datasetsMap).map((text, index) => {
+        return {
+            label: text,
+            data: datasetsMap[text],
+            borderColor: colors[index % colors.length],
+            backgroundColor: colors[index % colors.length],
+            tension: 0.3,
+            pointRadius: 5
+        };
+    });
+
     new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
-            datasets: [
-                {
-                    label: 'Unterricht (ø)',
-                    data: [{% for s in history %}{{ s.avg_lesson ?? 'null' }},{% endfor %}],
-                    borderColor: '#4a90e2',
-                    backgroundColor: '#4a90e2',
-                    tension: 0.3,
-                    pointRadius: 5
-                },
-                {
-                    label: 'Klassenklima (ø)',
-                    data: [{% for s in history %}{{ s.avg_climate ?? 'null' }},{% endfor %}],
-                    borderColor: '#27ae60',
-                    backgroundColor: '#27ae60',
-                    tension: 0.3,
-                    pointRadius: 5
-                }
-            ]
+            datasets: datasets
         },
         options: {
             responsive: true,

@@ -33,6 +33,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         
         $stmt = $conn->prepare("INSERT INTO feedback_sessions (teacher_id, klasse, fach, token, expires_at) VALUES (?, ?, ?, ?, ?)");
         $stmt->execute([$teacher_id, $klasse, $fach, $token, $expires_at]);
+        $session_id = $conn->lastInsertId();
+        
+        // Save Questions
+        $questions = $_POST['questions'] ?? [];
+        if (empty($questions)) {
+            $questions = ["Wie war die heutige Stunde?", "Wie ist aktuell das Klassenklima?"];
+        }
+        
+        $stmt_q = $conn->prepare("INSERT INTO feedback_questions (session_id, question_text, sort_order) VALUES (?, ?, ?)");
+        foreach ($questions as $index => $q_text) {
+            $q_text = trim($q_text);
+            if (!empty($q_text)) {
+                $stmt_q->execute([$session_id, $q_text, $index]);
+            }
+        }
         
         $_SESSION['flash_success'] = "Feedback-Sitzung für $klasse ($fach) gestartet.";
         $_SESSION['active_session_token'] = $token;

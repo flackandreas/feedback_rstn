@@ -21,22 +21,33 @@ if (!$session) {
     die("Sitzung nicht gefunden oder keine Berechtigung.");
 }
 
-// 2. Fetch responses
-$stmt_res = $conn->prepare("SELECT category, score FROM feedback_responses WHERE session_id = ?");
+// 2. Fetch questions
+$stmt_q = $conn->prepare("SELECT * FROM feedback_questions WHERE session_id = ? ORDER BY sort_order ASC");
+$stmt_q->execute([$session_id]);
+$questions = $stmt_q->fetchAll(PDO::FETCH_ASSOC);
+
+// 3. Fetch responses
+$stmt_res = $conn->prepare("SELECT question_id, score FROM feedback_responses WHERE session_id = ?");
 $stmt_res->execute([$session_id]);
 $responses = $stmt_res->fetchAll(PDO::FETCH_ASSOC);
 
-// 3. Process data for charts
-$data = [
-    'lesson' => [1=>0, 2=>0, 3=>0, 4=>0, 5=>0],
-    'climate' => [1=>0, 2=>0, 3=>0, 4=>0, 5=>0]
-];
-
-foreach ($responses as $r) {
-    $data[$r['category']][$r['score']]++;
+// 4. Process data for charts
+$data = [];
+foreach ($questions as $q) {
+    $data[$q['id']] = [
+        'text' => $q['question_text'],
+        'scores' => [1=>0, 2=>0, 3=>0, 4=>0, 5=>0]
+    ];
 }
 
-$total_votes = count($responses) / 2; // Assuming 2 questions per student
+foreach ($responses as $r) {
+    if (isset($data[$r['question_id']])) {
+        $data[$r['question_id']]['scores'][$r['score']]++;
+    }
+}
+
+$num_questions = count($questions);
+$total_votes = ($num_questions > 0) ? count($responses) / $num_questions : 0;
 
 require_once __DIR__ . '/includes/twig_setup.php';
 

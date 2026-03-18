@@ -21,30 +21,24 @@
 </div>
 
 <div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
-    <!-- Lesson Score -->
+    {% for q_id, q_data in data %}
     <div class="content-box">
-        <h3>Wie war die heutige Stunde?</h3>
+        <h3>{{ q_data.text }}</h3>
         <div style="height: 250px;">
-            <canvas id="chartLesson"></canvas>
+            <canvas id="chart_{{ q_id }}"></canvas>
         </div>
     </div>
-
-    <!-- Climate Score -->
-    <div class="content-box">
-        <h3>Wie ist aktuell das Klassenklima?</h3>
-        <div style="height: 250px;">
-            <canvas id="chartClimate"></canvas>
-        </div>
-    </div>
+    {% endfor %}
 </div>
 
 <div class="content-box" style="margin-top: 30px;">
-    <h3>Details & Interpretation</h3>
-    <p>Die Diagramme zeigen die Verteilung der Emoji-Stimmen von 1 (😫) bis 5 (😄).</p>
+    <h3>Interpretation der Ergebnisse</h3>
+    <p>Die Diagramme zeigen die Verteilung der Emoji-Stimmen von 1 (😫) bis 5 (😄) für jede Ihrer individuellen Fragen.</p>
     <ul>
-        <li><strong>Stunden-Qualität:</strong> Ein Schwerpunkt bei 4 und 5 deutet auf eine erfolgreiche Vermittlung hin.</li>
-        <li><strong>Klassenklima:</strong> Achten Sie auf Ausreißer nach unten (1-2), um potenzielle Konflikte frühzeitig zu erkennen.</li>
+        <li><strong>Hohe Werte (4-5):</strong> Zeigen eine positive Resonanz auf die jeweilige Frage.</li>
+        <li><strong>Niedrige Werte (1-2):</strong> Können auf Frust oder Klärungsbedarf bei der Schülerschaft hindeuten.</li>
     </ul>
+    <p style="font-size: 0.9em; color: var(--text-muted); italic: true;">Tipp: Nutzen Sie die Ergebnisse als Gesprächsanlass im Unterricht, um gemeinsam mit der Klasse an Verbesserungen zu arbeiten.</p>
 </div>
 
 {% endblock %}
@@ -55,14 +49,14 @@ document.addEventListener("DOMContentLoaded", function() {
     const labels = ['😫', '🙁', '😐', '🙂', '😄'];
     const colors = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#27ae60'];
 
-    // Lesson Chart
-    new Chart(document.getElementById('chartLesson'), {
+    {% for q_id, q_data in data %}
+    new Chart(document.getElementById('chart_{{ q_id }}'), {
         type: 'bar',
         data: {
             labels: labels,
             datasets: [{
                 label: 'Stimmen',
-                data: [{{ data.lesson[1] }}, {{ data.lesson[2] }}, {{ data.lesson[3] }}, {{ data.lesson[4] }}, {{ data.lesson[5] }}],
+                data: [{{ q_data.scores[1] }}, {{ q_data.scores[2] }}, {{ q_data.scores[3] }}, {{ q_data.scores[4] }}, {{ q_data.scores[5] }}],
                 backgroundColor: colors,
                 borderRadius: 5
             }]
@@ -74,26 +68,7 @@ document.addEventListener("DOMContentLoaded", function() {
             scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
         }
     });
-
-    // Climate Chart
-    new Chart(document.getElementById('chartClimate'), {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Stimmen',
-                data: [{{ data.climate[1] }}, {{ data.climate[2] }}, {{ data.climate[3] }}, {{ data.climate[4] }}, {{ data.climate[5] }}],
-                backgroundColor: colors,
-                borderRadius: 5
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-        }
-    });
+    {% endfor %}
 });
 </script>
 {% endblock %}

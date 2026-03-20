@@ -31,6 +31,17 @@ try {
     $stmt3->execute([$user_id]);
     $recent_sick = $stmt3->fetchColumn();
 
+    // Queries (Rückfragen)
+    $stmt4 = $conn->prepare("SELECT COUNT(*) FROM extracurricular_requests WHERE teacher_id = ? AND status = 'query'");
+    $stmt4->execute([$user_id]);
+    $queries_extra = $stmt4->fetchColumn();
+
+    $stmt5 = $conn->prepare("SELECT COUNT(*) FROM exemption_requests WHERE teacher_id = ? AND status = 'query'");
+    $stmt5->execute([$user_id]);
+    $queries_exempt = $stmt5->fetchColumn();
+    
+    $total_queries = (int)$queries_extra + (int)$queries_exempt;
+
     // Active Feedback Session
     $stmt_session = $conn->prepare("SELECT * FROM feedback_sessions WHERE teacher_id = ? AND is_active = 1 AND (expires_at IS NULL OR expires_at > NOW()) LIMIT 1");
     $stmt_session->execute([$user_id]);
@@ -50,6 +61,7 @@ echo $twig->render('dashboard.twig', [
     'pending_extra' => (int)$pending_extra,
     'pending_exemptions' => (int)$pending_exemptions,
     'recent_sick' => (int)$recent_sick,
+    'total_queries' => $total_queries ?? 0,
     'active_session' => $active_session,
     'host_url' => (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]",
     'is_admin' => is_current_user_admin(),

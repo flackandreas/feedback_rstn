@@ -224,4 +224,18 @@ document.addEventListener('keydown', function(event) {
 </script>
 {% endif %}
 
+{% if total_queries > 0 %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    Swal.fire({
+        title: 'Rücksprache mit der Schulleitung',
+        text: 'Es liegen {{ total_queries }} Anträge vor, zu denen die Schulleitung gerne mit dir Rücksprache halten würde. Bitte melde dich kurz im Sekretariat.',
+        icon: 'info',
+        confirmButtonColor: 'var(--primary-color)',
+        confirmButtonText: 'Verstanden'
+    });
+});
+</script>
+{% endif %}
+
 {% endblock %}

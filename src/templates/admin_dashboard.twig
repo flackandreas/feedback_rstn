@@ -90,7 +90,7 @@
                             reason: r.reason|default(''),
                             status: r.status
                         } %}
-                        <tr style="{{ r.status != 'pending' ? 'opacity: 0.65;' : '' }} cursor:pointer;" 
+                        <tr style="{{ (r.status != 'pending' and r.status != 'query') ? 'opacity: 0.65;' : '' }} cursor:pointer;" 
                             class="detail-row" 
                             data-info="{{ data|json_encode|e('html_attr') }}"
                             title="Klicken für Details">
@@ -106,9 +106,20 @@
                                         <input type="hidden" name="id" value="{{ r.id }}">
                                         <input type="hidden" name="type" value="freistellung">
                                         <button type="button" class="button-primary btn-approve" style="background-color: var(--success-color); padding: 5px 10px; font-size: 0.85em; margin-right: 5px;" title="Genehmigen">✓</button>
+                                        <button type="button" class="button-warning btn-query" style="background-color: var(--warning-color); padding: 5px 10px; font-size: 0.85em; margin-right: 5px; color: white; border: none;" title="Rückfrage">❓</button>
                                         <button type="button" class="button-danger btn-reject" style="padding: 5px 10px; font-size: 0.85em;" title="Ablehnen">✗</button>
                                         <input type="hidden" name="action" value="" class="action-input">
                                     </form>
+                                {% elseif r.status == 'query' %}
+                                    <form method="POST" action="/admin_action.php" style="display:inline-block; margin:0;" class="admin-action-form">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                        <input type="hidden" name="id" value="{{ r.id }}">
+                                        <input type="hidden" name="type" value="freistellung">
+                                        <button type="button" class="button-primary btn-approve" style="background-color: var(--success-color); padding: 5px 10px; font-size: 0.85em; margin-right: 5px;" title="Genehmigen">✓</button>
+                                        <button type="button" class="button-danger btn-reject" style="padding: 5px 10px; font-size: 0.85em;" title="Ablehnen">✗</button>
+                                        <input type="hidden" name="action" value="" class="action-input">
+                                    </form>
+                                    <div style="margin-top: 5px;"><span class="badge" style="background-color: var(--warning-color); color: white; font-size: 0.75em;">RÜCKFRAGE</span></div>
                                 {% else %}
                                     {% set statusColor = (r.status == 'approved') ? 'var(--success-color)' : 'var(--danger-color)' %}
                                     {% set statusText = (r.status == 'approved') ? 'GENEHMIGT' : 'ABGELEHNT' %}
@@ -167,7 +178,7 @@
                             schedule_notified: r.schedule_notified,
                             status: r.status
                         } %}
-                        <tr style="{{ r.status != 'pending' ? 'opacity: 0.65;' : '' }} cursor:pointer;"
+                        <tr style="{{ (r.status != 'pending' and r.status != 'query') ? 'opacity: 0.65;' : '' }} cursor:pointer;"
                             class="detail-row"
                             data-info="{{ data|json_encode|e('html_attr') }}"
                             title="Klicken für Details">
@@ -183,9 +194,20 @@
                                         <input type="hidden" name="id" value="{{ r.id }}">
                                         <input type="hidden" name="type" value="ausflug">
                                         <button type="button" class="button-primary btn-approve" style="background-color: var(--success-color); padding: 5px 10px; font-size: 0.85em; margin-right: 5px;" title="Genehmigen">✓</button>
+                                        <button type="button" class="button-warning btn-query" style="background-color: var(--warning-color); padding: 5px 10px; font-size: 0.85em; margin-right: 5px; color: white; border: none;" title="Rückfrage">❓</button>
                                         <button type="button" class="button-danger btn-reject" style="padding: 5px 10px; font-size: 0.85em;" title="Ablehnen">✗</button>
                                         <input type="hidden" name="action" value="" class="action-input">
                                     </form>
+                                {% elseif r.status == 'query' %}
+                                    <form method="POST" action="/admin_action.php" style="display:inline-block; margin:0;" class="admin-action-form">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                        <input type="hidden" name="id" value="{{ r.id }}">
+                                        <input type="hidden" name="type" value="ausflug">
+                                        <button type="button" class="button-primary btn-approve" style="background-color: var(--success-color); padding: 5px 10px; font-size: 0.85em; margin-right: 5px;" title="Genehmigen">✓</button>
+                                        <button type="button" class="button-danger btn-reject" style="padding: 5px 10px; font-size: 0.85em;" title="Ablehnen">✗</button>
+                                        <input type="hidden" name="action" value="" class="action-input">
+                                    </form>
+                                    <div style="margin-top: 5px;"><span class="badge" style="background-color: var(--warning-color); color: white; font-size: 0.75em;">RÜCKFRAGE</span></div>
                                 {% else %}
                                     {% set statusColor = (r.status == 'approved') ? 'var(--success-color)' : 'var(--danger-color)' %}
                                     {% set statusText = (r.status == 'approved') ? 'GENEHMIGT' : 'ABGELEHNT' %}
@@ -271,8 +293,8 @@ function openDetailPanel(d) {
         body += row('Stundenplan benachrichtigt', badge(d.schedule_notified));
     }
 
-    const statusColor = d.status === 'approved' ? 'var(--success-color)' : (d.status === 'rejected' ? 'var(--danger-color)' : 'var(--warning-color)');
-    const statusText = d.status === 'approved' ? 'GENEHMIGT' : (d.status === 'rejected' ? 'ABGELEHNT' : 'AUSSTEHEND');
+    const statusColor = d.status === 'approved' ? 'var(--success-color)' : (d.status === 'rejected' ? 'var(--danger-color)' : (d.status === 'query' ? 'var(--warning-color)' : 'var(--text-muted)'));
+    const statusText = d.status === 'approved' ? 'GENEHMIGT' : (d.status === 'rejected' ? 'ABGELEHNT' : (d.status === 'query' ? 'RÜCKFRAGE' : 'AUSSTEHEND'));
     body += row('Status', `<span style="color:${statusColor};font-weight:700;">${statusText}</span>`);
 
     document.getElementById('panel-title').textContent = title;
@@ -338,6 +360,26 @@ document.addEventListener("DOMContentLoaded", function() {
                 confirmButtonColor: 'var(--danger-color)',
                 cancelButtonColor: 'var(--text-muted)',
                 confirmButtonText: 'Ja, ablehnen',
+                cancelButtonText: 'Abbrechen'
+            }).then((result) => {
+                if (result.isConfirmed) { form.submit(); }
+            });
+        });
+    });
+
+    // Handle query buttons
+    document.querySelectorAll('.btn-query').forEach(button => {
+        button.addEventListener('click', function(e) {
+            const form = this.closest('form');
+            form.querySelector('.action-input').value = 'query';
+            Swal.fire({
+                title: 'Rücksprache halten?',
+                text: "Soll die Lehrkraft zu einer Rücksprache mit der Schulleitung aufgefordert werden? Der Antrag bleibt im System sichtbar.",
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--warning-color)',
+                cancelButtonColor: 'var(--text-muted)',
+                confirmButtonText: 'Ja, Rückfrage stellen',
                 cancelButtonText: 'Abbrechen'
             }).then((result) => {
                 if (result.isConfirmed) { form.submit(); }

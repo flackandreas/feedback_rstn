@@ -21,9 +21,12 @@ CREATE TABLE IF NOT EXISTS extracurricular_requests (
     class_name VARCHAR(100) NOT NULL,
     event_date DATE NOT NULL,
     destination VARCHAR(255) NOT NULL,
+    aud_type VARCHAR(50) DEFAULT NULL,
+    participating_teacher_id INT DEFAULT NULL,
     status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE CASCADE
+    FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE CASCADE,
+    FOREIGN KEY (participating_teacher_id) REFERENCES teachers(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 3. Exemption Requests (Antrag auf Freistellung)

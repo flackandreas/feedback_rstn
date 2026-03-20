@@ -5,11 +5,11 @@
     <h2>Zentrale Verwaltung (Schulleitung)</h2>
 </div>
 
-<!-- Section 1: Krankmeldungen -->
+<!-- Section 1: Aktuelle Krankmeldungen -->
 <div class="content-box">
-    <h3 style="border-left: 4px solid var(--danger-color); padding-left: 10px;">Krankmeldungen</h3>
-    {% if sick_leaves is empty %}
-        <p style="color: var(--text-muted);">Keine Krankmeldungen vorhanden.</p>
+    <h3 style="border-left: 4px solid var(--danger-color); padding-left: 10px;">Aktuelle & Zukünftige Krankmeldungen</h3>
+    {% if sick_leaves_current is empty %}
+        <p style="color: var(--text-muted);">Keine aktuellen Krankmeldungen vorhanden.</p>
     {% else %}
         <div style="overflow-x: auto;">
             <table class="data-table simple">
@@ -20,22 +20,82 @@
                         <th>Von</th>
                         <th>Bis</th>
                         <th>Notizen</th>
+                        <th>Anlage</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for r in sick_leaves %}
+                    {% for r in sick_leaves_current %}
                         <tr>
                             <td style="font-size: 0.85em; color: var(--text-muted);">{{ r.created_at|date('d.m.y H:i') }}</td>
                             <td style="font-weight: 600;">{{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span></td>
                             <td>{{ r.date_main|date('d.m.Y') }}</td>
                             <td>{{ r.date_to|date('d.m.Y') }}</td>
                             <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.details }}">{{ r.details|default('-') }}</td>
+                            <td>
+                                {% if r.attachment_path %}
+                                    <a href="/{{ r.attachment_path }}" target="_blank" class="button-secondary" style="padding: 2px 8px; font-size: 0.8em;">Ansehen</a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     {% endif %}
+</div>
+
+<!-- Section 1.5: Historie Krankmeldungen -->
+<div class="content-box">
+    <h3 style="border-left: 4px solid #6c757d; padding-left: 10px;">Historie Krankmeldungen</h3>
+    
+    <div style="margin-bottom: 20px;">
+        <label for="history_teacher_select" style="font-weight: 600;">Lehrkraft auswählen:</label>
+        <select id="history_teacher_select" style="padding: 10px; width: 300px; border: 1px solid #ccc; border-radius: 4px; margin-left: 10px;">
+            <option value="">-- Bitte wählen --</option>
+            {% for teacher in sick_history_by_teacher %}
+                <option value="tid_{{ teacher.id }}">{{ teacher.name }} ({{ teacher.kuerzel }})</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    {% for teacher in sick_history_by_teacher %}
+    <div class="history-teacher-block" id="tid_{{ teacher.id }}" style="display: none; padding: 15px; border: 1px solid #eee; background: #fcfcfc; border-radius: 6px; margin-bottom: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h4 style="margin: 0; font-size: 1.1em;">{{ teacher.name }} ({{ teacher.kuerzel }})</h4>
+            <div style="text-align: right;">
+                <span style="font-weight: 600; color: var(--danger-color); display: block; font-size: 1.1em;">Bisherige Krankheitstage: {{ teacher.total_days }}</span>
+                <a href="/export_sick_leaves.php?teacher_id={{ teacher.id }}" target="_blank" class="button-secondary" style="font-size: 0.8em; margin-top: 5px; display: inline-block;">📄 Als PDF Exportieren</a>
+            </div>
+        </div>
+        
+        <table class="data-table simple" style="font-size: 0.9em;">
+            <thead>
+                <tr>
+                    <th>Gültig Von</th>
+                    <th>Bis</th>
+                    <th>Notizen</th>
+                    <th>Anlage</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in teacher.records %}
+                    <tr>
+                        <td>{{ r.date_main|date('d.m.Y') }}</td>
+                        <td>{{ r.date_to|date('d.m.Y') }}</td>
+                        <td>{{ r.details|default('-') }}</td>
+                        <td>
+                            {% if r.attachment_path %}
+                                <a href="/{{ r.attachment_path }}" target="_blank">Ansehen</a>
+                            {% else %}-{% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
 </div>
 
 <!-- Section 2: Freistellungen -->
@@ -63,7 +123,7 @@
                             <td style="font-weight: 600;">{{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span></td>
                             <td>{{ r.date_main|date('d.m.Y') }}</td>
                             <td>{{ r.date_to|date('d.m.Y') }}</td>
-                            <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.details }}">{{ r.details }}</td>
+                            <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.details }}">{{ r.details|raw }}</td>
                             <td>
                                 {% if r.status == 'pending' %}
                                     <form method="POST" action="/admin_action.php" style="display:inline-block; margin:0;" class="admin-action-form">
@@ -91,29 +151,67 @@
 <!-- Section 3: Ausflüge (Außerunterrichtlich) -->
 <div class="content-box">
     <h3 style="border-left: 4px solid var(--primary-color); padding-left: 10px;">Außerunterrichtliche Veranstaltungen</h3>
+    
+    <div style="margin-bottom: 20px; padding: 15px; background: #eef2fb; border-radius: 6px;">
+        <h4 style="margin-top: 0; margin-bottom: 10px;">Übersicht der Eingeteilten Lehrkräfte</h4>
+        <textarea id="copy-textarea" rows="6" style="width: 100%; border: 1px solid #ccc; padding: 10px; font-family: monospace; white-space: pre; border-radius: 4px; resize: vertical;" readonly>{{ copy_text }}</textarea>
+        <button id="btn-copy-aud" type="button" class="button-secondary" style="margin-top: 10px;">📋 In Zwischenablage kopieren</button>
+    </div>
+
+    <!-- Email Reporting Settings -->
+    <div style="margin-bottom: 25px; padding: 15px; background: #fff; border: 1px solid #ddd; border-radius: 6px;">
+        <h4 style="margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Automatische Weiterleitung konfigurieren</h4>
+        <form method="POST" action="/admin_dashboard.php">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="save_settings" value="1">
+            <div class="form-grid-3">
+                <div class="form-group">
+                    <label>E-Mail Adresse:</label>
+                    <input type="email" name="report_email" placeholder="vertetung@schule.de" value="{{ app_settings['report_email'] }}">
+                </div>
+                <div class="form-group">
+                    <label>Uhrzeit:</label>
+                    <input type="time" name="report_time" value="{{ app_settings['report_time'] }}">
+                </div>
+                <div class="form-group">
+                    <label>Intervall:</label>
+                    <select name="report_interval">
+                        <option value="daily" {{ app_settings['report_interval'] == 'daily' ? 'selected' : '' }}>Täglich</option>
+                        <option value="weekly" {{ app_settings['report_interval'] == 'weekly' ? 'selected' : '' }}>Wöchentlich</option>
+                        <option value="monthly" {{ app_settings['report_interval'] == 'monthly' ? 'selected' : '' }}>Monatlich</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-top: 10px; text-align: right;">
+                <button type="submit" class="button-primary">Speichern</button>
+            </div>
+        </form>
+    </div>
+
     {% if extra_requests is empty %}
         <p style="color: var(--text-muted);">Keine Anträge auf außerunterrichtliche Veranstaltungen vorhanden.</p>
     {% else %}
         <div style="overflow-x: auto;">
-            <table class="data-table simple">
+            <table class="data-table simple" style="font-size: 0.9em;">
                 <thead>
                     <tr>
-                        <th>Eingang</th>
-                        <th>Lehrkraft</th>
+                        <th>AUD</th>
                         <th>Datum</th>
                         <th>Klasse</th>
-                        <th>Ziel</th>
+                        <th>Lehrkraft & Ziel</th>
                         <th>Aktion/Status</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for r in extra_requests %}
                         <tr style="{{ r.status != 'pending' ? 'opacity: 0.7;' : '' }}">
-                            <td style="font-size: 0.85em; color: var(--text-muted);">{{ r.created_at|date('d.m.y H:i') }}</td>
-                            <td style="font-weight: 600;">{{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span></td>
+                            <td><strong style="color: var(--primary-color);">{{ r.aud_type|default('-') }}</strong></td>
                             <td>{{ r.date_main|date('d.m.Y') }}</td>
                             <td>{{ r.class }}</td>
-                            <td>{{ r.details }}</td>
+                            <td>
+                                <strong>{{ r.teacher_name }}</strong> <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span>
+                                <div style="margin-top: 5px; font-size: 0.9em;">{{ r.details|raw }}</div>
+                            </td>
                             <td>
                                 {% if r.status == 'pending' %}
                                     <form method="POST" action="/admin_action.php" style="display:inline-block; margin:0;" class="admin-action-form">
@@ -163,6 +261,45 @@
 {% block extra_scripts %}
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        
+        // Handle teacher history dropdown visibility
+        var historySelect = document.getElementById('history_teacher_select');
+        if (historySelect) {
+            historySelect.addEventListener('change', function() {
+                // Hide all
+                document.querySelectorAll('.history-teacher-block').forEach(function(el) {
+                    el.style.display = 'none';
+                });
+                // Show selected
+                if (this.value !== "") {
+                    var target = document.getElementById(this.value);
+                    if (target) {
+                        target.style.display = 'block';
+                    }
+                }
+            });
+        }
+
+        // Copy to clipboard
+        document.getElementById('btn-copy-aud').addEventListener('click', function() {
+            var copyTextarea = document.getElementById('copy-textarea');
+            copyTextarea.select();
+            copyTextarea.setSelectionRange(0, 99999);
+            try {
+                document.execCommand('copy');
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'In die Zwischenablage kopiert!',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            } catch (err) {
+                console.error('Oops, unable to copy');
+            }
+        });
+
         // Handle approve buttons
         document.querySelectorAll('.btn-approve').forEach(button => {
             button.addEventListener('click', function(e) {

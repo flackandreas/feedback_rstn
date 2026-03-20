@@ -1,0 +1,1 @@
+ALTER TABLE extracurricular_requests ADD COLUMN aud_type VARCHAR(50) DEFAULT NULL;\nALTER TABLE extracurricular_requests ADD COLUMN participating_teacher_id INT DEFAULT NULL;\nALTER TABLE extracurricular_requests ADD CONSTRAINT fk_extracurricular_participating_teacher FOREIGN KEY (participating_teacher_id) REFERENCES teachers(id) ON DELETE SET NULL;\n

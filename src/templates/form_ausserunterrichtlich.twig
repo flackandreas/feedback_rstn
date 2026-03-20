@@ -27,6 +27,31 @@
             <input type="text" id="destination" name="destination" required placeholder="Wohin geht der Ausflug?">
         </div>
 
+        <div class="form-grid-2" style="margin-top: 15px;">
+            <div class="form-group">
+                <label for="aud_type">Art (AUD) *</label>
+                <select id="aud_type" name="aud_type" required>
+                    <option value="">Bitte wählen</option>
+                    <option value="AUD 1">AUD 1</option>
+                    <option value="AUD 2">AUD 2</option>
+                    <option value="AUD 3">AUD 3</option>
+                    <option value="AUD 4">AUD 4</option>
+                    <option value="AUD 6">AUD 6</option>
+                    <option value="AUD 7">AUD 7</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="participating_teacher_id">Begleitende Lehrkraft (Optional)</label>
+                <select id="participating_teacher_id" name="participating_teacher_id">
+                    <option value="">Keine / Bitte wählen</option>
+                    {% for teacher in all_teachers %}
+                        <option value="{{ teacher.id }}">{{ teacher.name }} ({{ teacher.kuerzel }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
         <div style="margin-top: 25px; text-align: right;">
             <button type="submit" class="button-primary">Antrag einreichen</button>
         </div>
@@ -44,6 +69,7 @@
                 <tr>
                     <th>Klasse</th>
                     <th>Ziel</th>
+                    <th>AUD</th>
                     <th>Datum</th>
                     <th>Status</th>
                 </tr>
@@ -59,6 +85,7 @@
                     <tr>
                         <td>{{ r.class_name }}</td>
                         <td>{{ r.destination }}</td>
+                        <td>{{ r.aud_type }}</td>
                         <td>{{ r.event_date|date('d.m.Y') }}</td>
                         <td><span style='color: {{ statusColor }}; font-weight: 600;'>{{ statusText|trim }}</span></td>
                     </tr>

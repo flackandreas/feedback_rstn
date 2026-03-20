@@ -44,14 +44,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['teacher_csv'])) {
                 $default_pw_hash = password_hash('lehrer', PASSWORD_DEFAULT);
                 
                 while (($data = fgetcsv($handle, 1000, $delimiter)) !== false) {
-                    // Expect: kuerzel, name, email
                     if (count($data) >= 2) {
                         $kuerzel = trim($data[0]);
                         $name = trim($data[1]);
                         $email = isset($data[2]) ? trim($data[2]) : null;
                         
                         if (!empty($kuerzel) && !empty($name)) {
-                            // Empty email could be string 'null' or empty string depending on csv, treat as null for db
                             if ($email === '') $email = null;
                             
                             $stmt->execute([$kuerzel, $name, $email, $default_pw_hash]);
@@ -78,14 +76,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['teacher_csv'])) {
     exit;
 }
 
-// 1. Sick leaves (Krankmeldungen)
-$stmt_sick = $conn->query("
-    SELECT r.id, 'Krankmeldung' as type, r.notes as details, r.date_from as date_main, r.date_to, 'Info' as status, r.created_at, t.name as teacher_name, t.kuerzel
+// Handle Settings update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
+    $csrf_token = $_POST['csrf_token'] ?? '';
+    if (!verify_csrf_token($csrf_token)) {
+        $_SESSION['flash_error'] = "Sicherheitsfehler: CSRF Token ungültig.";
+    } else {
+        $report_email = $_POST['report_email'] ?? '';
+        $report_time = $_POST['report_time'] ?? '';
+        $report_interval = $_POST['report_interval'] ?? '';
+
+        $stmt = $conn->prepare("UPDATE app_settings SET setting_value = ? WHERE setting_key = ?");
+        $stmt->execute([$report_email, 'report_email']);
+        $stmt->execute([$report_time, 'report_time']);
+        $stmt->execute([$report_interval, 'report_interval']);
+        
+        $_SESSION['flash_success'] = "Bericht-Einstellungen gespeichert.";
+    }
+    header("Location: /admin_dashboard.php");
+    exit;
+}
+
+// Fetch App Settings
+$stmt_settings = $conn->query("SELECT setting_key, setting_value FROM app_settings");
+$app_settings = [];
+while ($row = $stmt_settings->fetch()) {
+    $app_settings[$row['setting_key']] = $row['setting_value'];
+}
+
+// 1. Sick leaves (Aktuelle)
+$stmt_sick_curr = $conn->query("
+    SELECT r.id, r.teacher_id, 'Krankmeldung' as type, r.notes as details, r.date_from as date_main, r.date_to, r.created_at, t.name as teacher_name, t.kuerzel, r.attachment_path
     FROM sick_leave_reports r
     JOIN teachers t ON r.teacher_id = t.id
-    ORDER BY r.created_at DESC
+    WHERE r.date_to >= DATE_SUB(CURDATE(), INTERVAL 2 DAY)
+    ORDER BY r.date_from ASC
 ");
-$sick_leaves = $stmt_sick->fetchAll();
+$sick_leaves_current = $stmt_sick_curr->fetchAll();
+
+// 1.1 Sick leaves (Historie)
+$stmt_sick_hist = $conn->query("
+    SELECT r.id, r.teacher_id, 'Krankmeldung' as type, r.notes as details, r.date_from as date_main, r.date_to, r.created_at, t.name as teacher_name, t.kuerzel, r.attachment_path
+    FROM sick_leave_reports r
+    JOIN teachers t ON r.teacher_id = t.id
+    WHERE r.date_to < DATE_SUB(CURDATE(), INTERVAL 2 DAY)
+    ORDER BY r.date_from DESC
+");
+$sick_leaves_old_raw = $stmt_sick_hist->fetchAll();
+
+$sick_history_by_teacher = [];
+foreach ($sick_leaves_old_raw as $r) {
+    $tid = $r['teacher_id'];
+    if (!isset($sick_history_by_teacher[$tid])) {
+        $sick_history_by_teacher[$tid] = [
+            'id' => $tid,
+            'name' => $r['teacher_name'],
+            'kuerzel' => $r['kuerzel'],
+            'total_days' => 0,
+            'records' => []
+        ];
+    }
+    
+    $d1 = new DateTime($r['date_main']);
+    $d2 = new DateTime($r['date_to']);
+    $days = $d2->diff($d1)->days + 1;
+    
+    $sick_history_by_teacher[$tid]['total_days'] += $days;
+    $sick_history_by_teacher[$tid]['records'][] = $r;
+}
+usort($sick_history_by_teacher, function($a, $b) {
+    return strcmp($a['name'], $b['name']);
+});
 
 // 2. Exemption requests (Freistellungen)
 $stmt_exempt = $conn->query("
@@ -104,14 +165,73 @@ $stmt_exempt = $conn->query("
 ");
 $exempt_requests = $stmt_exempt->fetchAll();
 
-// 3. Extracurricular requests (Ausflüge)
+// 3. Extracurricular requests (Ausflüge) grouped and augmented
 $stmt_extra = $conn->query("
-    SELECT r.id, 'Ausflug' as type, r.class_name as class, r.destination as details, r.event_date as date_main, r.status, r.created_at, t.name as teacher_name, t.kuerzel 
+    SELECT r.id, 'Ausflug' as type, r.class_name as class, 
+           CONCAT_WS('<br>', 
+               IF(r.aud_type IS NOT NULL AND r.aud_type != '', CONCAT('<strong>Art:</strong> ', r.aud_type), NULL),
+               CONCAT('<strong>Ziel:</strong> ', r.destination),
+               IF(p.name IS NOT NULL, CONCAT('<strong>Begleitung:</strong> ', p.name), NULL)
+           ) as details, 
+           r.aud_type, r.event_date as date_main, r.status, r.created_at, t.name as teacher_name, t.kuerzel 
     FROM extracurricular_requests r 
     JOIN teachers t ON r.teacher_id = t.id 
-    ORDER BY FIELD(r.status, 'pending') DESC, r.created_at DESC
+    LEFT JOIN teachers p ON r.participating_teacher_id = p.id
+    ORDER BY r.aud_type ASC, FIELD(r.status, 'pending') DESC, r.created_at DESC
 ");
 $extra_requests = $stmt_extra->fetchAll();
+
+// Summary for AUD requests and finding Unassigned teachers
+$aud_list = ['AUD 1', 'AUD 2', 'AUD 3', 'AUD 4', 'AUD 6', 'AUD 7'];
+$aud_assigned = [];
+$assigned_teacher_ids = [];
+
+foreach ($aud_list as $aud) {
+    $stmt = $conn->prepare("
+        SELECT DISTINCT t.id, t.name, t.kuerzel 
+        FROM extracurricular_requests r
+        JOIN teachers t ON (r.teacher_id = t.id OR r.participating_teacher_id = t.id)
+        WHERE r.aud_type = ?
+    ");
+    $stmt->execute([$aud]);
+    $list = $stmt->fetchAll();
+    $aud_assigned[$aud] = $list;
+    foreach ($list as $l) {
+        $assigned_teacher_ids[] = $l['id'];
+    }
+}
+$assigned_teacher_ids = array_unique($assigned_teacher_ids);
+
+// Unassigned Teachers
+if (empty($assigned_teacher_ids)) {
+    $stmt_unassigned = $conn->query("SELECT id, name, kuerzel FROM teachers WHERE is_admin = 0 ORDER BY name ASC");
+} else {
+    $inClause = implode(',', array_map('intval', $assigned_teacher_ids));
+    $stmt_unassigned = $conn->query("SELECT id, name, kuerzel FROM teachers WHERE is_admin = 0 AND id NOT IN ($inClause) ORDER BY name ASC");
+}
+$unassigned_teachers = $stmt_unassigned->fetchAll();
+
+// Construct copy text:
+$copy_text = "=== Übersicht Außerunterrichtliche Veranstaltungen ===\n\n";
+foreach ($aud_list as $aud) {
+    $copy_text .= "[$aud]\n";
+    if (empty($aud_assigned[$aud])) {
+         $copy_text .= "  Keine Lehrkräfte\n";
+    } else {
+         foreach($aud_assigned[$aud] as $t) {
+             $copy_text .= "  - " . $t['name'] . " (" . $t['kuerzel'] . ")\n";
+         }
+    }
+    $copy_text .= "\n";
+}
+$copy_text .= "[Nicht eingeteilte Lehrkräfte]\n";
+if (empty($unassigned_teachers)) {
+    $copy_text .= "  Alle Lehrkräfte sind eingeteilt.\n";
+} else {
+    foreach ($unassigned_teachers as $t) {
+        $copy_text .= "  - " . $t['name'] . " (" . $t['kuerzel'] . ")\n";
+    }
+}
 
 $csrf_token = get_csrf_token();
 require_once __DIR__ . '/includes/twig_setup.php';
@@ -129,9 +249,12 @@ echo $twig->render('admin_dashboard.twig', [
     'csrf_token' => $csrf_token,
     'flash_success' => $flash_success,
     'flash_error' => $flash_error,
-    'sick_leaves' => $sick_leaves,
+    'sick_leaves_current' => $sick_leaves_current,
+    'sick_history_by_teacher' => $sick_history_by_teacher,
     'exempt_requests' => $exempt_requests,
     'extra_requests' => $extra_requests,
+    'copy_text' => $copy_text,
+    'app_settings' => $app_settings,
     'current_user_name' => get_current_user_name(),
     'is_admin' => is_current_user_admin(),
     'is_logged_in' => true

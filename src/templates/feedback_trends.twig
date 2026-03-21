@@ -1,0 +1,151 @@
+{% extends "base.twig" %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <div>
+        <h1>📈 Trend-Analyse</h1>
+        <p style="color: var(--text-muted);">Verlauf der Unterrichts- und Klima-Bewertungen über die Zeit.</p>
+    </div>
+</div>
+
+<div class="content-box" style="margin-bottom: 30px;">
+    <form method="GET" style="display: flex; gap: 15px; align-items: flex-end;">
+        <div class="form-group" style="margin: 0;">
+            <label style="display: block; margin-bottom: 5px; font-size: 0.9em;">Klasse Filtern</label>
+            <select name="klasse" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="">Alle Klassen</option>
+                {% for f in filters %}
+                    <option value="{{ f.klasse }}" {{ current_klasse == f.klasse ? 'selected' : '' }}>{{ f.klasse }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group" style="margin: 0;">
+            <label style="display: block; margin-bottom: 5px; font-size: 0.9em;">Fach Filtern</label>
+            <select name="fach" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="">Alle Fächer</option>
+                {% for f in filters %}
+                    <option value="{{ f.fach }}" {{ current_fach == f.fach ? 'selected' : '' }}>{{ f.fach }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn" style="background-color: var(--primary-color); color: white; border: none; padding: 11px 25px; border-radius: 4px; cursor: pointer;">Filtern</button>
+        <a href="/feedback_trends.php" style="padding: 11px 15px; text-decoration: none; color: var(--text-muted);">Reset</a>
+    </form>
+</div>
+
+<div class="content-box">
+    <h3>Stimmungs-Barometer</h3>
+    <div style="height: 400px; margin-top: 20px;">
+        <canvas id="trendChart"></canvas>
+    </div>
+</div>
+
+<div class="content-box" style="margin-top: 30px;">
+    <h3>Letzte Sitzungen</h3>
+    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+        <thead>
+            <tr style="text-align: left; border-bottom: 2px solid #eee;">
+                <th style="padding: 10px;">Datum</th>
+                <th style="padding: 10px;">Klasse/Fach</th>
+                <th style="padding: 10px;">Fragen & Durchschnittswerte</th>
+                <th style="padding: 10px;">Aktion</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in history|reverse %}
+                <tr style="border-bottom: 1px solid #f9f9f9;">
+                    <td style="padding: 10px;">{{ s.created_at|date('d.m.y') }}</td>
+                    <td style="padding: 10px;">{{ s.klasse }} ({{ s.fach }})</td>
+                    <td style="padding: 10px;">
+                        {% for q in s.questions %}
+                            <div style="font-size: 0.85em; margin-bottom: 4px;">
+                                <span style="font-weight: 600; color: var(--primary-color);">{{ q.avg|number_format(1) }}</span> 
+                                <span style="color: var(--text-muted);">{{ q.text }}</span>
+                            </div>
+                        {% endfor %}
+                    </td>
+                    <td style="padding: 10px;">
+                        <a href="/feedback_view.php?id={{ s.id }}" style="text-decoration: none; font-size: 0.9em; color: var(--primary-color);">Details →</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const ctx = document.getElementById('trendChart');
+    
+    const labels = [
+        {% for s in history %}
+            '{{ s.created_at|date('d.m.') }} ({{ s.klasse }})',
+        {% endfor %}
+    ];
+
+    // Data structure to hold scores per question text
+    const datasetsMap = {};
+    const colors = ['#4a90e2', '#27ae60', '#f39c12', '#9b59b6', '#e74c3c'];
+
+    {% for s in history %}
+        {% for q in s.questions %}
+            if (!datasetsMap['{{ q.text|escape('js') }}']) {
+                datasetsMap['{{ q.text|escape('js') }}'] = new Array({{ history|length }}).fill(null);
+            }
+            datasetsMap['{{ q.text|escape('js') }}'][{{ loop.parent.loop.index0 }}] = {{ q.avg ?? 'null' }};
+        {% endfor %}
+    {% endfor %}
+
+    const datasets = Object.keys(datasetsMap).map((text, index) => {
+        return {
+            label: text,
+            data: datasetsMap[text],
+            borderColor: colors[index % colors.length],
+            backgroundColor: colors[index % colors.length],
+            tension: 0.3,
+            pointRadius: 5
+        };
+    });
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    min: 1,
+                    max: 5,
+                    ticks: {
+                        callback: function(value) {
+                            const labels = {1: '😫', 2: '🙁', 3: '😐', 4: '🙂', 5: '😄'};
+                            return labels[value] || value;
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y.toFixed(1);
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

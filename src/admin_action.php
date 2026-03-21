@@ -22,9 +22,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $request_type = $_POST['type'] ?? '';
     $action = $_POST['action'] ?? '';
 
-    if ($request_id > 0 && in_array($request_type, ['ausflug', 'freistellung']) && in_array($action, ['approve', 'reject'])) {
+    if ($request_id > 0 && in_array($request_type, ['ausflug', 'freistellung']) && in_array($action, ['approve', 'reject', 'query'])) {
         $conn = db_connect();
-        $status = ($action === 'approve') ? 'approved' : 'rejected';
+        $status = 'pending';
+        if ($action === 'approve') $status = 'approved';
+        elseif ($action === 'reject') $status = 'rejected';
+        elseif ($action === 'query') $status = 'query';
         
         $table = ($request_type === 'ausflug') ? 'extracurricular_requests' : 'exemption_requests';
         
@@ -54,12 +57,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 
                 // Send email notification
                 if ($request_details && !empty($request_details['email'])) {
-                    $status_text = ($status === 'approved') ? 'genehmigt' : 'abgelehnt';
+                    $status_text = 'unbekannt';
+                    if ($status === 'approved') $status_text = 'genehmigt';
+                    elseif ($status === 'rejected') $status_text = 'abgelehnt';
+                    elseif ($status === 'query') $status_text = 'mit Rückfrage versehen';
+
                     $request_type_text = ($table === 'extracurricular_requests') ? 'außerunterrichtliche Veranstaltung' : 'Freistellung';
                     
                     $subject = "Update zu deinem Antrag auf $request_type_text";
                     $body = "<p>Hallo {$request_details['teacher_name']},</p>";
-                    $body .= "<p>dein Antrag auf $request_type_text wurde soeben <strong>{$status_text}</strong>.</p>";
+                    
+                    if ($status === 'query') {
+                        $body .= "<p>zu deinem Antrag auf $request_type_text gibt es eine <strong>Rückfrage der Schulleitung</strong>.</p>";
+                        $body .= "<p>Bitte halte kurz Rücksprache mit der Schulleitung.</p>";
+                    } else {
+                        $body .= "<p>dein Antrag auf $request_type_text wurde soeben <strong>{$status_text}</strong>.</p>";
+                    }
                     
                     if ($table === 'extracurricular_requests') {
                         $body .= "<p>Details: {$request_details['class_name']} nach {$request_details['destination']} am " . date('d.m.Y', strtotime($request_details['event_date'])) . "</p>";

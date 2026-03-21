@@ -38,6 +38,12 @@
                     <span class="nav-text">Dashboard</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="/feedback_trends.php" class="{{ is_current_page('feedback_trends.php') ? 'active' : '' }}">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-text">Trend-Analyse</span>
+                </a>
+            </li>
             
             <li class="nav-label">Anträge</li>
             <li class="nav-item">
@@ -72,7 +78,7 @@
             {% if is_admin %}
             <div class="nav-separator"></div>
             
-            <li class="nav-label" style="color: var(--danger-color-dark);">Administration</li>
+            <li class="nav-label">Administration</li>
             <li class="nav-item">
                 <a href="/admin_dashboard.php" class="{{ is_current_page('admin_dashboard.php') ? 'active' : '' }}">
                     <span class="nav-icon">🛡️</span>

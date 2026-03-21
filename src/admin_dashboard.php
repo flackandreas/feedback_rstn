@@ -7,9 +7,6 @@
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
 
-// Temporary hook to run DB migration
-require_once __DIR__ . '/run_alter.php';
-
 require_admin();
 
 $conn = db_connect();
@@ -150,36 +147,32 @@ usort($sick_history_by_teacher, function($a, $b) {
 
 // 2. Exemption requests (Freistellungen)
 $stmt_exempt = $conn->query("
-    SELECT r.id, 'Freistellung' as type, 
-           CONCAT_WS('<br>', 
-               IF(r.reason_type IS NOT NULL, CONCAT('<strong>Art:</strong> ', r.reason_type), NULL),
-               IF(r.days_of_week IS NOT NULL AND r.days_of_week != '', CONCAT('<strong>Tage:</strong> ', r.days_of_week), NULL),
-               IF(r.classes IS NOT NULL AND r.classes != '', CONCAT('<strong>Klassen:</strong> ', r.classes), NULL),
-               IF(r.hourly_exemption = 1, CONCAT('<strong>Stunden:</strong> ', r.hour_from, ' bis ', r.hour_to), NULL),
-               CONCAT('<strong>Begründung:</strong> ', r.reason)
-           ) as details, 
-           r.date_from as date_main, r.date_to, r.status, r.created_at, t.name as teacher_name, t.kuerzel 
+    SELECT r.id, r.reason_type, r.days_of_week, r.classes, r.hourly_exemption, r.hour_from, r.hour_to, r.reason,
+           r.date_from, r.date_to, r.status, r.created_at, t.name as teacher_name, t.kuerzel 
     FROM exemption_requests r 
     JOIN teachers t ON r.teacher_id = t.id 
     ORDER BY FIELD(r.status, 'pending') DESC, r.created_at DESC
 ");
-$exempt_requests = $stmt_exempt->fetchAll();
+$exempt_requests = $stmt_exempt->fetchAll(PDO::FETCH_ASSOC);
 
 // 3. Extracurricular requests (Ausflüge) grouped and augmented
 $stmt_extra = $conn->query("
-    SELECT r.id, 'Ausflug' as type, r.class_name as class, 
+    SELECT r.id, 'Ausflug' as type, r.class_name as class, r.class_name, r.event_date, r.destination, 
            CONCAT_WS('<br>', 
                IF(r.aud_type IS NOT NULL AND r.aud_type != '', CONCAT('<strong>Art:</strong> ', r.aud_type), NULL),
                CONCAT('<strong>Ziel:</strong> ', r.destination),
                IF(p.name IS NOT NULL, CONCAT('<strong>Begleitung:</strong> ', p.name), NULL)
            ) as details, 
-           r.aud_type, r.event_date as date_main, r.status, r.created_at, t.name as teacher_name, t.kuerzel 
+           r.aud_type, r.event_date as date_main, r.status, r.created_at, t.name as teacher_name, t.kuerzel,
+           r.role, r.companion, r.event_name, r.costs, r.transport,
+           r.start_time, r.start_location, r.return_time, r.return_location,
+           r.return_trip_arranged, r.supervisors, r.consent_form, r.schedule_notified
     FROM extracurricular_requests r 
     JOIN teachers t ON r.teacher_id = t.id 
     LEFT JOIN teachers p ON r.participating_teacher_id = p.id
     ORDER BY r.aud_type ASC, FIELD(r.status, 'pending') DESC, r.created_at DESC
 ");
-$extra_requests = $stmt_extra->fetchAll();
+$extra_requests = $stmt_extra->fetchAll(PDO::FETCH_ASSOC);
 
 // Summary for AUD requests and finding Unassigned teachers
 $aud_list = ['AUD 1', 'AUD 2', 'AUD 3', 'AUD 4', 'AUD 6', 'AUD 7'];

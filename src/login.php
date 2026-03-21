@@ -38,6 +38,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             header("Location: /index.php");
             exit;
         } else {
+            // Give a small delay to prevent rapid brute-forcing
+            sleep(1);
             $_SESSION['flash_error'] = "Falsches Kürzel oder Passwort.";
         }
     }

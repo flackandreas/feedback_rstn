@@ -10,6 +10,14 @@ require_once __DIR__ . '/includes/auth.php';
 require_login();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    
+    $csrf_token = $_POST['csrf_token'] ?? '';
+    if (!verify_csrf_token($csrf_token)) {
+        $_SESSION['flash_error'] = "Sicherheitsfehler: Ungültiger Token. Bitte laden Sie die Seite neu.";
+        header("Location: /index.php");
+        exit;
+    }
+
     $conn = db_connect();
     $teacher_id = get_current_user_id();
     

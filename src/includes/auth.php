@@ -4,6 +4,10 @@
  * Session management and authentication checks.
  */
 
+session_set_cookie_params([
+    'httponly' => true,
+    'samesite' => 'Strict'
+]);
 session_start();
 
 function is_logged_in() {

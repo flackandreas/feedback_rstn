@@ -118,7 +118,7 @@
         <div style="display: flex; gap: 30px; align-items: center; background: #f9f9f9; padding: 20px; border-radius: 8px;">
             <div style="text-align: center;">
                 {# Using a public QR generator for the demo link #}
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ host_url }}/student_feedback.php?t={{ active_session.token }}" 
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ (host_url ~ '/student_feedback.php?t=' ~ active_session.token)|url_encode }}" 
                      alt="QR Code" 
                      style="border: 10px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;"
                      onclick="openQRModal()"
@@ -198,7 +198,7 @@
     <span class="close-modal">&times;</span>
     <div class="qr-modal-content" onclick="event.stopPropagation()">
         <h2 style="margin-top: 0; color: var(--primary-color);">{{ active_session.klasse }} - {{ active_session.fach }}</h2>
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data={{ host_url }}/student_feedback.php?t={{ active_session.token }}" class="qr-large" alt="QR Code Large">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data={{ (host_url ~ '/student_feedback.php?t=' ~ active_session.token)|url_encode }}" class="qr-large" alt="QR Code Large">
         <p style="margin-top: 20px; font-weight: 600; font-size: 1.2em;">Scan mich für Feedback!</p>
         <code style="display: block; background: #f0f0f0; padding: 10px; border-radius: 4px; font-size: 0.9em; margin-top: 10px;">{{ host_url }}/student_feedback.php?t={{ active_session.token }}</code>
     </div>

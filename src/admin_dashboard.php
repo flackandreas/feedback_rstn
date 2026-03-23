@@ -103,7 +103,7 @@ while ($row = $stmt_settings->fetch()) {
 
 // 1. Sick leaves (Aktuelle)
 $stmt_sick_curr = $conn->query("
-    SELECT r.id, r.teacher_id, 'Krankmeldung' as type, r.notes as details, r.date_from as date_main, r.date_to, r.created_at, t.name as teacher_name, t.kuerzel, r.attachment_path
+    SELECT r.id, r.teacher_id, 'Krankmeldung' as type, r.notes as details, r.date_from as date_main, r.date_to, r.created_at, t.name as teacher_name, t.kuerzel, r.attachment_path, r.material_link
     FROM sick_leave_reports r
     JOIN teachers t ON r.teacher_id = t.id
     WHERE r.date_to >= DATE_SUB(CURDATE(), INTERVAL 2 DAY)
@@ -113,7 +113,7 @@ $sick_leaves_current = $stmt_sick_curr->fetchAll();
 
 // 1.1 Sick leaves (Historie)
 $stmt_sick_hist = $conn->query("
-    SELECT r.id, r.teacher_id, 'Krankmeldung' as type, r.notes as details, r.date_from as date_main, r.date_to, r.created_at, t.name as teacher_name, t.kuerzel, r.attachment_path
+    SELECT r.id, r.teacher_id, 'Krankmeldung' as type, r.notes as details, r.date_from as date_main, r.date_to, r.created_at, t.name as teacher_name, t.kuerzel, r.attachment_path, r.material_link
     FROM sick_leave_reports r
     JOIN teachers t ON r.teacher_id = t.id
     WHERE r.date_to < DATE_SUB(CURDATE(), INTERVAL 2 DAY)

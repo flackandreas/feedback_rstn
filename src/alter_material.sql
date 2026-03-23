@@ -1,0 +1,1 @@
+ALTER TABLE sick_leave_reports ADD COLUMN IF NOT EXISTS material_link VARCHAR(255) DEFAULT NULL;

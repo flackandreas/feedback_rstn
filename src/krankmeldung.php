@@ -34,6 +34,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $date_from = $_POST['date_from'] ?? '';
         $date_to = $_POST['date_to'] ?? '';
         $notes = trim($_POST['notes'] ?? '');
+        $material_link = trim($_POST['material_link'] ?? '');
         
         // Handle file upload
         $attachment_path = null;
@@ -57,17 +58,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 if ($post_edit_id) {
                     // Update
                     if ($attachment_path) {
-                        $stmt = $conn->prepare("UPDATE sick_leave_reports SET date_from = ?, date_to = ?, notes = ?, attachment_path = ? WHERE id = ? AND teacher_id = ?");
-                        $stmt->execute([$date_from, $date_to, $notes, $attachment_path, $post_edit_id, $user_id]);
+                        $stmt = $conn->prepare("UPDATE sick_leave_reports SET date_from = ?, date_to = ?, notes = ?, material_link = ?, attachment_path = ? WHERE id = ? AND teacher_id = ?");
+                        $stmt->execute([$date_from, $date_to, $notes, $material_link, $attachment_path, $post_edit_id, $user_id]);
                     } else {
-                        $stmt = $conn->prepare("UPDATE sick_leave_reports SET date_from = ?, date_to = ?, notes = ? WHERE id = ? AND teacher_id = ?");
-                        $stmt->execute([$date_from, $date_to, $notes, $post_edit_id, $user_id]);
+                        $stmt = $conn->prepare("UPDATE sick_leave_reports SET date_from = ?, date_to = ?, notes = ?, material_link = ? WHERE id = ? AND teacher_id = ?");
+                        $stmt->execute([$date_from, $date_to, $notes, $material_link, $post_edit_id, $user_id]);
                     }
                     $_SESSION['flash_success'] = "Ihre Krankmeldung wurde erfolgreich aktualisiert.";
                 } else {
                     // Insert
-                    $stmt = $conn->prepare("INSERT INTO sick_leave_reports (teacher_id, date_from, date_to, notes, attachment_path) VALUES (?, ?, ?, ?, ?)");
-                    $stmt->execute([$user_id, $date_from, $date_to, $notes, $attachment_path]);
+                    $stmt = $conn->prepare("INSERT INTO sick_leave_reports (teacher_id, date_from, date_to, notes, material_link, attachment_path) VALUES (?, ?, ?, ?, ?, ?)");
+                    $stmt->execute([$user_id, $date_from, $date_to, $notes, $material_link, $attachment_path]);
                     $_SESSION['flash_success'] = "Ihre Krankmeldung wurde erfolgreich übermittelt.";
                 }
             } catch (PDOException $e) {

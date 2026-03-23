@@ -55,6 +55,25 @@
             </table>
         </div>
     {% endif %}
+
+    <!-- CSV Import Section -->
+    <div style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 30px;">
+        <h3 style="margin-top: 0; margin-bottom: 15px;">📥 Lehrkräfte importieren (CSV)</h3>
+        <p style="color: var(--text-muted); font-size: 0.9em; margin-bottom: 20px;">
+            Laden Sie eine Semikolon-getrennte CSV-Datei hoch (Format: <code>Kürzel;Name;Email</code>). 
+            Die erste Zeile wird als Überschrift ignoriert. Bereits bestehende Kürzel werden übersprungen.<br>
+            Das Standard-Passwort für neu importierte Lehrkräfte lautet: <strong>Start123!</strong>
+        </p>
+        
+        <form method="POST" enctype="multipart/form-data" style="display: flex; align-items: center; gap: 15px; background: #f9f9f9; padding: 20px; border-radius: 6px; border: 1px dashed #ccc;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="action" value="import_csv">
+            
+            <input type="file" name="csv_file" accept=".csv" required style="flex-grow: 1;">
+            
+            <button type="submit" class="btn btn-primary" style="background-color: var(--primary-color); color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600;">Importieren</button>
+        </form>
+    </div>
 </div>
 
 <!-- Modal -->

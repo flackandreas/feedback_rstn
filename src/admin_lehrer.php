@@ -75,6 +75,56 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $_SESSION['flash_error'] = "Fehler beim Löschen. Eventuell gibt es noch verknüpfte Anträge.";
                 }
             }
+        } elseif ($action === 'import_csv') {
+            if (isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] === UPLOAD_ERR_OK) {
+                $fileTmpPath = $_FILES['csv_file']['tmp_name'];
+                $fileName = $_FILES['csv_file']['name'];
+                $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+                if ($fileExtension !== 'csv') {
+                    $_SESSION['flash_error'] = "Bitte laden Sie nur CSV-Dateien hoch.";
+                } else {
+                    $handle = fopen($fileTmpPath, 'r');
+                    if ($handle !== false) {
+                        $imported = 0;
+                        $skipped = 0;
+                        $isFirstRow = true;
+                        
+                        $hash = password_hash('Start123!', PASSWORD_DEFAULT);
+                        $stmtCheck = $conn->prepare("SELECT id FROM teachers WHERE kuerzel = ?");
+                        $stmtInsert = $conn->prepare("INSERT INTO teachers (kuerzel, name, email, passwort_hash, is_admin) VALUES (?, ?, ?, ?, 0)");
+
+                        while (($row = fgetcsv($handle, 1000, ';')) !== false) {
+                            if ($isFirstRow) {
+                                $isFirstRow = false;
+                                continue;
+                            }
+                            
+                            if (count($row) >= 2) {
+                                $kuerzel = trim($row[0]);
+                                $name = trim($row[1]);
+                                $email = isset($row[2]) ? trim($row[2]) : '';
+                                
+                                if (!empty($kuerzel) && !empty($name)) {
+                                    $stmtCheck->execute([$kuerzel]);
+                                    if ($stmtCheck->rowCount() == 0) {
+                                        $stmtInsert->execute([$kuerzel, $name, $email, $hash]);
+                                        $imported++;
+                                    } else {
+                                        $skipped++;
+                                    }
+                                }
+                            }
+                        }
+                        fclose($handle);
+                        $_SESSION['flash_success'] = "Import abgeschlossen: $imported neu angelegt, $skipped übersprungen (bereits vorhanden).";
+                    } else {
+                        $_SESSION['flash_error'] = "Fehler beim Lesen der CSV-Datei.";
+                    }
+                }
+            } else {
+                $_SESSION['flash_error'] = "Bitte wählen Sie eine gültige Datei aus.";
+            }
         }
     }
     

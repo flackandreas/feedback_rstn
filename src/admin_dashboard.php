@@ -175,7 +175,7 @@ $stmt_extra = $conn->query("
 $extra_requests = $stmt_extra->fetchAll(PDO::FETCH_ASSOC);
 
 // Summary for AUD requests and finding Unassigned teachers
-$aud_list = ['AUD 1', 'AUD 2', 'AUD 3', 'AUD 4', 'AUD 6', 'AUD 7'];
+$aud_list = ['AUD 1', 'AUD 2', 'AUD 3', 'AUD 4', 'AUD 5', 'AUD 6', 'AUD 7', 'Ausflug außerhalb der AUD Tage', 'Sonstige'];
 $aud_assigned = [];
 $assigned_teacher_ids = [];
 

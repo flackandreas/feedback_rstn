@@ -39,14 +39,21 @@
                 </select>
             </div>
             <div class="form-group">
-                <label>Begleitperson(en)</label>
-                <div style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; background: var(--bg-content);">
+                <label for="companion_select_1">Begleitperson 1</label>
+                <select id="companion_select_1" name="companion_select_1" style="margin-bottom: 10px;">
+                    <option value="">Keine / Bitte wählen</option>
                     {% for teacher in all_teachers_full %}
-                        <label style="display: block; font-weight: normal; margin-bottom: 5px; cursor: pointer;">
-                            <input type="checkbox" name="companion_select[]" value="{{ teacher.name }} ({{ teacher.kuerzel }})"> {{ teacher.name }} ({{ teacher.kuerzel }})
-                        </label>
+                        <option value="{{ teacher.name }} ({{ teacher.kuerzel }})">{{ teacher.name }} ({{ teacher.kuerzel }})</option>
                     {% endfor %}
-                </div>
+                </select>
+
+                <label for="companion_select_2" style="margin-top: 10px;">Begleitperson 2</label>
+                <select id="companion_select_2" name="companion_select_2">
+                    <option value="">Keine / Bitte wählen</option>
+                    {% for teacher in all_teachers_full %}
+                        <option value="{{ teacher.name }} ({{ teacher.kuerzel }})">{{ teacher.name }} ({{ teacher.kuerzel }})</option>
+                    {% endfor %}
+                </select>
                 <div style="margin-top: 8px;">
                     <button type="button" class="button-secondary" style="font-size: 0.85em; padding: 4px 8px;" onclick="document.getElementById('companion_extra_container').style.display='block'; this.style.display='none'; document.getElementById('companion_extra').focus();">+ Weitere Begleitpersonen händisch eingeben</button>
                     <div id="companion_extra_container" style="display: none; margin-top: 8px;">

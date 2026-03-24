@@ -27,7 +27,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $aud_type = $_POST['aud_type'] ?? null;
         $participating_teacher_id = !empty($_POST['participating_teacher_id']) ? $_POST['participating_teacher_id'] : null;
         $role              = trim($_POST['role'] ?? '');
-        $companion         = trim($_POST['companion'] ?? '');
+        $companion_select  = trim($_POST['companion_select'] ?? '');
+        $companion_extra   = trim($_POST['companion_extra'] ?? '');
+        $companion = trim(implode(', ', array_filter([$companion_select, $companion_extra])));
         $event_name        = trim($_POST['event_name'] ?? '');
         $costs             = trim($_POST['costs'] ?? '');
         $transport         = trim($_POST['transport'] ?? '');
@@ -78,6 +80,10 @@ $stmt_teachers = $conn->prepare("SELECT id, name, kuerzel FROM teachers WHERE id
 $stmt_teachers->execute([$user_id]);
 $all_teachers = $stmt_teachers->fetchAll();
 
+$stmt_teachers_full = $conn->prepare("SELECT id, name, kuerzel FROM teachers ORDER BY name ASC");
+$stmt_teachers_full->execute();
+$all_teachers_full = $stmt_teachers_full->fetchAll();
+
 $csrf_token = get_csrf_token();
 $flash_success = $_SESSION['flash_success'] ?? null;
 $flash_error = $_SESSION['flash_error'] ?? null;
@@ -89,6 +95,7 @@ echo $twig->render('form_ausserunterrichtlich.twig', [
     'flash_error' => $flash_error,
     'requests' => $requests,
     'all_teachers' => $all_teachers,
+    'all_teachers_full' => $all_teachers_full,
     'current_user_name' => get_current_user_name(),
     'is_admin' => is_current_user_admin(),
     'is_logged_in' => true

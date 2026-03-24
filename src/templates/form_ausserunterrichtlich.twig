@@ -21,11 +21,27 @@
         <div class="form-grid-2" style="margin-top: 15px;">
             <div class="form-group">
                 <label for="class_name">Lehrperson</label>
-                <input type="text" id="class_name" name="class_name" required placeholder="Name der Lehrkraft">
+                <select id="class_name" name="class_name" required>
+                    <option value="">Bitte wählen</option>
+                    {% for teacher in all_teachers_full %}
+                        <option value="{{ teacher.name }} ({{ teacher.kuerzel }})" {% if current_user_name == teacher.name %}selected{% endif %}>{{ teacher.name }} ({{ teacher.kuerzel }})</option>
+                    {% endfor %}
+                </select>
             </div>
             <div class="form-group">
-                <label for="companion">Begleitperson</label>
-                <input type="text" id="companion" name="companion" placeholder="Name der Begleitperson">
+                <label for="companion_select">Begleitperson</label>
+                <select id="companion_select" name="companion_select">
+                    <option value="">Keine / Bitte wählen</option>
+                    {% for teacher in all_teachers_full %}
+                        <option value="{{ teacher.name }} ({{ teacher.kuerzel }})">{{ teacher.name }} ({{ teacher.kuerzel }})</option>
+                    {% endfor %}
+                </select>
+                <div style="margin-top: 8px;">
+                    <button type="button" class="button-secondary" style="font-size: 0.85em; padding: 4px 8px;" onclick="document.getElementById('companion_extra_container').style.display='block'; this.style.display='none'; document.getElementById('companion_extra').focus();">+ Weitere Begleitpersonen händisch eingeben</button>
+                    <div id="companion_extra_container" style="display: none; margin-top: 8px;">
+                        <input type="text" id="companion_extra" name="companion_extra" placeholder="Name(n) weiterer Begleitpersonen" style="width: 100%;">
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -35,29 +51,17 @@
             <input type="date" id="event_date" name="event_date" required>
         </div>
 
-        <div class="form-grid-2" style="margin-top: 15px;">
-            <div class="form-group">
-                <label for="aud_type">Art (AUD) *</label>
-                <select id="aud_type" name="aud_type" required>
-                    <option value="">Bitte wählen</option>
-                    <option value="AUD 1">AUD 1</option>
-                    <option value="AUD 2">AUD 2</option>
-                    <option value="AUD 3">AUD 3</option>
-                    <option value="AUD 4">AUD 4</option>
-                    <option value="AUD 6">AUD 6</option>
-                    <option value="AUD 7">AUD 7</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="participating_teacher_id">Begleitende Lehrkraft (Optional)</label>
-                <select id="participating_teacher_id" name="participating_teacher_id">
-                    <option value="">Keine / Bitte wählen</option>
-                    {% for teacher in all_teachers %}
-                        <option value="{{ teacher.id }}">{{ teacher.name }} ({{ teacher.kuerzel }})</option>
-                    {% endfor %}
-                </select>
-            </div>
+        <div class="form-group" style="margin-top: 15px;">
+            <label for="aud_type">Art (AUD) *</label>
+            <select id="aud_type" name="aud_type" required>
+                <option value="">Bitte wählen</option>
+                <option value="AUD 1">AUD 1</option>
+                <option value="AUD 2">AUD 2</option>
+                <option value="AUD 3">AUD 3</option>
+                <option value="AUD 4">AUD 4</option>
+                <option value="AUD 6">AUD 6</option>
+                <option value="AUD 7">AUD 7</option>
+            </select>
         </div>
         {# Zeile 4: Veranstaltungsname #}
         <div class="form-group" style="margin-top: 15px;">

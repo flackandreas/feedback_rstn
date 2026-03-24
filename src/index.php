@@ -53,6 +53,14 @@ try {
     $active_session = null;
 }
 
+try {
+    $stmt_classes = $conn->prepare("SELECT id, name FROM classes ORDER BY name ASC");
+    $stmt_classes->execute();
+    $all_classes = $stmt_classes->fetchAll();
+} catch (PDOException $e) {
+    $all_classes = [];
+}
+
 require_once __DIR__ . '/includes/twig_setup.php';
 
 $csrf_token = get_csrf_token();
@@ -68,6 +76,7 @@ echo $twig->render('dashboard.twig', [
     'recent_sick' => (int)$recent_sick,
     'total_queries' => $total_queries ?? 0,
     'active_session' => $active_session,
+    'all_classes' => $all_classes,
     'host_url' => (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]",
     'is_admin' => is_current_user_admin(),
     'is_logged_in' => true,

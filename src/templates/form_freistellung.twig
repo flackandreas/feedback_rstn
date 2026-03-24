@@ -34,8 +34,13 @@
         </div>
 
         <div class="form-group" style="margin-top: 15px;">
-            <label for="classes">evtl. Teilnehmende Klassen</label>
-            <input type="text" id="classes" name="classes" placeholder="z.B. 5a, 6b, ...">
+            <label for="classes">Beteiligte Klasse</label>
+            <select id="classes" name="classes">
+                <option value="">Keine / Bitte wählen</option>
+                {% for c in all_classes %}
+                    <option value="{{ c.name }}">{{ c.name }}</option>
+                {% endfor %}
+            </select>
         </div>
 
         <div class="form-group" style="margin-top: 15px;">

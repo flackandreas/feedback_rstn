@@ -78,6 +78,10 @@ $stmt_teachers = $conn->prepare("SELECT id, name, kuerzel FROM teachers WHERE id
 $stmt_teachers->execute([$user_id]);
 $all_teachers = $stmt_teachers->fetchAll();
 
+$stmt_classes = $conn->prepare("SELECT id, name FROM classes ORDER BY name ASC");
+$stmt_classes->execute();
+$all_classes = $stmt_classes->fetchAll();
+
 $csrf_token = get_csrf_token();
 $flash_success = $_SESSION['flash_success'] ?? null;
 $flash_error = $_SESSION['flash_error'] ?? null;
@@ -89,6 +93,7 @@ echo $twig->render('form_ausserunterrichtlich.twig', [
     'flash_error' => $flash_error,
     'requests' => $requests,
     'all_teachers' => $all_teachers,
+    'all_classes' => $all_classes,
     'current_user_name' => get_current_user_name(),
     'is_admin' => is_current_user_admin(),
     'is_logged_in' => true

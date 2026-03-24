@@ -55,6 +55,10 @@ $stmt = $conn->prepare("SELECT date_from, date_to, status FROM exemption_request
 $stmt->execute([$user_id]);
 $requests = $stmt->fetchAll();
 
+$stmt_classes = $conn->prepare("SELECT id, name FROM classes ORDER BY name ASC");
+$stmt_classes->execute();
+$all_classes = $stmt_classes->fetchAll();
+
 $csrf_token = get_csrf_token();
 $flash_success = $_SESSION['flash_success'] ?? null;
 $flash_error = $_SESSION['flash_error'] ?? null;
@@ -65,6 +69,7 @@ echo $twig->render('form_freistellung.twig', [
     'flash_success' => $flash_success,
     'flash_error' => $flash_error,
     'requests' => $requests,
+    'all_classes' => $all_classes,
     'current_user_name' => get_current_user_name(),
     'is_admin' => is_current_user_admin(),
     'is_logged_in' => true

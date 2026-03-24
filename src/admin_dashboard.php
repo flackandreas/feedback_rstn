@@ -247,6 +247,8 @@ echo $twig->render('admin_dashboard.twig', [
     'exempt_requests' => $exempt_requests,
     'extra_requests' => $extra_requests,
     'copy_text' => $copy_text,
+    'aud_assigned' => $aud_assigned,
+    'unassigned_teachers' => $unassigned_teachers,
     'app_settings' => $app_settings,
     'current_user_name' => get_current_user_name(),
     'is_admin' => is_current_user_admin(),

@@ -211,9 +211,73 @@
     <h3 style="border-left: 4px solid var(--primary-color); padding-left: 10px;">Außerunterrichtliche Veranstaltungen</h3>
     
     <div style="margin-bottom: 20px; padding: 15px; background: #eef2fb; border-radius: 6px;">
-        <h4 style="margin-top: 0; margin-bottom: 10px;">Übersicht der Eingeteilten Lehrkräfte</h4>
-        <textarea id="copy-textarea" rows="6" style="width: 100%; border: 1px solid #ccc; padding: 10px; font-family: monospace; white-space: pre; border-radius: 4px; resize: vertical;" readonly>{{ copy_text }}</textarea>
-        <button id="btn-copy-aud" type="button" class="button-secondary" style="margin-top: 10px;">📋 In Zwischenablage kopieren</button>
+        <h4 style="margin-top: 0; margin-bottom: 15px;">Übersicht der Eingeteilten Lehrkräfte</h4>
+        
+        <div class="aud-accordions">
+            {% for aud_name, teachers in aud_assigned %}
+                <div style="margin-bottom: 10px; background: white; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;">
+                    <button type="button" style="width: 100%; text-align: left; padding: 12px 15px; background: #f8f9fa; border: none; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="const p = this.nextElementSibling; const isHidden = p.style.display === 'none'; p.style.display = isHidden ? 'block' : 'none'; this.children[1].textContent = isHidden ? '▲' : '▼';">
+                        <span>{{ aud_name }}</span>
+                        <span>▼</span>
+                    </button>
+                    <div style="display: none; padding: 15px; border-top: 1px solid #ddd;">
+                        {% if teachers is empty %}
+                            <p style="color: var(--text-muted); margin: 0 0 10px 0;">Keine Lehrkräfte eingeteilt.</p>
+                        {% else %}
+                            <ul style="margin: 0 0 15px 0; padding-left: 20px;">
+                            {% for teacher in teachers %}
+                                <li>{{ teacher.name }} ({{ teacher.kuerzel }})</li>
+                            {% endfor %}
+                            </ul>
+                            
+                            <textarea id="copy-aud-{{ loop.index }}" style="display:none;">
+=== {{ aud_name }} ===
+{% for teacher in teachers %}
+- {{ teacher.name }} ({{ teacher.kuerzel }})
+{% endfor %}
+                            </textarea>
+                            <button type="button" class="button-secondary" style="font-size: 0.85em;" onclick="copyAudContent('copy-aud-{{ loop.index }}')">📋 In Zwischenablage kopieren</button>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+            
+            <div style="margin-bottom: 10px; background: white; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;">
+                <button type="button" style="width: 100%; text-align: left; padding: 12px 15px; background: #f8f9fa; border: none; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="const p = this.nextElementSibling; const isHidden = p.style.display === 'none'; p.style.display = isHidden ? 'block' : 'none'; this.children[1].textContent = isHidden ? '▲' : '▼';">
+                    <span>Nicht eingeteilte Lehrkräfte</span>
+                    <span>▼</span>
+                </button>
+                <div style="display: none; padding: 15px; border-top: 1px solid #ddd;">
+                    {% if unassigned_teachers is empty %}
+                        <p style="color: var(--text-muted); margin: 0 0 10px 0;">Alle Lehrkräfte sind eingeteilt.</p>
+                    {% else %}
+                        <ul style="margin: 0 0 15px 0; padding-left: 20px;">
+                        {% for teacher in unassigned_teachers %}
+                            <li>{{ teacher.name }} ({{ teacher.kuerzel }})</li>
+                        {% endfor %}
+                        </ul>
+                        <textarea id="copy-unassigned" style="display:none;">
+=== Nicht eingeteilte Lehrkräfte ===
+{% for teacher in unassigned_teachers %}
+- {{ teacher.name }} ({{ teacher.kuerzel }})
+{% endfor %}
+                        </textarea>
+                        <button type="button" class="button-secondary" style="font-size: 0.85em;" onclick="copyAudContent('copy-unassigned')">📋 In Zwischenablage kopieren</button>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div style="margin-top: 15px; background: white; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;">
+                <button type="button" style="width: 100%; text-align: left; padding: 12px 15px; background: #e3ecf5; border: none; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="const p = this.nextElementSibling; const isHidden = p.style.display === 'none'; p.style.display = isHidden ? 'block' : 'none'; this.children[1].textContent = isHidden ? '▲' : '▼';">
+                    <span>Gesamte Übersicht (Alle AUDs beisammen)</span>
+                    <span>▼</span>
+                </button>
+                <div style="display: none; padding: 15px; border-top: 1px solid #ddd;">
+                    <textarea id="copy-text-all" rows="6" style="width: 100%; border: 1px solid #ccc; padding: 10px; font-family: monospace; white-space: pre; border-radius: 4px; resize: vertical;" readonly>{{ copy_text }}</textarea>
+                    <button type="button" class="button-secondary" style="margin-top: 10px;" onclick="copyAudContent('copy-text-all')">📋 Gesamte Übersicht kopieren</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Email Reporting Settings -->
@@ -370,11 +434,17 @@
             });
         }
 
-        // Copy to clipboard
-        document.getElementById('btn-copy-aud').addEventListener('click', function() {
-            var copyTextarea = document.getElementById('copy-textarea');
-            copyTextarea.select();
-            copyTextarea.setSelectionRange(0, 99999);
+        // Ensure global access for copyAudContent function
+        window.copyAudContent = function(elementId) {
+            var el = document.getElementById(elementId);
+            if (!el) return;
+            // Un-hide temporarily if hidden
+            var displayWas = el.style.display;
+            if(displayWas === 'none') {
+                el.style.display = 'block';
+            }
+            el.select();
+            el.setSelectionRange(0, 99999);
             try {
                 document.execCommand('copy');
                 Swal.fire({
@@ -388,7 +458,10 @@
             } catch (err) {
                 console.error('Oops, unable to copy');
             }
-        });
+            if(displayWas === 'none') {
+                el.style.display = 'none';
+            }
+        };
     });
 
 // ── Helper to build a detail row ────────────────────────────────────────────

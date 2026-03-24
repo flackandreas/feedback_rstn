@@ -27,8 +27,8 @@
             </select>
         </div>
 
-        {# Zeile 2: Klassenlehrerin + Begleitperson #}
-        <div class="form-grid-2" style="margin-top: 15px;">
+        {# Zeile 2: Lehrperson + Begleitpersonen #}
+        <div class="form-grid-3" style="margin-top: 15px;">
             <div class="form-group">
                 <label for="class_name">Lehrperson</label>
                 <select id="class_name" name="class_name" required>
@@ -38,16 +38,19 @@
                     {% endfor %}
                 </select>
             </div>
+            
             <div class="form-group">
                 <label for="companion_select_1">Begleitperson 1</label>
-                <select id="companion_select_1" name="companion_select_1" style="margin-bottom: 10px;">
+                <select id="companion_select_1" name="companion_select_1">
                     <option value="">Keine / Bitte wählen</option>
                     {% for teacher in all_teachers_full %}
                         <option value="{{ teacher.name }} ({{ teacher.kuerzel }})">{{ teacher.name }} ({{ teacher.kuerzel }})</option>
                     {% endfor %}
                 </select>
+            </div>
 
-                <label for="companion_select_2" style="margin-top: 10px;">Begleitperson 2</label>
+            <div class="form-group">
+                <label for="companion_select_2">Begleitperson 2</label>
                 <select id="companion_select_2" name="companion_select_2">
                     <option value="">Keine / Bitte wählen</option>
                     {% for teacher in all_teachers_full %}
@@ -55,9 +58,9 @@
                     {% endfor %}
                 </select>
                 <div style="margin-top: 8px;">
-                    <button type="button" class="button-secondary" style="font-size: 0.85em; padding: 4px 8px;" onclick="document.getElementById('companion_extra_container').style.display='block'; this.style.display='none'; document.getElementById('companion_extra').focus();">+ Weitere Begleitpersonen händisch eingeben</button>
+                    <button type="button" class="button-secondary" style="font-size: 0.85em; padding: 4px 8px;" onclick="document.getElementById('companion_extra_container').style.display='block'; this.style.display='none'; document.getElementById('companion_extra').focus();">+ Weitere Personen händisch eingeben</button>
                     <div id="companion_extra_container" style="display: none; margin-top: 8px;">
-                        <input type="text" id="companion_extra" name="companion_extra" placeholder="Name(n) weiterer Begleitpersonen" style="width: 100%;">
+                        <input type="text" id="companion_extra" name="companion_extra" placeholder="Name(n) weiterer Personen" style="width: 100%;">
                     </div>
                 </div>
             </div>

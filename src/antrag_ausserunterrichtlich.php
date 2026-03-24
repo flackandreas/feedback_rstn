@@ -27,7 +27,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $aud_type = $_POST['aud_type'] ?? null;
         $participating_teacher_id = !empty($_POST['participating_teacher_id']) ? $_POST['participating_teacher_id'] : null;
         $role              = trim($_POST['role'] ?? '');
-        $companion_select  = trim($_POST['companion_select'] ?? '');
+        $companion_select_raw = $_POST['companion_select'] ?? [];
+        $companion_select = is_array($companion_select_raw) ? implode(', ', $companion_select_raw) : trim($companion_select_raw);
         $companion_extra   = trim($_POST['companion_extra'] ?? '');
         $companion = trim(implode(', ', array_filter([$companion_select, $companion_extra])));
         $event_name        = trim($_POST['event_name'] ?? '');

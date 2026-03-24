@@ -40,10 +40,19 @@
             <input type="date" id="event_date" name="event_date" required>
         </div>
 
-        <div class="form-grid-2" style="margin-top: 15px;">
-            <div class="form-group">
+        {# Checkbox for AUD #}
+        <div class="form-group" style="margin-top: 15px;">
+            <label style="font-weight: normal; cursor: pointer;">
+                <input type="checkbox" id="is_aud_checkbox" name="is_aud" value="1">
+                <strong>Handelt es sich um ein AUD?</strong>
+            </label>
+        </div>
+
+        {# AUD Fields Placeholder (Hidden initially) #}
+        <div id="aud_fields_container" class="form-grid-2" style="margin-top: 15px; display: none; background: #eaf3ff; padding: 15px; border-radius: 6px; border: 1px solid #cce0ff;">
+            <div class="form-group" style="margin: 0;">
                 <label for="aud_type">Art (AUD) *</label>
-                <select id="aud_type" name="aud_type" required>
+                <select id="aud_type" name="aud_type">
                     <option value="">Bitte wählen</option>
                     <option value="AUD 1">AUD 1</option>
                     <option value="AUD 2">AUD 2</option>
@@ -54,7 +63,7 @@
                 </select>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" style="margin: 0;">
                 <label for="participating_teacher_id">Begleitende Lehrkraft (Optional)</label>
                 <select id="participating_teacher_id" name="participating_teacher_id">
                     <option value="">Keine / Bitte wählen</option>
@@ -191,4 +200,34 @@
         </table>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const audCheckbox = document.getElementById('is_aud_checkbox');
+    const audContainer = document.getElementById('aud_fields_container');
+    const audTypeSelect = document.getElementById('aud_type');
+    const teacherSelect = document.getElementById('participating_teacher_id');
+
+    function toggleAudFields() {
+        if (audCheckbox.checked) {
+            audContainer.style.display = 'grid'; // .form-grid-2 uses grid
+            audTypeSelect.required = true;
+        } else {
+            audContainer.style.display = 'none';
+            audTypeSelect.required = false;
+            // Clear values when hiding
+            audTypeSelect.value = "";
+            teacherSelect.value = "";
+        }
+    }
+
+    // Initialize state
+    if (audCheckbox) {
+        audCheckbox.addEventListener('change', toggleAudFields);
+        toggleAudFields();
+    }
+});
+</script>
 {% endblock %}

@@ -216,7 +216,7 @@
         <div class="aud-accordions">
             {% for aud_name, teachers in aud_assigned %}
                 <div style="margin-bottom: 10px; background: white; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;">
-                    <button type="button" style="width: 100%; text-align: left; padding: 12px 15px; background: #f8f9fa; border: none; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="const p = this.nextElementSibling; const isHidden = p.style.display === 'none'; p.style.display = isHidden ? 'block' : 'none'; this.children[1].textContent = isHidden ? '▲' : '▼';">
+                    <button type="button" style="width: 100%; text-align: left; padding: 12px 15px; background: #f8f9fa; color: #333; border: none; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="const p = this.nextElementSibling; const isHidden = p.style.display === 'none'; p.style.display = isHidden ? 'block' : 'none'; this.children[1].textContent = isHidden ? '▲' : '▼';">
                         <span>{{ aud_name }}</span>
                         <span>▼</span>
                     </button>
@@ -243,7 +243,7 @@
             {% endfor %}
             
             <div style="margin-bottom: 10px; background: white; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;">
-                <button type="button" style="width: 100%; text-align: left; padding: 12px 15px; background: #f8f9fa; border: none; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="const p = this.nextElementSibling; const isHidden = p.style.display === 'none'; p.style.display = isHidden ? 'block' : 'none'; this.children[1].textContent = isHidden ? '▲' : '▼';">
+                <button type="button" style="width: 100%; text-align: left; padding: 12px 15px; background: #f8f9fa; color: #333; border: none; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="const p = this.nextElementSibling; const isHidden = p.style.display === 'none'; p.style.display = isHidden ? 'block' : 'none'; this.children[1].textContent = isHidden ? '▲' : '▼';">
                     <span>Nicht eingeteilte Lehrkräfte</span>
                     <span>▼</span>
                 </button>
@@ -268,7 +268,7 @@
             </div>
             
             <div style="margin-top: 15px; background: white; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;">
-                <button type="button" style="width: 100%; text-align: left; padding: 12px 15px; background: #e3ecf5; border: none; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="const p = this.nextElementSibling; const isHidden = p.style.display === 'none'; p.style.display = isHidden ? 'block' : 'none'; this.children[1].textContent = isHidden ? '▲' : '▼';">
+                <button type="button" style="width: 100%; text-align: left; padding: 12px 15px; background: #e3ecf5; color: #333; border: none; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="const p = this.nextElementSibling; const isHidden = p.style.display === 'none'; p.style.display = isHidden ? 'block' : 'none'; this.children[1].textContent = isHidden ? '▲' : '▼';">
                     <span>Gesamte Übersicht (Alle AUDs beisammen)</span>
                     <span>▼</span>
                 </button>

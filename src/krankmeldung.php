@@ -7,6 +7,8 @@
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/twig_setup.php';
+require_once __DIR__ . '/includes/migrations.php';
+run_all_migrations();
 
 require_login();
 

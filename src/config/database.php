@@ -20,6 +20,13 @@ function db_connect() {
         // Ensure data is returned as associative arrays by default
         $conn->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
         
+        // Auto-migrate column for modifications
+        try {
+            $conn->exec("ALTER TABLE extracurricular_requests ADD COLUMN modified_after_approval TINYINT(1) DEFAULT 0");
+        } catch (PDOException $e) {
+            // Ignore if column exists
+        }
+        
         return $conn;
     } catch (PDOException $e) {
         error_log("Datenbankfehler: " . $e->getMessage());

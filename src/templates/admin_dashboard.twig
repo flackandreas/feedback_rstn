@@ -325,7 +325,7 @@
                             <td onclick="event.stopPropagation();">
                                 {% if r.modified_after_approval %}
                                     <div style="margin-bottom: 5px;">
-                                        <span class="badge" target="_blank" style="background-color: #8e44ad; color: white; font-size: 0.75em; padding: 2px 6px; border-radius: 4px;">GEÄNDERT(Nachträglich)</span>
+                                        <span class="badge" target="_blank" style="background-color: #8e44ad; color: white; font-size: 0.75em; padding: 2px 6px; border-radius: 4px;">GEÄNDERT (am {{ (r.modified_at ? r.modified_at|date('d.m.Y') : '—') }})</span>
                                     </div>
                                 {% endif %}
                                 {% if r.status == 'pending' %}

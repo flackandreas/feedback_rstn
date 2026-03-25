@@ -166,7 +166,8 @@ $stmt_extra = $conn->query("
            r.aud_type, r.event_date as date_main, r.status, r.created_at, t.name as teacher_name, t.kuerzel,
            r.role, r.companion, r.event_name, r.costs, r.transport,
            r.start_time, r.start_location, r.return_time, r.return_location,
-           r.return_trip_arranged, r.supervisors, r.consent_form, r.schedule_notified
+           r.return_trip_arranged, r.supervisors, r.consent_form, r.schedule_notified,
+           r.modified_after_approval, r.modified_at
     FROM extracurricular_requests r 
     JOIN teachers t ON r.teacher_id = t.id 
     LEFT JOIN teachers p ON r.participating_teacher_id = p.id

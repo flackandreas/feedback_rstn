@@ -60,14 +60,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         
                         $stmt = $conn->prepare("
                             UPDATE extracurricular_requests SET
-                            role=?, class_name=?, companion=?, event_date=?, event_name=?, destination=?, costs=?, transport=?, start_time=?, start_location=?, return_time=?, return_location=?, return_trip_arranged=?, supervisors=?, consent_form=?, schedule_notified=?, aud_type=?, participating_teacher_id=?, modified_after_approval=?
+                            role=?, class_name=?, companion=?, event_date=?, event_name=?, destination=?, costs=?, transport=?, start_time=?, start_location=?, return_time=?, return_location=?, return_trip_arranged=?, supervisors=?, consent_form=?, schedule_notified=?, aud_type=?, participating_teacher_id=?, modified_after_approval=?, 
+                            modified_at = CASE WHEN ? = 1 THEN NOW() ELSE modified_at END
                             WHERE id = ? AND teacher_id = ?
                         ");
                         $stmt->execute([
                             $role, $class_name, $companion, $event_date, $event_name, $destination,
                             $costs, $transport, $start_time, $start_location, $return_time, $return_location,
                             $return_trip_arranged, $supervisors, $consent_form, $schedule_notified, $aud_type, $participating_teacher_id, $is_modified,
-                            $edit_id, $user_id
+                            $is_modified, $edit_id, $user_id
                         ]);
                         
                         // Notify admin if approved request was modified

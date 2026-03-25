@@ -43,7 +43,12 @@
                         {% endset %}
                         
                         <tr>
-                            <td style="font-weight: 500;">{{ r.date_main|date('d.m.Y') }}</td>
+                            <td style="font-weight: 500;">
+                                {{ r.date_main|date('d.m.Y') }}
+                                {% if r.modified_at %}
+                                    <br><span style="color: #8e44ad; font-size: 0.75em; font-weight: 600;">(Geändert am {{ r.modified_at|date('d.m.Y') }})</span>
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if r.type == 'Ausflug' %}
                                     🚌 {{ r.type }}
@@ -67,6 +72,8 @@
                             <td>
                                 {% if r.type == 'Ausflug' %}
                                     <a href="/antrag_ausserunterrichtlich.php?edit_id={{ r.id }}" class="button-secondary" style="padding: 4px 8px; font-size: 0.8em; text-decoration: none;">✏️ Bearbeiten</a>
+                                {% elseif r.type == 'Krankmeldung' %}
+                                    <a href="/krankmeldung.php?id={{ r.id }}" class="button-secondary" style="padding: 4px 8px; font-size: 0.8em; text-decoration: none;">✏️ Bearbeiten</a>
                                 {% endif %}
                             </td>
                         </tr>

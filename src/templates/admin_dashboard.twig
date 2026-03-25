@@ -45,7 +45,14 @@
                     {% for r in sick_leaves_current %}
                         <tr>
                             <td style="font-size: 0.85em; color: var(--text-muted);">{{ r.created_at|date('d.m.y H:i') }}</td>
-                            <td style="font-weight: 600;">{{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span></td>
+                            <td style="font-weight: 600;">
+                                {{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span>
+                                {% if r.modified_at %}
+                                    <div style="margin-top: 4px;">
+                                        <span class="badge" style="background-color: #8e44ad; color: white; font-size: 0.7em; padding: 2px 5px; border-radius: 3px;">GEÄNDERT (am {{ r.modified_at|date('d.m.Y') }})</span>
+                                    </div>
+                                {% endif %}
+                            </td>
                             <td>{{ r.date_main|date('d.m.Y') }}</td>
                             <td>{{ r.date_to|date('d.m.Y') }}</td>
                             <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.details }}">{{ r.details|default('-') }}</td>
@@ -88,7 +95,9 @@
     {% for teacher in sick_history_by_teacher %}
     <div class="history-teacher-block" id="tid_{{ teacher.id }}" style="display: none; padding: 15px; border: 1px solid #eee; background: #fcfcfc; border-radius: 6px; margin-bottom: 15px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h4 style="margin: 0; font-size: 1.1em;">{{ teacher.name }} ({{ teacher.kuerzel }})</h4>
+            <h4 style="margin: 0; font-size: 1.1em;">
+                {{ teacher.name }} ({{ teacher.kuerzel }})
+            </h4>
             <div style="text-align: right;">
                 <span style="font-weight: 600; color: var(--danger-color); display: block; font-size: 1.1em;">Bisherige Krankheitstage: {{ teacher.total_days }}</span>
                 <a href="/export_sick_leaves.php?teacher_id={{ teacher.id }}" target="_blank" class="button-secondary" style="font-size: 0.8em; margin-top: 5px; display: inline-block;">📄 Als PDF Exportieren</a>
@@ -107,7 +116,12 @@
             <tbody>
                 {% for r in teacher.records %}
                     <tr>
-                        <td>{{ r.date_main|date('d.m.Y') }}</td>
+                        <td>
+                            {{ r.date_main|date('d.m.Y') }}
+                            {% if r.modified_at %}
+                                <br><span style="color: #8e44ad; font-size: 0.75em; font-weight: 600;">(Geändert am {{ r.modified_at|date('d.m.Y') }})</span>
+                            {% endif %}
+                        </td>
                         <td>{{ r.date_to|date('d.m.Y') }}</td>
                         <td>{{ r.details|default('-') }}</td>
                         <td>
@@ -165,7 +179,14 @@
                             data-info="{{ data|json_encode|e('html_attr') }}"
                             title="Klicken für Details">
                             <td style="font-size: 0.85em; color: var(--text-muted);">{{ r.created_at|date('d.m.y H:i') }}</td>
-                            <td style="font-weight: 600;">{{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span></td>
+                            <td style="font-weight: 600;">
+                                {{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span>
+                                {% if r.modified_at %}
+                                    <div style="margin-top: 4px;">
+                                        <span class="badge" style="background-color: #8e44ad; color: white; font-size: 0.7em; padding: 2px 5px; border-radius: 3px;">GEÄNDERT (am {{ r.modified_at|date('d.m.Y') }})</span>
+                                    </div>
+                                {% endif %}
+                            </td>
                             <td>{{ r.date_from|date('d.m.Y') }}</td>
                             <td>{{ r.date_to|date('d.m.Y') }}</td>
                             <td>{{ r.reason_type|default('—') }}</td>
@@ -318,7 +339,14 @@
                             data-info="{{ data|json_encode|e('html_attr') }}"
                             title="Klicken für Details">
                             <td><strong style="color: var(--primary-color);">{{ r.aud_type|default('-') }}</strong></td>
-                            <td style="font-weight: 600;">{{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span></td>
+                            <td style="font-weight: 600;">
+                                {{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span>
+                                {% if r.modified_at %}
+                                    <div style="margin-top: 4px;">
+                                        <span class="badge" style="background-color: #8e44ad; color: white; font-size: 0.7em; padding: 2px 5px; border-radius: 3px;">GEÄNDERT (am {{ r.modified_at|date('d.m.Y') }})</span>
+                                    </div>
+                                {% endif %}
+                            </td>
                             <td>{{ r.event_date|date('d.m.Y') }}</td>
                             <td>{{ r.class_name }}</td>
                             <td>{{ r.destination }}</td>

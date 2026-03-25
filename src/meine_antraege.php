@@ -15,9 +15,9 @@ $filter_status = $_GET['status'] ?? 'all';
 $conn = db_connect();
 
 // Base queries
-$sql_extra  = "SELECT id, 'Ausflug' as type, class_name as details, event_date as date_main, status, created_at, modified_after_approval FROM extracurricular_requests WHERE teacher_id = ?";
-$sql_exempt = "SELECT id, 'Freistellung' as type, reason as details, date_from as date_main, status, created_at, 0 as modified_after_approval FROM exemption_requests WHERE teacher_id = ?";
-$sql_sick   = "SELECT id, 'Krankmeldung' as type, notes as details, date_from as date_main, 'approved' as status, created_at, 0 as modified_after_approval FROM sick_leave_reports WHERE teacher_id = ?";
+$sql_extra  = "SELECT id, 'Ausflug' as type, class_name as details, event_date as date_main, status, created_at, modified_at, modified_after_approval FROM extracurricular_requests WHERE teacher_id = ?";
+$sql_exempt = "SELECT id, 'Freistellung' as type, reason as details, date_from as date_main, status, created_at, NULL as modified_at, 0 as modified_after_approval FROM exemption_requests WHERE teacher_id = ?";
+$sql_sick   = "SELECT id, 'Krankmeldung' as type, notes as details, date_from as date_main, 'approved' as status, created_at, modified_at, 0 as modified_after_approval FROM sick_leave_reports WHERE teacher_id = ?";
 
 $params = [$user_id, $user_id, $user_id];
 

@@ -409,6 +409,61 @@
         </div>
     </form>
 </div>
+
+{# =====================================================================
+   SECTION 6: Jahresabschluss & Archivierung
+   ===================================================================== #}
+<div class="content-box">
+    <h3 style="border-left: 4px solid #8e44ad; padding-left: 10px;">Jahresabschluss & Archivierung</h3>
+    <p style="color: var(--text-muted); font-size: 0.9em;">Am Ende eines Schuljahres/Kalenderjahres können Sie hier alle Daten exportieren und anschließend das Jahr bereinigen.</p>
+    
+    <div style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; margin-top: 15px;">
+        <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+            <label for="archive_year_select" class="form-label">Jahr auswählen:</label>
+            <select id="archive_year_select" class="form-control" style="background: white;">
+                {% set current_year = "now"|date("Y") %}
+                <option value="{{ current_year }}">{{ current_year }} (Aktuell)</option>
+                <option value="{{ current_year - 1 }}">{{ current_year - 1 }}</option>
+                <option value="{{ current_year - 2 }}">{{ current_year - 2 }}</option>
+            </select>
+        </div>
+        
+        <div style="flex: 2; display: flex; gap: 10px;">
+            <button type="button" class="button-primary" onclick="window.location.href='/admin_archive.php?action=export&year=' + document.getElementById('archive_year_select').value" style="background-color: #8e44ad; width: auto;">
+                📥 Daten exportieren (.zip)
+            </button>
+            
+            <form method="POST" action="/admin_archive.php?action=cleanup" id="cleanup-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="confirm_year" id="cleanup_year_input">
+                <button type="button" class="button-danger" onclick="handleCleanupClick()" style="width: auto;">
+                    🗑️ Jahr löschen
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function handleCleanupClick() {
+    const year = document.getElementById('archive_year_select').value;
+    Swal.fire({
+        title: 'Daten für ' + year + ' löschen?',
+        text: "Dies kann NICHT rückgängig gemacht werden! Stellen Sie sicher, dass Sie zuvor einen ZIP-Export erstellt haben.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--danger-color)',
+        cancelButtonColor: 'var(--text-muted)',
+        confirmButtonText: 'Ja, unwiderruflich löschen',
+        cancelButtonText: 'Abbrechen'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('cleanup_year_input').value = year;
+            document.getElementById('cleanup-form').submit();
+        }
+    });
+}
+</script>
 {% endblock %}
 
 {% block extra_scripts %}

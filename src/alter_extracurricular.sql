@@ -15,9 +15,9 @@ ALTER TABLE extracurricular_requests
     ADD COLUMN IF NOT EXISTS return_trip_arranged TINYINT(1) DEFAULT 0 AFTER return_location,
     ADD COLUMN IF NOT EXISTS supervisors TEXT DEFAULT NULL AFTER return_trip_arranged,
     ADD COLUMN IF NOT EXISTS consent_form ENUM('ja','nein') DEFAULT NULL AFTER supervisors,
-    ADD COLUMN IF NOT EXISTS schedule_notified TINYINT(1) DEFAULT 0 AFTER consent_form,
-    ADD COLUMN IF NOT EXISTS modified_after_approval TINYINT(1) DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS modified_at DATETIME DEFAULT NULL;
+    ADD COLUMN schedule_notified TINYINT(1) DEFAULT 0 AFTER consent_form,
+    ADD COLUMN modified_after_approval TINYINT(1) DEFAULT 0,
+    ADD COLUMN modified_at DATETIME DEFAULT NULL;
 
 -- Try to add fk constraint, ignore if exists (requires manual care or ignore since script is simple)
 ALTER TABLE extracurricular_requests ADD CONSTRAINT fk_extracurricular_participating_teacher FOREIGN KEY IF NOT EXISTS (participating_teacher_id) REFERENCES teachers(id) ON DELETE SET NULL;

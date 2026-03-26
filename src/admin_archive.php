@@ -13,13 +13,15 @@ $action = $_GET['action'] ?? '';
 $year = (int)($_GET['year'] ?? date('Y', strtotime('-1 month'))); // Default to last year if in Jan
 
 if ($action === 'export') {
-    $zip = new ZipArchive();
-    $zip_filename = "Jahresabschluss_" . $year . "_" . date('Ymd_His') . ".zip";
-    $zip_path = __DIR__ . "/uploads/" . $zip_filename;
-
-    if ($zip->open($zip_path, ZipArchive::CREATE) !== TRUE) {
-        die("Fehler beim Erstellen des ZIP-Archivs.");
-    }
+    $archive_name = "Jahresabschluss_" . $year . "_" . date('Ymd_His');
+    $tmp_dir = __DIR__ . "/uploads/" . $archive_name;
+    
+    if (!is_dir($tmp_dir)) mkdir($tmp_dir, 0777, true);
+    if (!is_dir($tmp_dir . "/Krankmeldungen")) mkdir($tmp_dir . "/Krankmeldungen");
+    if (!is_dir($tmp_dir . "/Veranstaltungen")) mkdir($tmp_dir . "/Veranstaltungen");
+    if (!is_dir($tmp_dir . "/Freistellungen")) mkdir($tmp_dir . "/Freistellungen");
+    if (!is_dir($tmp_dir . "/Feedback")) mkdir($tmp_dir . "/Feedback");
+    if (!is_dir($tmp_dir . "/Anhaenge")) mkdir($tmp_dir . "/Anhaenge");
 
     // --- 1. Export Sick Leave Reports ---
     $stmt = $conn->prepare("SELECT * FROM sick_leave_reports WHERE YEAR(date_from) = ?");
@@ -29,50 +31,61 @@ if ($action === 'export') {
     foreach ($data as $r) {
         $csv .= implode(';', array_values($r)) . "\n";
         if (!empty($r['attachment_path']) && file_exists(__DIR__ . '/' . $r['attachment_path'])) {
-            $zip->addFile(__DIR__ . '/' . $r['attachment_path'], "Anhaenge/" . basename($r['attachment_path']));
+            copy(__DIR__ . '/' . $r['attachment_path'], $tmp_dir . "/Anhaenge/" . basename($r['attachment_path']));
         }
     }
-    $zip->addFromString("Krankmeldungen/krankmeldungen_$year.csv", "\xEF\xBB\xBF" . $csv);
+    file_put_contents($tmp_dir . "/Krankmeldungen/krankmeldungen_$year.csv", "\xEF\xBB\xBF" . $csv);
 
-    // --- 2. Export Extracurricular Requests ---
+    // --- 2. Export Extracurricular Events ---
     $stmt = $conn->prepare("SELECT * FROM extracurricular_requests WHERE YEAR(event_date) = ?");
     $stmt->execute([$year]);
-    $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $extra_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $csv = "ID;Lehrer_ID;Rolle;Klasse;Begleitung;Datum;Event;Ziel;AUD_Typ;Begleitlehrer_ID;Kosten;Transport;Start_Zeit;Start_Ort;Rueck_Zeit;Rueck_Ort;Rueck_Arrangiert;Aufsicht;Einverstaendnis;Stundenplan;Status;Erstellt_am;Geaendert_am;Geaendert_nach_Appr\n";
-    foreach ($data as $r) {
+    foreach ($extra_data as $r) {
         $csv .= implode(';', array_values($r)) . "\n";
     }
-    $zip->addFromString("Veranstaltungen/veranstaltungen_$year.csv", "\xEF\xBB\xBF" . $csv);
+    file_put_contents($tmp_dir . "/Veranstaltungen/veranstaltungen_$year.csv", "\xEF\xBB\xBF" . $csv);
 
     // --- 3. Export Exemption Requests ---
     $stmt = $conn->prepare("SELECT * FROM exemption_requests WHERE YEAR(date_from) = ?");
     $stmt->execute([$year]);
-    $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $ex_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $csv = "ID;Lehrer_ID;Von;Bis;Grund;Wochentage;Klassen;Stuendlich;Std_Von;Std_Bis;Grund_Typ;Status;Erstellt_am\n";
-    foreach ($data as $r) {
+    foreach ($ex_data as $r) {
         $csv .= implode(';', array_values($r)) . "\n";
     }
-    $zip->addFromString("Freistellungen/freistellungen_$year.csv", "\xEF\xBB\xBF" . $csv);
+    file_put_contents($tmp_dir . "/Freistellungen/freistellungen_$year.csv", "\xEF\xBB\xBF" . $csv);
 
     // --- 4. Export Feedback ---
     $stmt = $conn->prepare("SELECT * FROM feedback_sessions WHERE YEAR(created_at) = ?");
     $stmt->execute([$year]);
-    $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $fb_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $csv = "ID;Lehrer_ID;Klasse;Fach;Token;Aktiv;Ablauf;Erstellt_am\n";
-    foreach ($data as $r) {
+    foreach ($fb_data as $r) {
         $csv .= implode(';', array_values($r)) . "\n";
     }
-    $zip->addFromString("Feedback/sessions_$year.csv", "\xEF\xBB\xBF" . $csv);
+    file_put_contents($tmp_dir . "/Feedback/sessions_$year.csv", "\xEF\xBB\xBF" . $csv);
 
-    $zip->close();
+    // Create Archive using tar (fallback for ZipArchive)
+    $archive_file = $archive_name . ".tar.gz";
+    $archive_path = __DIR__ . "/uploads/" . $archive_file;
+    
+    $cmd = "tar -czf " . escapeshellarg($archive_path) . " -C " . escapeshellarg($tmp_dir) . " .";
+    shell_exec($cmd);
 
-    // Send ZIP to browser
-    header('Content-Type: application/zip');
-    header('Content-Disposition: attachment; filename="' . $zip_filename . '"');
-    header('Content-Length: ' . filesize($zip_path));
-    readfile($zip_path);
-    unlink($zip_path); // Delete temp file from server
-    exit;
+    // Cleanup tmp dir
+    shell_exec("rm -rf " . escapeshellarg($tmp_dir));
+
+    if (file_exists($archive_path)) {
+        header('Content-Type: application/x-gzip');
+        header('Content-Disposition: attachment; filename="' . $archive_file . '"');
+        header('Content-Length: ' . filesize($archive_path));
+        readfile($archive_path);
+        unlink($archive_path);
+        exit;
+    } else {
+        die("Fehler beim Erstellen des Archivs.");
+    }
 }
 
 if ($action === 'cleanup' && isset($_POST['confirm_year'])) {

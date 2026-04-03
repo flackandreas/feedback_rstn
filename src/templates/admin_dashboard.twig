@@ -5,6 +5,8 @@
     <h2>Zentrale Verwaltung (Schulleitung)</h2>
 </div>
 
+
+
 {# =====================================================================
    SLIDE-IN DETAIL PANEL (shared for all request types)
    ===================================================================== #}
@@ -35,6 +37,7 @@
                         <th>Von</th>
                         <th>Bis</th>
                         <th>Notizen</th>
+                        <th>Vertretungsmaterial</th>
                         <th>Anlage</th>
                     </tr>
                 </thead>
@@ -42,10 +45,24 @@
                     {% for r in sick_leaves_current %}
                         <tr>
                             <td style="font-size: 0.85em; color: var(--text-muted);">{{ r.created_at|date('d.m.y H:i') }}</td>
-                            <td style="font-weight: 600;">{{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span></td>
+                            <td style="font-weight: 600;">
+                                {{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span>
+                                {% if r.modified_at %}
+                                    <div style="margin-top: 4px;">
+                                        <span class="badge" style="background-color: #8e44ad; color: white; font-size: 0.7em; padding: 2px 5px; border-radius: 3px;">GEÄNDERT (am {{ r.modified_at|date('d.m.Y') }})</span>
+                                    </div>
+                                {% endif %}
+                            </td>
                             <td>{{ r.date_main|date('d.m.Y') }}</td>
                             <td>{{ r.date_to|date('d.m.Y') }}</td>
                             <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.details }}">{{ r.details|default('-') }}</td>
+                            <td>
+                                {% if r.material_link %}
+                                    <a href="{{ r.material_link }}" target="_blank" class="button-secondary" style="padding: 2px 8px; font-size: 0.8em; color: var(--primary-color);">🚀 Material</a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if r.attachment_path %}
                                     <a href="/{{ r.attachment_path }}" target="_blank" class="button-secondary" style="padding: 2px 8px; font-size: 0.8em;">Ansehen</a>
@@ -78,7 +95,9 @@
     {% for teacher in sick_history_by_teacher %}
     <div class="history-teacher-block" id="tid_{{ teacher.id }}" style="display: none; padding: 15px; border: 1px solid #eee; background: #fcfcfc; border-radius: 6px; margin-bottom: 15px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h4 style="margin: 0; font-size: 1.1em;">{{ teacher.name }} ({{ teacher.kuerzel }})</h4>
+            <h4 style="margin: 0; font-size: 1.1em;">
+                {{ teacher.name }} ({{ teacher.kuerzel }})
+            </h4>
             <div style="text-align: right;">
                 <span style="font-weight: 600; color: var(--danger-color); display: block; font-size: 1.1em;">Bisherige Krankheitstage: {{ teacher.total_days }}</span>
                 <a href="/export_sick_leaves.php?teacher_id={{ teacher.id }}" target="_blank" class="button-secondary" style="font-size: 0.8em; margin-top: 5px; display: inline-block;">📄 Als PDF Exportieren</a>
@@ -97,7 +116,12 @@
             <tbody>
                 {% for r in teacher.records %}
                     <tr>
-                        <td>{{ r.date_main|date('d.m.Y') }}</td>
+                        <td>
+                            {{ r.date_main|date('d.m.Y') }}
+                            {% if r.modified_at %}
+                                <br><span style="color: #8e44ad; font-size: 0.75em; font-weight: 600;">(Geändert am {{ r.modified_at|date('d.m.Y') }})</span>
+                            {% endif %}
+                        </td>
                         <td>{{ r.date_to|date('d.m.Y') }}</td>
                         <td>{{ r.details|default('-') }}</td>
                         <td>
@@ -155,7 +179,14 @@
                             data-info="{{ data|json_encode|e('html_attr') }}"
                             title="Klicken für Details">
                             <td style="font-size: 0.85em; color: var(--text-muted);">{{ r.created_at|date('d.m.y H:i') }}</td>
-                            <td style="font-weight: 600;">{{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span></td>
+                            <td style="font-weight: 600;">
+                                {{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span>
+                                {% if r.modified_at %}
+                                    <div style="margin-top: 4px;">
+                                        <span class="badge" style="background-color: #8e44ad; color: white; font-size: 0.7em; padding: 2px 5px; border-radius: 3px;">GEÄNDERT (am {{ r.modified_at|date('d.m.Y') }})</span>
+                                    </div>
+                                {% endif %}
+                            </td>
                             <td>{{ r.date_from|date('d.m.Y') }}</td>
                             <td>{{ r.date_to|date('d.m.Y') }}</td>
                             <td>{{ r.reason_type|default('—') }}</td>
@@ -201,9 +232,37 @@
     <h3 style="border-left: 4px solid var(--primary-color); padding-left: 10px;">Außerunterrichtliche Veranstaltungen</h3>
     
     <div style="margin-bottom: 20px; padding: 15px; background: #eef2fb; border-radius: 6px;">
-        <h4 style="margin-top: 0; margin-bottom: 10px;">Übersicht der Eingeteilten Lehrkräfte</h4>
-        <textarea id="copy-textarea" rows="6" style="width: 100%; border: 1px solid #ccc; padding: 10px; font-family: monospace; white-space: pre; border-radius: 4px; resize: vertical;" readonly>{{ copy_text }}</textarea>
-        <button id="btn-copy-aud" type="button" class="button-secondary" style="margin-top: 10px;">📋 In Zwischenablage kopieren</button>
+        <h4 style="margin-top: 0; margin-bottom: 15px;">Übersicht der freien Lehrkräfte (ohne Teilnahme)</h4>
+        
+        <div class="aud-accordions">
+            {% for aud_name, free_teachers in aud_free %}
+                <div style="margin-bottom: 10px; background: white; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;">
+                    <button type="button" style="width: 100%; text-align: left; padding: 12px 15px; background: #f8f9fa; color: #333; border: none; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="const p = this.nextElementSibling; const isHidden = p.style.display === 'none'; p.style.display = isHidden ? 'block' : 'none'; this.children[1].textContent = isHidden ? '▲' : '▼';">
+                        <span>{{ aud_name }}</span>
+                        <span>▼</span>
+                    </button>
+                    <div style="display: none; padding: 15px; border-top: 1px solid #ddd;">
+                        {% if free_teachers is empty %}
+                            <p style="color: var(--text-muted); margin: 0 0 10px 0;">Alle Lehrkräfte sind eingeteilt.</p>
+                        {% else %}
+                            <ul style="margin: 0 0 15px 0; padding-left: 20px;">
+                            {% for teacher in free_teachers %}
+                                <li>{{ teacher.name }} ({{ teacher.kuerzel }})</li>
+                            {% endfor %}
+                            </ul>
+                            
+                            <textarea id="copy-aud-{{ loop.index }}" style="display:none;">
+=== Freie Lehrkräfte - {{ aud_name }} ===
+{% for teacher in free_teachers %}
+- {{ teacher.name }} ({{ teacher.kuerzel }})
+{% endfor %}
+                            </textarea>
+                            <button type="button" class="button-secondary" style="font-size: 0.85em;" onclick="copyAudContent('copy-aud-{{ loop.index }}')">📋 In Zwischenablage kopieren</button>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
     </div>
 
     <!-- Email Reporting Settings -->
@@ -244,6 +303,7 @@
                 <thead>
                     <tr>
                         <th>AUD</th>
+                        <th>Lehrkraft</th>
                         <th>Datum</th>
                         <th>Klasse(n)</th>
                         <th>Ziel</th>
@@ -279,11 +339,23 @@
                             data-info="{{ data|json_encode|e('html_attr') }}"
                             title="Klicken für Details">
                             <td><strong style="color: var(--primary-color);">{{ r.aud_type|default('-') }}</strong></td>
-                            <td style="font-weight: 600;">{{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span></td>
+                            <td style="font-weight: 600;">
+                                {{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span>
+                                {% if r.modified_at %}
+                                    <div style="margin-top: 4px;">
+                                        <span class="badge" style="background-color: #8e44ad; color: white; font-size: 0.7em; padding: 2px 5px; border-radius: 3px;">GEÄNDERT (am {{ r.modified_at|date('d.m.Y') }})</span>
+                                    </div>
+                                {% endif %}
+                            </td>
                             <td>{{ r.event_date|date('d.m.Y') }}</td>
                             <td>{{ r.class_name }}</td>
                             <td>{{ r.destination }}</td>
                             <td onclick="event.stopPropagation();">
+                                {% if r.modified_after_approval %}
+                                    <div style="margin-bottom: 5px;">
+                                        <span class="badge" target="_blank" style="background-color: #8e44ad; color: white; font-size: 0.75em; padding: 2px 6px; border-radius: 4px;">GEÄNDERT (am {{ (r.modified_at ? r.modified_at|date('d.m.Y') : '—') }})</span>
+                                    </div>
+                                {% endif %}
                                 {% if r.status == 'pending' %}
                                     <form method="POST" action="/admin_action.php" style="display:inline-block; margin:0;" class="admin-action-form">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -337,6 +409,61 @@
         </div>
     </form>
 </div>
+
+{# =====================================================================
+   SECTION 6: Jahresabschluss & Archivierung
+   ===================================================================== #}
+<div class="content-box">
+    <h3 style="border-left: 4px solid #8e44ad; padding-left: 10px;">Jahresabschluss & Archivierung</h3>
+    <p style="color: var(--text-muted); font-size: 0.9em;">Am Ende eines Schuljahres/Kalenderjahres können Sie hier alle Daten exportieren und anschließend das Jahr bereinigen.</p>
+    
+    <div style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; margin-top: 15px;">
+        <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+            <label for="archive_year_select" class="form-label">Jahr auswählen:</label>
+            <select id="archive_year_select" class="form-control" style="background: white;">
+                {% set current_year = "now"|date("Y") %}
+                <option value="{{ current_year }}">{{ current_year }} (Aktuell)</option>
+                <option value="{{ current_year - 1 }}">{{ current_year - 1 }}</option>
+                <option value="{{ current_year - 2 }}">{{ current_year - 2 }}</option>
+            </select>
+        </div>
+        
+        <div style="flex: 2; display: flex; gap: 10px;">
+            <button type="button" class="button-primary" onclick="window.location.href='/admin_archive.php?action=export&year=' + document.getElementById('archive_year_select').value" style="background-color: #8e44ad; width: auto;">
+                📥 Daten exportieren (.zip)
+            </button>
+            
+            <form method="POST" action="/admin_archive.php?action=cleanup" id="cleanup-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="confirm_year" id="cleanup_year_input">
+                <button type="button" class="button-danger" onclick="handleCleanupClick()" style="width: auto;">
+                    🗑️ Jahr löschen
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function handleCleanupClick() {
+    const year = document.getElementById('archive_year_select').value;
+    Swal.fire({
+        title: 'Daten für ' + year + ' löschen?',
+        text: "Dies kann NICHT rückgängig gemacht werden! Stellen Sie sicher, dass Sie zuvor einen ZIP-Export erstellt haben.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--danger-color)',
+        cancelButtonColor: 'var(--text-muted)',
+        confirmButtonText: 'Ja, unwiderruflich löschen',
+        cancelButtonText: 'Abbrechen'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('cleanup_year_input').value = year;
+            document.getElementById('cleanup-form').submit();
+        }
+    });
+}
+</script>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -360,11 +487,17 @@
             });
         }
 
-        // Copy to clipboard
-        document.getElementById('btn-copy-aud').addEventListener('click', function() {
-            var copyTextarea = document.getElementById('copy-textarea');
-            copyTextarea.select();
-            copyTextarea.setSelectionRange(0, 99999);
+        // Ensure global access for copyAudContent function
+        window.copyAudContent = function(elementId) {
+            var el = document.getElementById(elementId);
+            if (!el) return;
+            // Un-hide temporarily if hidden
+            var displayWas = el.style.display;
+            if(displayWas === 'none') {
+                el.style.display = 'block';
+            }
+            el.select();
+            el.setSelectionRange(0, 99999);
             try {
                 document.execCommand('copy');
                 Swal.fire({
@@ -378,7 +511,10 @@
             } catch (err) {
                 console.error('Oops, unable to copy');
             }
-        });
+            if(displayWas === 'none') {
+                el.style.display = 'none';
+            }
+        };
     });
 
 // ── Helper to build a detail row ────────────────────────────────────────────

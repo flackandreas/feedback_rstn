@@ -50,8 +50,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $stmt_details->execute([$request_id]);
             $request_details = $stmt_details->fetch(PDO::FETCH_ASSOC);
 
-            // Update status
-            $stmt = $conn->prepare("UPDATE {$table} SET status = ? WHERE id = ?");
+            if ($table === 'extracurricular_requests' && $action === 'approve') {
+                $stmt = $conn->prepare("UPDATE {$table} SET status = ?, modified_after_approval = 0, modified_at = NULL WHERE id = ?");
+            } else {
+                $stmt = $conn->prepare("UPDATE {$table} SET status = ? WHERE id = ?");
+            }
             if ($stmt->execute([$status, $request_id])) {
                 $_SESSION['flash_success'] = "Antrag erfolgreich bearbeitet.";
                 

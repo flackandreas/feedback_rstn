@@ -1,4 +1,5 @@
 ALTER TABLE sick_leave_reports ADD COLUMN attachment_path VARCHAR(255) DEFAULT NULL;
+ALTER TABLE sick_leave_reports ADD COLUMN modified_at DATETIME DEFAULT NULL;
 
 CREATE TABLE IF NOT EXISTS app_settings (
     setting_key VARCHAR(100) PRIMARY KEY,

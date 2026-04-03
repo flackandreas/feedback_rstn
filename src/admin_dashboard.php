@@ -103,7 +103,7 @@ while ($row = $stmt_settings->fetch()) {
 
 // 1. Sick leaves (Aktuelle)
 $stmt_sick_curr = $conn->query("
-    SELECT r.id, r.teacher_id, 'Krankmeldung' as type, r.notes as details, r.date_from as date_main, r.date_to, r.created_at, t.name as teacher_name, t.kuerzel, r.attachment_path
+    SELECT r.id, r.teacher_id, 'Krankmeldung' as type, r.notes as details, r.date_from as date_main, r.date_to, r.created_at, r.modified_at, t.name as teacher_name, t.kuerzel, r.attachment_path, r.material_link
     FROM sick_leave_reports r
     JOIN teachers t ON r.teacher_id = t.id
     WHERE r.date_to >= DATE_SUB(CURDATE(), INTERVAL 2 DAY)
@@ -113,7 +113,7 @@ $sick_leaves_current = $stmt_sick_curr->fetchAll();
 
 // 1.1 Sick leaves (Historie)
 $stmt_sick_hist = $conn->query("
-    SELECT r.id, r.teacher_id, 'Krankmeldung' as type, r.notes as details, r.date_from as date_main, r.date_to, r.created_at, t.name as teacher_name, t.kuerzel, r.attachment_path
+    SELECT r.id, r.teacher_id, 'Krankmeldung' as type, r.notes as details, r.date_from as date_main, r.date_to, r.created_at, r.modified_at, t.name as teacher_name, t.kuerzel, r.attachment_path, r.material_link
     FROM sick_leave_reports r
     JOIN teachers t ON r.teacher_id = t.id
     WHERE r.date_to < DATE_SUB(CURDATE(), INTERVAL 2 DAY)
@@ -166,7 +166,8 @@ $stmt_extra = $conn->query("
            r.aud_type, r.event_date as date_main, r.status, r.created_at, t.name as teacher_name, t.kuerzel,
            r.role, r.companion, r.event_name, r.costs, r.transport,
            r.start_time, r.start_location, r.return_time, r.return_location,
-           r.return_trip_arranged, r.supervisors, r.consent_form, r.schedule_notified
+           r.return_trip_arranged, r.supervisors, r.consent_form, r.schedule_notified,
+           r.modified_after_approval, r.modified_at
     FROM extracurricular_requests r 
     JOIN teachers t ON r.teacher_id = t.id 
     LEFT JOIN teachers p ON r.participating_teacher_id = p.id
@@ -174,56 +175,57 @@ $stmt_extra = $conn->query("
 ");
 $extra_requests = $stmt_extra->fetchAll(PDO::FETCH_ASSOC);
 
-// Summary for AUD requests and finding Unassigned teachers
-$aud_list = ['AUD 1', 'AUD 2', 'AUD 3', 'AUD 4', 'AUD 6', 'AUD 7'];
-$aud_assigned = [];
-$assigned_teacher_ids = [];
+// Summary for AUD requests - finding FREE teachers
+$aud_list_for_ui = ['AUD 1', 'AUD 2', 'AUD 3', 'AUD 4', 'AUD 5', 'AUD 6', 'AUD 7', 'Sonstige'];
+$aud_free = [];
 
-foreach ($aud_list as $aud) {
+$stmt_all = $conn->query("SELECT id, name, kuerzel FROM teachers WHERE is_admin = 0 ORDER BY name ASC");
+$all_teachers = $stmt_all->fetchAll(PDO::FETCH_ASSOC);
+
+foreach ($aud_list_for_ui as $aud) {
+    // Collect all assigned teachers for this AUD (teacher_id, participating_teacher_id if any, and companions)
     $stmt = $conn->prepare("
-        SELECT DISTINCT t.id, t.name, t.kuerzel 
+        SELECT r.teacher_id, r.participating_teacher_id, r.companion
         FROM extracurricular_requests r
-        JOIN teachers t ON (r.teacher_id = t.id OR r.participating_teacher_id = t.id)
-        WHERE r.aud_type = ?
+        WHERE r.aud_type = ? AND r.status != 'rejected'
     ");
     $stmt->execute([$aud]);
-    $list = $stmt->fetchAll();
-    $aud_assigned[$aud] = $list;
-    foreach ($list as $l) {
-        $assigned_teacher_ids[] = $l['id'];
+    $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $assigned_ids = [];
+    $assigned_names = []; // To check companions string
+    
+    foreach ($requests as $req) {
+        if ($req['teacher_id']) $assigned_ids[] = $req['teacher_id'];
+        if ($req['participating_teacher_id']) $assigned_ids[] = $req['participating_teacher_id'];
+        
+        $comp_str = $req['companion'];
+        if (!empty($comp_str)) {
+            $assigned_names[] = $comp_str; // raw string containing names
+        }
     }
-}
-$assigned_teacher_ids = array_unique($assigned_teacher_ids);
-
-// Unassigned Teachers
-if (empty($assigned_teacher_ids)) {
-    $stmt_unassigned = $conn->query("SELECT id, name, kuerzel FROM teachers WHERE is_admin = 0 ORDER BY name ASC");
-} else {
-    $inClause = implode(',', array_map('intval', $assigned_teacher_ids));
-    $stmt_unassigned = $conn->query("SELECT id, name, kuerzel FROM teachers WHERE is_admin = 0 AND id NOT IN ($inClause) ORDER BY name ASC");
-}
-$unassigned_teachers = $stmt_unassigned->fetchAll();
-
-// Construct copy text:
-$copy_text = "=== Übersicht Außerunterrichtliche Veranstaltungen ===\n\n";
-foreach ($aud_list as $aud) {
-    $copy_text .= "[$aud]\n";
-    if (empty($aud_assigned[$aud])) {
-         $copy_text .= "  Keine Lehrkräfte\n";
-    } else {
-         foreach($aud_assigned[$aud] as $t) {
-             $copy_text .= "  - " . $t['name'] . " (" . $t['kuerzel'] . ")\n";
-         }
+    
+    $free_for_aud = [];
+    foreach ($all_teachers as $t) {
+        $is_assigned = false;
+        if (in_array($t['id'], $assigned_ids)) {
+            $is_assigned = true;
+        } else {
+            // Check if teacher name or kuerzel appears in companion string
+            foreach ($assigned_names as $comp_str) {
+                if (strpos($comp_str, $t['name']) !== false || strpos($comp_str, "(" . $t['kuerzel'] . ")") !== false) {
+                    $is_assigned = true;
+                    break;
+                }
+            }
+        }
+        
+        if (!$is_assigned) {
+            $free_for_aud[] = $t;
+        }
     }
-    $copy_text .= "\n";
-}
-$copy_text .= "[Nicht eingeteilte Lehrkräfte]\n";
-if (empty($unassigned_teachers)) {
-    $copy_text .= "  Alle Lehrkräfte sind eingeteilt.\n";
-} else {
-    foreach ($unassigned_teachers as $t) {
-        $copy_text .= "  - " . $t['name'] . " (" . $t['kuerzel'] . ")\n";
-    }
+    
+    $aud_free[$aud] = $free_for_aud;
 }
 
 $csrf_token = get_csrf_token();
@@ -246,7 +248,7 @@ echo $twig->render('admin_dashboard.twig', [
     'sick_history_by_teacher' => $sick_history_by_teacher,
     'exempt_requests' => $exempt_requests,
     'extra_requests' => $extra_requests,
-    'copy_text' => $copy_text,
+    'aud_free' => $aud_free,
     'app_settings' => $app_settings,
     'current_user_name' => get_current_user_name(),
     'is_admin' => is_current_user_admin(),

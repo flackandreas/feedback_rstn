@@ -30,8 +30,13 @@
         </div>
 
         <div class="form-group" style="margin-top: 15px;">
+            <label for="material_link">Link zum Vertretungsmaterial (z.B. Nextcloud, Mebis) - Optional</label>
+            <input type="url" id="material_link" name="material_link" placeholder="https://cloud.schule.de/s/..." value="{{ editing_request ? editing_request.material_link : '' }}" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px;">
+        </div>
+
+        <div class="form-group" style="margin-top: 15px;">
             <label for="notes">Zusätzliche Notizen (Optional)</label>
-            <textarea id="notes" name="notes" rows="3" placeholder="z.B. Vertretungsmaterial liegt im Lehrerzimmer...">{{ editing_request ? editing_request.notes : '' }}</textarea>
+            <textarea id="notes" name="notes" rows="3" placeholder="z.B. Klassenbuch liegt im Fach.">{{ editing_request ? editing_request.notes : '' }}</textarea>
         </div>
         
         <div class="form-group" style="margin-top: 15px;">

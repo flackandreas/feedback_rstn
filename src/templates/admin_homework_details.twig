@@ -1,0 +1,220 @@
+{% extends "base.twig" %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px;">
+    <div>
+        <a href="/admin_homework.php" style="color: var(--primary-color); text-decoration: none; margin-bottom: 10px; display: inline-block;">&larr; Zurück zur Übersicht</a>
+        <h1 style="margin: 0;">{{ assignment.title }}</h1>
+        <p style="color: var(--text-muted); margin: 5px 0 0 0;">{{ assignment.klasse }} - {{ assignment.fach }} | Erstellt: {{ assignment.created_at|date('d.m.Y') }}</p>
+    </div>
+</div>
+
+<div class="content-box" style="margin-bottom: 30px; background-color: #f8fafc; border-left: 4px solid var(--primary-color);">
+    <h3 style="margin-top: 0;">Link für die Schüler</h3>
+    <p style="margin-bottom: 15px;">Teile diesen Link oder QR-Code mit den Schülern, damit sie ihre Hausaufgabe einreichen können:</p>
+    
+    <div style="display: flex; gap: 20px; align-items: center;">
+        <div style="flex: 1;">
+            <input type="text" readonly value="{{ host_url }}/student_homework.php?t={{ assignment.token }}" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; background: white; font-family: monospace; font-size: 1.1em;" onclick="this.select();">
+        </div>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ (host_url ~ '/student_homework.php?t=' ~ assignment.token)|url_encode }}" alt="QR Code" style="border: 5px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+    </div>
+</div>
+
+<div class="content-box" style="margin-bottom: 30px;">
+    <h3 style="margin-top: 0;">Aufgabenstellung</h3>
+    <div style="background: white; padding: 15px; border: 1px solid var(--border-color); border-radius: 4px; white-space: pre-wrap;">{{ assignment.description }}</div>
+</div>
+
+<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+    <h2 style="margin: 0;">Einreichungen ({{ submissions|length }})</h2>
+    {% if submissions is not empty %}
+    <div style="display: flex; gap: 15px;">
+        <div style="display: flex; flex-direction: column;">
+            <label for="sortSelect" style="font-size: 0.8em; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Sortieren</label>
+            <select id="sortSelect" style="padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: white; font-family: inherit;">
+                <option value="date-desc">Datum (Neu - Alt)</option>
+                <option value="date-asc">Datum (Alt - Neu)</option>
+                <option value="name-asc">Name (A - Z)</option>
+                <option value="name-desc">Name (Z - A)</option>
+                <option value="score-desc">Punkte (Absteigend)</option>
+                <option value="score-asc">Punkte (Aufsteigend)</option>
+            </select>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+            <label for="groupSelect" style="font-size: 0.8em; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Gruppieren</label>
+            <select id="groupSelect" style="padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: white; font-family: inherit;">
+                <option value="none">Keine Gruppierung</option>
+                <option value="status">Nach Status</option>
+                <option value="score">Nach Punkten</option>
+            </select>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% if submissions is empty %}
+    <div class="content-box" style="text-align: center; padding: 40px;">
+        <p style="color: var(--text-muted); font-size: 1.1em;">Bisher wurden noch keine Hausaufgaben eingereicht.</p>
+    </div>
+{% else %}
+    <div id="submissions-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+        {% for sub in submissions %}
+        <div class="submission-card content-box" data-name="{{ sub.student_name }}" data-date="{{ sub.created_at|date('U') }}" data-score="{{ sub.score ?? -1 }}" data-status="{{ sub.status }}" style="padding: 20px; border-top: 4px solid {% if sub.status == 'evaluated' %}#2ecc71{% else %}#f1c40f{% endif %};">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                <div>
+                    <h3 style="margin: 0;">{{ sub.student_name }}</h3>
+                    <span style="font-size: 0.8em; color: var(--text-muted);">{{ sub.created_at|date('d.m.Y H:i') }}</span>
+                </div>
+                <form action="/admin_homework.php?action=delete_sub" method="POST" class="delete-form" style="margin: 0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="submission_id" value="{{ sub.id }}">
+                    <input type="hidden" name="assignment_id" value="{{ assignment.id }}">
+                    <button type="button" class="btn-delete" style="background: none; border: none; color: var(--danger-color); cursor: pointer; font-size: 1.2em; padding: 0;" title="Einreichung löschen">🗑️</button>
+                </form>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <a href="/{{ sub.image_path }}" target="_blank" style="display: block; width: 100%; height: 150px; background-color: #eee; background-image: url('/{{ sub.image_path }}'); background-size: cover; background-position: center; border-radius: 4px;"></a>
+            </div>
+
+            {% if sub.status == 'evaluated' %}
+                <div style="background: #f8fafc; padding: 10px; border-radius: 4px; font-size: 0.9em; margin-bottom: 10px;">
+                    <strong style="color: var(--danger-color); display: block; margin-bottom: 5px;">⚠️ Lernschwierigkeiten (Für Lehrkraft)</strong>
+                    <div style="white-space: pre-wrap;">{{ sub.teacher_notes }}</div>
+                </div>
+                {% if sub.score is not null %}
+                    <div style="text-align: right; font-weight: bold; color: var(--primary-color);">Punkte: {{ sub.score }}</div>
+                {% endif %}
+            {% else %}
+                <div style="text-align: center; padding: 10px; color: var(--warning-color); font-weight: 600;">
+                    ⏳ Auswertung läuft...
+                </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Delete Confirmation
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const form = this.closest('form');
+            Swal.fire({
+                title: 'Einreichung löschen?',
+                text: "Diese Aktion kann nicht rückgängig gemacht werden. Das hochgeladene Bild und die Bewertung werden endgültig gelöscht.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--danger-color)',
+                cancelButtonColor: 'var(--text-muted)',
+                confirmButtonText: 'Ja, löschen',
+                cancelButtonText: 'Abbrechen'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+
+    const grid = document.getElementById('submissions-grid');
+    if (!grid) return;
+    const sortSelect = document.getElementById('sortSelect');
+    const groupSelect = document.getElementById('groupSelect');
+    
+    // Sort & Group Logic
+    function updateGrid() {
+        const sortBy = sortSelect.value;
+        const groupBy = groupSelect.value;
+        
+        let cards = Array.from(grid.querySelectorAll('.submission-card'));
+        
+        // Remove existing group headers
+        grid.querySelectorAll('.group-header').forEach(h => h.remove());
+        
+        // Sorting
+        cards.sort((a, b) => {
+            let valA, valB;
+            if (sortBy.startsWith('date')) {
+                valA = parseInt(a.dataset.date);
+                valB = parseInt(b.dataset.date);
+            } else if (sortBy.startsWith('name')) {
+                valA = a.dataset.name.toLowerCase();
+                valB = b.dataset.name.toLowerCase();
+            } else if (sortBy.startsWith('score')) {
+                valA = parseInt(a.dataset.score);
+                valB = parseInt(b.dataset.score);
+            }
+            
+            if (valA < valB) return sortBy.endsWith('asc') ? -1 : 1;
+            if (valA > valB) return sortBy.endsWith('asc') ? 1 : -1;
+            return 0;
+        });
+        
+        // Apply Sort and Grouping
+        grid.innerHTML = ''; // Clear grid
+        
+        if (groupBy === 'none') {
+            cards.forEach(card => grid.appendChild(card));
+        } else {
+            let groups = {};
+            
+            cards.forEach(card => {
+                let groupKey = 'Sonstige';
+                if (groupBy === 'status') {
+                    groupKey = card.dataset.status === 'evaluated' ? 'Ausgewertet' : 'Ausstehend (Auswertung läuft)';
+                } else if (groupBy === 'score') {
+                    let score = parseInt(card.dataset.score);
+                    if (score === -1) groupKey = 'Ohne Bewertung';
+                    else if (score >= 90) groupKey = 'Sehr Gut (90-100)';
+                    else if (score >= 75) groupKey = 'Gut (75-89)';
+                    else if (score >= 50) groupKey = 'Befriedigend/Ausreichend (50-74)';
+                    else groupKey = 'Förderbedarf (<50)';
+                }
+                
+                if (!groups[groupKey]) groups[groupKey] = [];
+                groups[groupKey].push(card);
+            });
+            
+            // Order logic for keys could be improved, but JS object keys maintain insertion order for strings.
+            // Let's sort keys if they are strings like "Sehr Gut" etc. to be safe.
+            const orderScores = { 'Sehr Gut (90-100)':1, 'Gut (75-89)':2, 'Befriedigend/Ausreichend (50-74)':3, 'Förderbedarf (<50)':4, 'Ohne Bewertung':5 };
+            const orderStatus = { 'Ausgewertet':1, 'Ausstehend (Auswertung läuft)':2 };
+            
+            let sortedKeys = Object.keys(groups).sort((a, b) => {
+                if(groupBy === 'score') return (orderScores[a] || 9) - (orderScores[b] || 9);
+                if(groupBy === 'status') return (orderStatus[a] || 9) - (orderStatus[b] || 9);
+                return a.localeCompare(b);
+            });
+            
+            // Render groups
+            sortedKeys.forEach(key => {
+                let groupCards = groups[key];
+                let header = document.createElement('div');
+                header.className = 'group-header';
+                header.style.gridColumn = '1 / -1';
+                header.style.fontSize = '1.2em';
+                header.style.fontWeight = 'bold';
+                header.style.color = 'var(--text-dark)';
+                header.style.marginTop = '10px';
+                header.style.borderBottom = '2px solid var(--primary-color)';
+                header.style.paddingBottom = '5px';
+                header.innerText = key + ' (' + groupCards.length + ')';
+                grid.appendChild(header);
+                
+                groupCards.forEach(card => grid.appendChild(card));
+            });
+        }
+    }
+    
+    if(sortSelect) sortSelect.addEventListener('change', updateGrid);
+    if(groupSelect) groupSelect.addEventListener('change', updateGrid);
+});
+</script>
+{% endblock %}

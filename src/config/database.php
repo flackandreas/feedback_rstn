@@ -4,6 +4,10 @@
  * Stellt die PDO-Verbindung zur MariaDB her.
  */
 
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require_once __DIR__ . '/../vendor/autoload.php';
+}
+
 // Datenbank-Konfiguration
 define('DB_SERVER', 'db'); // Docker service name
 define('DB_USERNAME', 'root');
@@ -23,9 +27,11 @@ function db_connect() {
         // Auto-migrate column for modifications
         try {
             $conn->exec("ALTER TABLE extracurricular_requests ADD COLUMN modified_after_approval TINYINT(1) DEFAULT 0");
-        } catch (PDOException $e) {
-            // Ignore if column exists
-        }
+        } catch (PDOException $e) {}
+        
+        try {
+            $conn->exec("ALTER TABLE homework_evaluations ADD COLUMN error_markers TEXT DEFAULT NULL");
+        } catch (PDOException $e) {}
         
         return $conn;
     } catch (PDOException $e) {

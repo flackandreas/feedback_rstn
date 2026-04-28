@@ -8,11 +8,21 @@ if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     require_once __DIR__ . '/../vendor/autoload.php';
 }
 
+// Load .env from project root
+try {
+    if (file_exists(__DIR__ . '/../.env')) {
+        $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
+        $dotenv->load();
+    }
+} catch (Exception $e) {
+    // Silence error if .env is missing in production (env vars should be set in host/docker)
+}
+
 // Datenbank-Konfiguration
-define('DB_SERVER', 'db'); // Docker service name
-define('DB_USERNAME', 'root');
-define('DB_PASSWORD', 'db_user');
-define('DB_NAME', 'db_feedback');
+define('DB_SERVER', $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: 'db');
+define('DB_USERNAME', $_ENV['DB_USER'] ?? getenv('DB_USER') ?: 'root');
+define('DB_PASSWORD', $_ENV['DB_PASS'] ?? getenv('DB_PASS') ?: 'db_user');
+define('DB_NAME', $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: 'db_feedback');
 define('CHARSET', 'utf8mb4');
 
 function db_connect() {

@@ -16,7 +16,13 @@ $twig = new \Twig\Environment($loader, [
     'strict_variables' => false
 ]);
 
-// Helper extension: Expose a function to fetch base URL or active navigation states if needed
+// Helper extension: Expose a function to fetch active navigation states
 $twig->addFunction(new \Twig\TwigFunction('is_current_page', function ($page) {
     return basename($_SERVER['PHP_SELF']) === $page;
 }));
+
+// Global pending counts for admin badges
+if (isset($conn) && isset($_SESSION['is_admin']) && $_SESSION['is_admin'] == 1) {
+    require_once __DIR__ . '/admin_helpers.php';
+    $twig->addGlobal('pending_counts', get_pending_counts($conn));
+}

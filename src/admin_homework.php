@@ -26,10 +26,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $title = $_POST['title'] ?? '';
         $description = $_POST['description'] ?? '';
         
+        $context_image_path = null;
+        if (isset($_FILES['context_image']) && $_FILES['context_image']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = __DIR__ . '/uploads/context/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+            $ext = pathinfo($_FILES['context_image']['name'], PATHINFO_EXTENSION);
+            $filename = uniqid('ctx_') . '.' . $ext;
+            if (move_uploaded_file($_FILES['context_image']['tmp_name'], $uploadDir . $filename)) {
+                $context_image_path = 'uploads/context/' . $filename;
+            }
+        }
+
         $token = bin2hex(random_bytes(16));
         
-        $stmt = $conn->prepare("INSERT INTO homework_assignments (teacher_id, klasse, fach, title, description, token) VALUES (?, ?, ?, ?, ?, ?)");
-        if ($stmt->execute([$user_id, $klasse, $fach, $title, $description, $token])) {
+        $stmt = $conn->prepare("INSERT INTO homework_assignments (teacher_id, klasse, fach, title, description, token, context_image_path) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        if ($stmt->execute([$user_id, $klasse, $fach, $title, $description, $token, $context_image_path])) {
             $_SESSION['flash_success'] = "Hausaufgabe erfolgreich erstellt.";
         } else {
             $_SESSION['flash_error'] = "Fehler beim Erstellen.";
@@ -85,8 +98,24 @@ if ($action === 'list') {
         $assignment['submission_count'] = $stmt_sub->fetchColumn();
     }
 
+    // Fetch all classes and selected classes
+    try {
+        $stmt_classes = $conn->prepare("SELECT id, name FROM classes ORDER BY name ASC");
+        $stmt_classes->execute();
+        $all_classes = $stmt_classes->fetchAll();
+
+        $stmt_selected = $conn->prepare("SELECT class_id FROM teacher_classes WHERE teacher_id = ?");
+        $stmt_selected->execute([$user_id]);
+        $selected_class_ids = $stmt_selected->fetchAll(PDO::FETCH_COLUMN);
+    } catch (PDOException $e) {
+        $all_classes = [];
+        $selected_class_ids = [];
+    }
+
     echo $twig->render('admin_homework.twig', [
         'assignments' => $assignments,
+        'all_classes' => $all_classes,
+        'selected_class_ids' => $selected_class_ids,
         'csrf_token' => get_csrf_token(),
         'flash_success' => $_SESSION['flash_success'] ?? null,
         'flash_error' => $_SESSION['flash_error'] ?? null,

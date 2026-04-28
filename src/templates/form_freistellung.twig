@@ -37,9 +37,24 @@
             <label for="classes">Beteiligte Klasse</label>
             <select id="classes" name="classes">
                 <option value="">Keine / Bitte wählen</option>
-                {% for c in all_classes %}
-                    <option value="{{ c.name }}">{{ c.name }}</option>
-                {% endfor %}
+                {% if selected_class_ids|length > 0 %}
+                    <optgroup label="Meine Klassen">
+                        {% for c in all_classes %}
+                            {% if c.id in selected_class_ids %}
+                                <option value="{{ c.name }}">{{ c.name }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </optgroup>
+                    <optgroup label="Alle Klassen">
+                        {% for c in all_classes %}
+                            <option value="{{ c.name }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </optgroup>
+                {% else %}
+                    {% for c in all_classes %}
+                        <option value="{{ c.name }}">{{ c.name }}</option>
+                    {% endfor %}
+                {% endif %}
             </select>
         </div>
 

@@ -66,6 +66,12 @@
                 </a>
             </li>
             
+            <li class="nav-item">
+                <a href="/teacher_feedback.php" class="{{ is_current_page('teacher_feedback.php') ? 'active' : '' }}">
+                    <span class="nav-icon">⚡</span>
+                    <span class="nav-text">Schüler-Feedback</span>
+                </a>
+            </li>
             <li class="nav-label">Anträge</li>
             <li class="nav-item">
                 <a href="/antrag_ausserunterrichtlich.php" class="{{ is_current_page('antrag_ausserunterrichtlich.php') ? 'active' : '' }}">
@@ -92,9 +98,25 @@
             
             <li class="nav-label">Administration</li>
             <li class="nav-item">
-                <a href="/admin_dashboard.php" class="{{ is_current_page('admin_dashboard.php') ? 'active' : '' }}">
-                    <span class="nav-icon">🛡️</span>
-                    <span class="nav-text">Antragsverwaltung</span>
+                <a href="/admin_dashboard.php" class="{{ is_current_page('admin_dashboard.php') ? 'active' : '' }}" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center;">
+                        <span class="nav-icon">🛡️</span>
+                        <span class="nav-text">Antragsverwaltung</span>
+                    </div>
+                    {% if pending_counts.exemption > 0 %}
+                        <span class="badge" style="background-color: var(--danger-color); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.75em; margin-left: 5px;">{{ pending_counts.exemption }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin_aud.php" class="{{ is_current_page('admin_aud.php') ? 'active' : '' }}" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center;">
+                        <span class="nav-icon">🚌</span>
+                        <span class="nav-text">AUD Verwaltung</span>
+                    </div>
+                    {% if pending_counts.aud > 0 %}
+                        <span class="badge" style="background-color: var(--danger-color); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.75em; margin-left: 5px;">{{ pending_counts.aud }}</span>
+                    {% endif %}
                 </a>
             </li>
             <li class="nav-item">
@@ -107,6 +129,12 @@
                 <a href="/admin_klassen.php" class="{{ is_current_page('admin_klassen.php') ? 'active' : '' }}">
                     <span class="nav-icon">🏫</span>
                     <span class="nav-text">Klassenverwaltung</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin_system.php" class="{{ is_current_page('admin_system.php') ? 'active' : '' }}">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">Systemverwaltung</span>
                 </a>
             </li>
             {% endif %}

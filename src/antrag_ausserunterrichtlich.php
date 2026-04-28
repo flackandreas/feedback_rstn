@@ -147,6 +147,11 @@ $stmt_classes = $conn->prepare("SELECT id, name FROM classes ORDER BY name ASC")
 $stmt_classes->execute();
 $all_classes = $stmt_classes->fetchAll();
 
+// Fetch selected classes for this teacher
+$stmt_selected = $conn->prepare("SELECT class_id FROM teacher_classes WHERE teacher_id = ?");
+$stmt_selected->execute([$user_id]);
+$selected_class_ids = $stmt_selected->fetchAll(PDO::FETCH_COLUMN);
+
 $stmt_teachers_full = $conn->prepare("SELECT id, name, kuerzel FROM teachers ORDER BY name ASC");
 $stmt_teachers_full->execute();
 $all_teachers_full = $stmt_teachers_full->fetchAll();
@@ -164,6 +169,7 @@ echo $twig->render('form_ausserunterrichtlich.twig', [
     'edit_request' => $edit_request,
     'all_teachers' => $all_teachers,
     'all_classes' => $all_classes,
+    'selected_class_ids' => $selected_class_ids,
     'all_teachers_full' => $all_teachers_full,
     'current_user_name' => get_current_user_name(),
     'is_admin' => is_current_user_admin(),

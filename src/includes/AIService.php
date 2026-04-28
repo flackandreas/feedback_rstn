@@ -12,16 +12,16 @@ class AIService {
 
     public function __construct() {
         // Lade .env falls vorhanden (für lokale Entwicklung)
-        $envPath = __DIR__ . '/../';
-        if (file_exists($envPath . '.env')) {
+        $envPath = realpath(__DIR__ . '/../');
+        if (file_exists($envPath . '/.env')) {
             $dotenv = Dotenv::createImmutable($envPath);
             $dotenv->load();
         }
 
-        $this->apiKey = $_ENV['GEMINI_API_KEY'] ?? getenv('GEMINI_API_KEY');
+        $this->apiKey = $_ENV['GEMINI_API_KEY'] ?? $_SERVER['GEMINI_API_KEY'] ?? getenv('GEMINI_API_KEY');
 
         if (!$this->apiKey) {
-            throw new \Exception("GEMINI_API_KEY is not set in environment.");
+            throw new \Exception("GEMINI_API_KEY is not set in environment. Path: " . $envPath);
         }
 
         $this->client = new Client([
@@ -30,18 +30,32 @@ class AIService {
         ]);
     }
 
-    public function evaluateHomeworkImage(string $taskDescription, string $imagePath, string $studentPseudonym): array {
-        // Read image and encode to base64
-        if (!file_exists($imagePath)) {
-            throw new \Exception("Image not found: " . $imagePath);
+    public function evaluateHomeworkImage(string $taskDescription, string $studentImagePath, string $studentPseudonym, ?string $contextImagePath = null): array {
+        // Read student image
+        if (!file_exists($studentImagePath)) {
+            throw new \Exception("Student image not found: " . $studentImagePath);
         }
 
-        $mimeType = mime_content_type($imagePath);
-        $imageData = base64_encode(file_get_contents($imagePath));
+        $studentMimeType = mime_content_type($studentImagePath);
+        $studentImageData = base64_encode(file_get_contents($studentImagePath));
+
+        $contextParts = [];
+        if ($contextImagePath && file_exists($contextImagePath)) {
+            $contextMimeType = mime_content_type($contextImagePath);
+            $contextImageData = base64_encode(file_get_contents($contextImagePath));
+            $contextParts[] = ['text' => "Zusätzlicher Kontext (z.B. Musterlösung oder Aufgabenblatt):"];
+            $contextParts[] = [
+                'inline_data' => [
+                    'mime_type' => $contextMimeType,
+                    'data' => $contextImageData
+                ]
+            ];
+        }
 
         $prompt = "Du bist ein erfahrener und ermutigender Lehrer. \n" .
                   "Die Aufgabe lautet: " . $taskDescription . "\n\n" .
-                  "Hier ist die eingereichte Hausaufgabe (als Bild) von Schüler-ID " . $studentPseudonym . ". \n" .
+                  ($contextImagePath ? "Ich habe dir oben auch ein Bild als Kontext (Musterlösung/Aufgabe) beigefügt.\n" : "") .
+                  "Hier ist die eingereichte Hausaufgabe von Schüler " . $studentPseudonym . ". \n" .
                   "Werte diese Hausaufgabe aus und antworte AUSSCHLIESSLICH im JSON-Format mit exakt folgenden Feldern:\n" .
                   "{\n" .
                   "  \"student_feedback\": \"Dein konstruktives, motivierendes Feedback für den Schüler in der Du-Form.\",\n" .
@@ -55,18 +69,20 @@ class AIService {
                   "  ]\n" .
                   "}";
 
+        $parts = [];
+        foreach ($contextParts as $cp) $parts[] = $cp;
+        $parts[] = ['text' => $prompt];
+        $parts[] = [
+            'inline_data' => [
+                'mime_type' => $studentMimeType,
+                'data' => $studentImageData
+            ]
+        ];
+
         $payload = [
             'contents' => [
                 [
-                    'parts' => [
-                        ['text' => $prompt],
-                        [
-                            'inline_data' => [
-                                'mime_type' => $mimeType,
-                                'data' => $imageData
-                            ]
-                        ]
-                    ]
+                    'parts' => $parts
                 ]
             ],
             'generationConfig' => [
@@ -76,7 +92,7 @@ class AIService {
         ];
 
         try {
-            $response = $this->client->post('v1beta/models/gemini-2.5-flash:generateContent?key=' . $this->apiKey, [
+            $response = $this->client->post('v1beta/models/gemini-2.0-flash:generateContent?key=' . $this->apiKey, [
                 'json' => $payload
             ]);
 

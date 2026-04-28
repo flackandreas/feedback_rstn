@@ -59,6 +59,11 @@ $stmt_classes = $conn->prepare("SELECT id, name FROM classes ORDER BY name ASC")
 $stmt_classes->execute();
 $all_classes = $stmt_classes->fetchAll();
 
+// Fetch selected classes for this teacher
+$stmt_selected = $conn->prepare("SELECT class_id FROM teacher_classes WHERE teacher_id = ?");
+$stmt_selected->execute([$user_id]);
+$selected_class_ids = $stmt_selected->fetchAll(PDO::FETCH_COLUMN);
+
 $csrf_token = get_csrf_token();
 $flash_success = $_SESSION['flash_success'] ?? null;
 $flash_error = $_SESSION['flash_error'] ?? null;
@@ -70,6 +75,7 @@ echo $twig->render('form_freistellung.twig', [
     'flash_error' => $flash_error,
     'requests' => $requests,
     'all_classes' => $all_classes,
+    'selected_class_ids' => $selected_class_ids,
     'current_user_name' => get_current_user_name(),
     'is_admin' => is_current_user_admin(),
     'is_logged_in' => true

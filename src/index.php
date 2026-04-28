@@ -44,10 +44,8 @@ try {
     
     $total_queries = (int)$queries_extra + (int)$queries_exempt;
 
-    // Active Feedback Session
-    $stmt_session = $conn->prepare("SELECT * FROM feedback_sessions WHERE teacher_id = ? AND is_active = 1 AND (expires_at IS NULL OR expires_at > NOW()) LIMIT 1");
-    $stmt_session->execute([$user_id]);
-    $active_session = $stmt_session->fetch(PDO::FETCH_ASSOC);
+    // (Feedback Session logic moved to teacher_feedback.php)
+
 
 } catch (PDOException $e) {
     // If table doesn't exist yet, we catch the error gracefully
@@ -59,8 +57,14 @@ try {
     $stmt_classes = $conn->prepare("SELECT id, name FROM classes ORDER BY name ASC");
     $stmt_classes->execute();
     $all_classes = $stmt_classes->fetchAll();
+
+    // Fetch selected classes for this teacher
+    $stmt_selected = $conn->prepare("SELECT class_id FROM teacher_classes WHERE teacher_id = ?");
+    $stmt_selected->execute([$user_id]);
+    $selected_class_ids = $stmt_selected->fetchAll(PDO::FETCH_COLUMN);
 } catch (PDOException $e) {
     $all_classes = [];
+    $selected_class_ids = [];
 }
 
 require_once __DIR__ . '/includes/twig_setup.php';
@@ -77,8 +81,8 @@ echo $twig->render('dashboard.twig', [
     'pending_exemptions' => (int)$pending_exemptions,
     'recent_sick' => (int)$recent_sick,
     'total_queries' => $total_queries ?? 0,
-    'active_session' => $active_session,
     'all_classes' => $all_classes,
+    'selected_class_ids' => $selected_class_ids,
     'host_url' => (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]",
     'is_admin' => is_current_user_admin(),
     'is_logged_in' => true,

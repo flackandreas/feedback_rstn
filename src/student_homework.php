@@ -36,10 +36,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "Bitte lade ein Bild deiner Hausaufgabe hoch.";
     } else {
         $file = $_FILES['homework_image'];
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+        
         $allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
         
-        if (!in_array($file['type'], $allowedTypes)) {
-            $error = "Nur JPG, PNG oder WEBP Bilder sind erlaubt.";
+        if (!in_array($mimeType, $allowedTypes)) {
+            $error = "Nur JPG, PNG oder WEBP Bilder sind erlaubt. Erkannt: " . htmlspecialchars($mimeType);
         } else {
             // Pseudonym generieren
             $pseudonym = 'Student_' . bin2hex(random_bytes(4));
@@ -65,7 +69,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // KI Auswertung
                 try {
                     $aiService = new \App\Includes\AIService();
-                    $eval = $aiService->evaluateHomeworkImage($assignment['description'], $destination, $pseudonym);
+                    $contextPath = !empty($assignment['context_image_path']) ? __DIR__ . '/' . $assignment['context_image_path'] : null;
+                    $eval = $aiService->evaluateHomeworkImage($assignment['description'], $destination, $pseudonym, $contextPath);
                     
                     // Evaluation speichern
                     $error_markers_json = isset($eval['errors']) ? json_encode($eval['errors']) : null;

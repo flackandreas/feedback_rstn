@@ -6,7 +6,8 @@
 
 session_set_cookie_params([
     'httponly' => true,
-    'samesite' => 'Strict'
+    'samesite' => 'Strict',
+    'secure'   => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
 ]);
 session_start();
 

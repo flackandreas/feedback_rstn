@@ -1,57 +1,5 @@
 {% extends "base.twig" %}
 
-{% block extra_head %}
-<style>
-    .qr-modal {
-        display: none;
-        position: fixed;
-        z-index: 9999;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0,0,0,0.85);
-        backdrop-filter: blur(5px);
-        justify-content: center;
-        align-items: center;
-        cursor: zoom-out;
-        transition: all 0.3s ease;
-    }
-    .qr-modal-content {
-        background-color: white;
-        padding: 30px;
-        border-radius: 12px;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-        text-align: center;
-        max-width: 90%;
-        max-height: 90%;
-        transform: scale(0.8);
-        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .qr-modal.active {
-        display: flex;
-    }
-    .qr-modal.active .qr-modal-content {
-        transform: scale(1);
-    }
-    .qr-large {
-        width: 100%;
-        max-width: 500px;
-        height: auto;
-        border: 15px solid white;
-    }
-    .close-modal {
-        position: absolute;
-        top: 20px;
-        right: 30px;
-        color: white;
-        font-size: 40px;
-        font-weight: bold;
-        cursor: pointer;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: center;">
     <h1>Willkommen, {{ current_user_name }}</h1>
@@ -75,7 +23,6 @@
     </div>
 </div>
 
-
 <div class="content-box" style="margin-top: 30px;">
     <h2>Schnellzugriff</h2>
     
@@ -95,140 +42,60 @@
             <span style="color: var(--text-dark); margin: 0; align-self: center;">Neue Meldung:<br>Krankmeldung</span>
         </a>
 
+        <a href="/teacher_feedback.php" class="kpi-box" style="text-decoration: none; cursor: pointer; border-left: 5px solid #3498db;">
+            <div style="font-size: 2em; margin-bottom: 15px;">⚡</div>
+            <span style="color: var(--text-dark); margin: 0; align-self: center;">Sitzung:<br>Schüler-Feedback</span>
+        </a>
+
         <a href="/admin_homework.php" class="kpi-box" style="text-decoration: none; cursor: pointer; border-left: 5px solid #2ecc71;">
             <div style="font-size: 2em; margin-bottom: 15px;">📚</div>
             <span style="color: var(--text-dark); margin: 0; align-self: center;">KI-Auswertung:<br>Hausaufgaben</span>
         </a>
+
+        <div onclick="openClassesModal()" class="kpi-box" style="text-decoration: none; cursor: pointer; border-left: 5px solid #9b59b6;">
+            <div style="font-size: 2em; margin-bottom: 15px;">🏫</div>
+            <span style="color: var(--text-dark); margin: 0; align-self: center;">Meine Klassen<br>auswählen</span>
+        </div>
     </div>
 </div>
 
-<div class="content-box" style="margin-top: 30px; border-top: 4px solid var(--primary-color);">
-    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-        <div>
-            <h2 style="margin-top: 0;">⚡ Schüler-Feedback</h2>
-            <p style="color: var(--text-muted);">Starten Sie eine Live-Feedback-Runde für Ihre aktuelle Stunde.</p>
-        </div>
-        {% if active_session %}
-            <span class="badge" style="background-color: var(--success-color); color: white; padding: 5px 10px; border-radius: 4px;">Sitzung Aktiv</span>
-        {% endif %}
-    </div>
-
-    {% if active_session %}
-        <div style="display: flex; gap: 30px; align-items: center; background: #f9f9f9; padding: 20px; border-radius: 8px;">
-            <div style="text-align: center;">
-                {# Using a public QR generator for the demo link #}
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ (host_url ~ '/student_feedback.php?t=' ~ active_session.token)|url_encode }}" 
-                     alt="QR Code" 
-                     style="border: 10px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;"
-                     onclick="openQRModal()"
-                     onmouseover="this.style.transform='scale(1.05)'"
-                     onmouseout="this.style.transform='scale(1)'">
-                <div style="margin-top: 10px; font-size: 0.8em; color: var(--text-muted);">Scan mich!</div>
-            </div>
-            <div style="flex: 1;">
-                <h3 style="margin: 0 0 10px 0;">{{ active_session.klasse }} - {{ active_session.fach }}</h3>
-                <p style="margin: 0 0 20px 0; font-size: 0.9em;">Schüler können jetzt unter folgendem Link abstimmen:</p>
-                <code style="display: block; background: #eee; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 0.8em;">{{ host_url }}/student_feedback.php?t={{ active_session.token }}</code>
-                
-                <form action="/feedback_action.php" method="POST">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <input type="hidden" name="action" value="stop">
-                    <button type="submit" class="btn btn-danger" style="background-color: var(--danger-color); color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Sitzung Beenden</button>
-                    <a href="/feedback_view.php?id={{ active_session.id }}" class="btn" style="margin-left: 10px; text-decoration: none; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 9px 20px; border-radius: 4px;">Ergebnisse ansehen</a>
-                </form>
-            </div>
-        </div>
-    {% else %}
-        <form action="/feedback_action.php" method="POST" style="background: #f9f9f9; padding: 25px; border-radius: 8px;">
+{# Class Selection Modal #}
+<div id="classesModal" class="qr-modal" onclick="closeClassesModal()">
+    <div class="qr-modal-content" onclick="event.stopPropagation()" style="text-align: left; max-width: 500px;">
+        <h2 style="margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 15px;">Meine Klassen auswählen</h2>
+        <p style="color: var(--text-muted); font-size: 0.9em; margin-bottom: 20px;">Wählen Sie die Klassen aus, für die Sie zuständig sind. Dies filtert Ihre Ansichten.</p>
+        
+        <form action="/profile_action.php" method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="action" value="start">
+            <input type="hidden" name="action" value="update_classes">
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
-                <div class="form-group" style="margin: 0;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Klasse</label>
-                    <select name="klasse" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; background-color: white;">
-                        <option value="">Bitte wählen</option>
-                        {% for c in all_classes %}
-                            <option value="{{ c.name }}">{{ c.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group" style="margin: 0;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Fach</label>
-                    <input type="text" name="fach" placeholder="z.B. Mathe" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px;">
-                </div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-height: 300px; overflow-y: auto; padding: 10px; background: #fdfdfd; border: 1px solid #eee; border-radius: 8px;">
+                {% for c in all_classes %}
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 5px; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">
+                        <input type="checkbox" name="classes[]" value="{{ c.id }}" {% if c.id in selected_class_ids %}checked{% endif %}>
+                        <span style="font-weight: 500;">{{ c.name }}</span>
+                    </label>
+                {% endfor %}
             </div>
 
-            <div id="questions-container">
-                <label style="display: block; margin-bottom: 12px; font-weight: 600;">Fragen festlegen</label>
-                <div class="question-row" style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <input type="text" name="questions[]" value="Wie war die heutige Stunde?" required style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
-                    <button type="button" onclick="this.parentElement.remove()" style="background: #ff7675; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer;">✕</button>
-                </div>
-                <div class="question-row" style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <input type="text" name="questions[]" value="Wie ist aktuell das Klassenklima?" required style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
-                    <button type="button" onclick="this.parentElement.remove()" style="background: #ff7675; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer;">✕</button>
-                </div>
-            </div>
-
-            <button type="button" onclick="addQuestion()" style="background: #eee; border: 1px dashed #ccc; width: 100%; padding: 10px; border-radius: 6px; cursor: pointer; margin-bottom: 25px; color: #666;">+ Weitere Frage hinzufügen</button>
-
-            <div style="text-align: right;">
-                <button type="submit" class="btn btn-primary" style="background-color: var(--primary-color); color: white; border: none; padding: 12px 30px; border-radius: 6px; cursor: pointer; font-weight: 600;">Sitzung erstellen & QR-Code generieren</button>
+            <div style="margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeClassesModal()" class="btn" style="background: #eee; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Abbrechen</button>
+                <button type="submit" class="btn btn-primary" style="background: var(--primary-color); color: white; border: none; padding: 10px 25px; border-radius: 6px; cursor: pointer; font-weight: 600;">Speichern</button>
             </div>
         </form>
-
-        <script>
-        function addQuestion() {
-            const container = document.getElementById('questions-container');
-            const div = document.createElement('div');
-            div.className = 'question-row';
-            div.style.display = 'flex';
-            div.style.gap = '10px';
-            div.style.marginBottom = '10px';
-            div.innerHTML = `
-                <input type="text" name="questions[]" placeholder="Eigene Frage eingeben..." required style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
-                <button type="button" onclick="this.parentElement.remove()" style="background: #ff7675; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer;">✕</button>
-            `;
-            container.appendChild(div);
-        }
-        </script>
-    {% endif %}
-</div>
-
-
-{% if active_session %}
-<div id="qrModal" class="qr-modal" onclick="closeQRModal()">
-    <span class="close-modal">&times;</span>
-    <div class="qr-modal-content" onclick="event.stopPropagation()">
-        <h2 style="margin-top: 0; color: var(--primary-color);">{{ active_session.klasse }} - {{ active_session.fach }}</h2>
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data={{ (host_url ~ '/student_feedback.php?t=' ~ active_session.token)|url_encode }}" class="qr-large" alt="QR Code Large">
-        <p style="margin-top: 20px; font-weight: 600; font-size: 1.2em;">Scan mich für Feedback!</p>
-        <code style="display: block; background: #f0f0f0; padding: 10px; border-radius: 4px; font-size: 0.9em; margin-top: 10px;">{{ host_url }}/student_feedback.php?t={{ active_session.token }}</code>
     </div>
 </div>
 
 <script>
-function openQRModal() {
-    const modal = document.getElementById('qrModal');
-    modal.classList.add('active');
-    document.body.style.overflow = 'hidden'; // Prevent scrolling
+function openClassesModal() {
+    document.getElementById('classesModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
 }
-
-function closeQRModal() {
-    const modal = document.getElementById('qrModal');
-    modal.classList.remove('active');
-    document.body.style.overflow = 'auto'; // Restore scrolling
+function closeClassesModal() {
+    document.getElementById('classesModal').classList.remove('active');
+    document.body.style.overflow = 'auto';
 }
-
-// Close on Escape key
-document.addEventListener('keydown', function(event) {
-    if (event.key === "Escape") {
-        closeQRModal();
-    }
-});
 </script>
-{% endif %}
 
 {% if total_queries > 0 %}
 <script>

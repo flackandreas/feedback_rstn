@@ -23,13 +23,33 @@
 
 <div class="content-box" style="margin-bottom: 30px; border-top: 4px solid #2ecc71;">
     <h2 style="margin-top: 0;">Neue Hausaufgabe erstellen</h2>
-    <form action="/admin_homework.php?action=create" method="POST">
+    <form action="/admin_homework.php?action=create" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px;">
             <div class="form-group" style="margin: 0;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 600;">Klasse</label>
-                <input type="text" name="klasse" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                <select name="klasse" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background-color: white;">
+                    <option value="">Bitte wählen</option>
+                    {% if selected_class_ids|length > 0 %}
+                        <optgroup label="Meine Klassen">
+                            {% for c in all_classes %}
+                                {% if c.id in selected_class_ids %}
+                                    <option value="{{ c.name }}">{{ c.name }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </optgroup>
+                        <optgroup label="Alle Klassen">
+                            {% for c in all_classes %}
+                                <option value="{{ c.name }}">{{ c.name }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    {% else %}
+                        {% for c in all_classes %}
+                            <option value="{{ c.name }}">{{ c.name }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
             </div>
             <div class="form-group" style="margin: 0;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 600;">Fach</label>
@@ -42,9 +62,15 @@
             <input type="text" name="title" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;" placeholder="z.B. S. 14 Nr. 3a">
         </div>
 
-        <div class="form-group" style="margin-bottom: 25px;">
+        <div class="form-group" style="margin-bottom: 15px;">
             <label style="display: block; margin-bottom: 8px; font-weight: 600;">Aufgabenstellung / Kontext für die KI</label>
             <textarea name="description" required rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;" placeholder="Beschreibe kurz die Aufgabe, damit die KI weiß, worauf sie bei der Auswertung achten muss..."></textarea>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 25px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Kontext-Bild (Lösung, Muster oder Aufgabenblatt)</label>
+            <input type="file" name="context_image" accept="image/*" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #fff;">
+            <p style="color: var(--text-muted); font-size: 0.85em; margin-top: 5px;">Optional: Ein Bild der Musterlösung hilft der KI, die Schülerantworten präziser zu bewerten.</p>
         </div>
 
         <div style="text-align: right;">

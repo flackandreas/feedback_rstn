@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $context_image_path = null;
         if (isset($_FILES['context_image']) && $_FILES['context_image']['error'] === UPLOAD_ERR_OK) {
-            $uploadDir = __DIR__ . '/uploads/context/';
+            $uploadDir = __DIR__ . '/public/uploads/context/';
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0777, true);
             }
@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($submission) {
             // Delete file from disk
-            $file_path = __DIR__ . '/../' . $submission['image_path'];
+            $file_path = __DIR__ . '/public/' . $submission['image_path'];
             if (file_exists($file_path)) {
                 unlink($file_path);
             }

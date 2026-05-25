@@ -5,6 +5,8 @@ db-data/
 .env
 .env.*
 *.secret
+Oauth/*.json
+
 
 # Logs
 *.log

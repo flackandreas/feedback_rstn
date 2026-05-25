@@ -44,7 +44,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $allowed_types = ['application/pdf', 'image/jpeg', 'image/png'];
             if (in_array($_FILES['attachment']['type'], $allowed_types)) {
                 $filename = uniqid('au_') . '_' . basename($_FILES['attachment']['name']);
-                $upload_dir = __DIR__ . '/uploads/';
+                $upload_dir = __DIR__ . '/public/uploads/';
                 if (move_uploaded_file($_FILES['attachment']['tmp_name'], $upload_dir . $filename)) {
                     $attachment_path = 'uploads/' . $filename;
                 }

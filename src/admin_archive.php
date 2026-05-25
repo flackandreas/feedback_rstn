@@ -14,7 +14,7 @@ $year = (int)($_GET['year'] ?? date('Y', strtotime('-1 month'))); // Default to 
 
 if ($action === 'export') {
     $archive_name = "Jahresabschluss_" . $year . "_" . date('Ymd_His');
-    $tmp_dir = __DIR__ . "/uploads/" . $archive_name;
+    $tmp_dir = __DIR__ . "/public/uploads/" . $archive_name;
     
     if (!is_dir($tmp_dir)) mkdir($tmp_dir, 0777, true);
     if (!is_dir($tmp_dir . "/Krankmeldungen")) mkdir($tmp_dir . "/Krankmeldungen");
@@ -30,8 +30,8 @@ if ($action === 'export') {
     $csv = "ID;Lehrer_ID;Von;Bis;Notizen;Material;Anhang;Erstellt_am\n";
     foreach ($data as $r) {
         $csv .= implode(';', array_values($r)) . "\n";
-        if (!empty($r['attachment_path']) && file_exists(__DIR__ . '/' . $r['attachment_path'])) {
-            copy(__DIR__ . '/' . $r['attachment_path'], $tmp_dir . "/Anhaenge/" . basename($r['attachment_path']));
+        if (!empty($r['attachment_path']) && file_exists(__DIR__ . '/public/' . $r['attachment_path'])) {
+            copy(__DIR__ . '/public/' . $r['attachment_path'], $tmp_dir . "/Anhaenge/" . basename($r['attachment_path']));
         }
     }
     file_put_contents($tmp_dir . "/Krankmeldungen/krankmeldungen_$year.csv", "\xEF\xBB\xBF" . $csv);
@@ -68,7 +68,7 @@ if ($action === 'export') {
 
     // Create Archive using tar (fallback for ZipArchive)
     $archive_file = $archive_name . ".tar.gz";
-    $archive_path = __DIR__ . "/uploads/" . $archive_file;
+    $archive_path = __DIR__ . "/public/uploads/" . $archive_file;
     
     $cmd = "tar -czf " . escapeshellarg($archive_path) . " -C " . escapeshellarg($tmp_dir) . " .";
     shell_exec($cmd);

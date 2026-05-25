@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pseudonym = 'Student_' . bin2hex(random_bytes(4));
             
             // Upload Verzeichnis sichern
-            $uploadDir = __DIR__ . '/uploads/homework/';
+            $uploadDir = __DIR__ . '/public/uploads/homework/';
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0777, true);
             }
@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // KI Auswertung
                 try {
                     $aiService = new \App\Includes\AIService();
-                    $contextPath = !empty($assignment['context_image_path']) ? __DIR__ . '/' . $assignment['context_image_path'] : null;
+                    $contextPath = !empty($assignment['context_image_path']) ? __DIR__ . '/public/' . $assignment['context_image_path'] : null;
                     $eval = $aiService->evaluateHomeworkImage($assignment['description'], $destination, $pseudonym, $contextPath);
                     
                     // Evaluation speichern

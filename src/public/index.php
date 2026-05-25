@@ -45,10 +45,8 @@ $routes = [
 // Fallback for legacy .php requests or exact matches
 if (array_key_exists($request, $routes)) {
     $file = $routes[$request];
-} elseif (file_exists(__DIR__ . '/../' . $request . '.php')) {
-    $file = $request . '.php';
-} elseif (file_exists(__DIR__ . '/../' . $request) && is_file(__DIR__ . '/../' . $request)) {
-    // Serve static files if not caught by Apache (though Apache should catch them)
+} elseif (preg_match('/^[a-zA-Z0-9_-]+\.php$/', $request) && file_exists(__DIR__ . '/../' . $request)) {
+    // Securely allow direct access to root-level PHP controllers only (no directory traversal, no subdirectories like config/ or vendor/)
     $file = $request;
 } else {
     $file = 'index.php'; // Default fallback

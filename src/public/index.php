@@ -14,7 +14,8 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
     header("Strict-Transport-Security: max-age=31536000; includeSubDomains");
 }
 // Content-Security-Policy (Base)
-header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self';");
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://api.qrserver.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self';");
+
 
 // 2. Routing
 $request = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);

@@ -177,11 +177,20 @@
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         {% if flash_success %}
-        Swal.fire({
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer);
+                toast.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        });
+        Toast.fire({
             icon: 'success',
-            title: 'Erfolg!',
-            text: '{{ flash_success|escape('js') }}',
-            confirmButtonColor: 'var(--success-color)'
+            title: '{{ flash_success|escape('js') }}'
         });
         {% endif %}
         

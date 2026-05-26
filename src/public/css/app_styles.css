@@ -1242,3 +1242,13 @@ body.dark-mode .danger-option {
     font-weight: bold;
     cursor: pointer;
 }
+
+/* Responsive Table Layout for mobile screens */
+@media (max-width: 768px) {
+    .data-table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}

@@ -129,7 +129,18 @@
                 </div>
             </div>
 
-            <div id="questions-container">
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Vorlage laden</label>
+                <select id="template-select" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; background-color: white;">
+                    <option value="default" data-klasse="" data-fach="" data-questions='["Wie war die heutige Stunde?", "Wie ist aktuell das Klassenklima?"]'>Standard-Fragen (2 Fragen)</option>
+                    <option value="empty" data-klasse="" data-fach="" data-questions='[]'>Leere Fragenliste</option>
+                    {% for t in templates %}
+                        <option value="{{ t.id }}" data-klasse="{{ t.klasse|escape('html_attr') }}" data-fach="{{ t.fach|escape('html_attr') }}" data-questions="{{ t.questions|json_encode|escape('html_attr') }}">{{ t.title }} ({{ t.question_count }} {{ t.question_count == 1 ? 'Frage' : 'Fragen' }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="questions-container" style="margin-bottom: 15px;">
                 <label style="display: block; margin-bottom: 12px; font-weight: 600;">Fragen festlegen</label>
                 <div class="question-row" style="display: flex; gap: 10px; margin-bottom: 10px;">
                     <input type="text" name="questions[]" value="Wie war die heutige Stunde?" required style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
@@ -143,12 +154,47 @@
 
             <button type="button" onclick="addQuestion()" style="background: #eee; border: 1px dashed #ccc; width: 100%; padding: 10px; border-radius: 6px; cursor: pointer; margin-bottom: 25px; color: #666;">+ Weitere Frage hinzufügen</button>
 
+            <div style="margin-bottom: 25px; padding: 15px; background: #fff; border: 1px solid #eee; border-radius: 6px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600;">
+                    <input type="checkbox" id="save-as-template-checkbox" name="save_template" value="1" onchange="toggleTemplateTitle(this.checked)">
+                    <span>Aktuelle Fragen als Vorlage speichern</span>
+                </label>
+                <div id="template-title-container" style="display: none; margin-top: 15px;">
+                    <label style="display: block; margin-bottom: 8px; font-size: 0.9em; color: var(--text-muted);">Name der Vorlage</label>
+                    <input type="text" name="template_title" id="template-title-input" placeholder="z.B. Feedback zum Projektunterricht" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                </div>
+            </div>
+
             <div style="text-align: right;">
                 <button type="submit" class="btn btn-primary" style="background-color: var(--primary-color); color: white; border: none; padding: 12px 30px; border-radius: 6px; cursor: pointer; font-weight: 600;">Sitzung erstellen & QR-Code generieren</button>
             </div>
         </form>
     {% endif %}
 </div>
+
+{% if templates is not empty %}
+<div class="content-box" style="margin-top: 30px;">
+    <h3 style="margin-top: 0;">Meine Vorlagen verwalten</h3>
+    <p style="color: var(--text-muted); font-size: 0.9em; margin-bottom: 15px;">Hier können Sie Ihre gespeicherten Vorlagen löschen.</p>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;">
+        {% for t in templates %}
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong style="display: block; color: var(--text-dark);">{{ t.title }}</strong>
+                    <span style="font-size: 0.85em; color: var(--text-muted);">{{ t.question_count }} {{ t.question_count == 1 ? 'Frage' : 'Fragen' }}</span>
+                </div>
+                <form action="/feedback_action.php" method="POST" onsubmit="return confirm('Möchten Sie diese Vorlage wirklich löschen?');" style="margin: 0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="action" value="delete_template">
+                    <input type="hidden" name="template_id" value="{{ t.id }}">
+                    <button type="submit" class="btn-danger" style="background-color: var(--danger-color); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85em;">Löschen</button>
+                </form>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
 {% if active_session %}
 <div id="qrModal" class="qr-modal" onclick="closeQRModal()">
@@ -167,18 +213,78 @@
 {% block extra_scripts %}
 <script>
 function addQuestion() {
+    addQuestionWithText('');
+}
+
+function addQuestionWithText(text = '') {
     const container = document.getElementById('questions-container');
+    if (!container) return;
     const div = document.createElement('div');
     div.className = 'question-row';
     div.style.display = 'flex';
     div.style.gap = '10px';
     div.style.marginBottom = '10px';
     div.innerHTML = `
-        <input type="text" name="questions[]" placeholder="Eigene Frage eingeben..." required style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+        <input type="text" name="questions[]" value="${escapeHtml(text)}" placeholder="Eigene Frage eingeben..." required style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
         <button type="button" onclick="this.parentElement.remove()" style="background: #ff7675; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer;">✕</button>
     `;
     container.appendChild(div);
 }
+
+function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+function toggleTemplateTitle(checked) {
+    const container = document.getElementById('template-title-container');
+    const input = document.getElementById('template-title-input');
+    if (container && input) {
+        container.style.display = checked ? 'block' : 'none';
+        input.required = checked;
+        if (!checked) input.value = '';
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    const templateSelect = document.getElementById('template-select');
+    if (templateSelect) {
+        templateSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            
+            // Populate class and subject
+            const klasse = selectedOption.getAttribute('data-klasse') || '';
+            const fach = selectedOption.getAttribute('data-fach') || '';
+            const klasseSelect = document.querySelector('select[name="klasse"]');
+            const fachInput = document.querySelector('input[name="fach"]');
+            
+            if (klasseSelect && klasse !== '') {
+                klasseSelect.value = klasse;
+            }
+            if (fachInput && fach !== '') {
+                fachInput.value = fach;
+            }
+            
+            // Populate questions
+            const questionsJson = selectedOption.getAttribute('data-questions');
+            const questions = JSON.parse(questionsJson || '[]');
+            
+            const container = document.getElementById('questions-container');
+            if (container) {
+                // Remove all current question-row elements
+                const rows = container.querySelectorAll('.question-row');
+                rows.forEach(row => row.remove());
+                
+                if (questions.length === 0) {
+                    addQuestionWithText(''); // At least one empty row
+                } else {
+                    questions.forEach(qText => {
+                        addQuestionWithText(qText);
+                    });
+                }
+            }
+        });
+    }
+});
 
 function openQRModal() {
     const modal = document.getElementById('qrModal');

@@ -21,6 +21,21 @@ $stmt_filters = $conn->prepare("SELECT DISTINCT klasse, fach FROM feedback_sessi
 $stmt_filters->execute([$teacher_id]);
 $filters = $stmt_filters->fetchAll(PDO::FETCH_ASSOC);
 
+$unique_classes = [];
+$unique_subjects = [];
+foreach ($filters as $f) {
+    if (!empty($f['klasse'])) {
+        $unique_classes[] = $f['klasse'];
+    }
+    if (!empty($f['fach'])) {
+        $unique_subjects[] = $f['fach'];
+    }
+}
+$unique_classes = array_values(array_unique($unique_classes));
+$unique_subjects = array_values(array_unique($unique_subjects));
+sort($unique_classes);
+sort($unique_subjects);
+
 // Fetch average scores per session grouped by question
 $query = "
     SELECT 
@@ -62,10 +77,27 @@ foreach ($raw_history as $row) {
 }
 $history = array_values($history);
 
+// Group history by class and subject for the charts
+$grouped_history = [];
+foreach ($history as $session) {
+    $group_key = $session['klasse'] . ' - ' . $session['fach'];
+    if (!isset($grouped_history[$group_key])) {
+        $grouped_history[$group_key] = [
+            'klasse' => $session['klasse'],
+            'fach' => $session['fach'],
+            'sessions' => []
+        ];
+    }
+    $grouped_history[$group_key]['sessions'][] = $session;
+}
+
 require_once __DIR__ . '/includes/twig_setup.php';
 
 echo $twig->render('feedback_trends.twig', [
     'history' => $history,
+    'grouped_history' => $grouped_history,
+    'unique_classes' => $unique_classes,
+    'unique_subjects' => $unique_subjects,
     'filters' => $filters,
     'current_klasse' => $klasse,
     'current_fach' => $fach,

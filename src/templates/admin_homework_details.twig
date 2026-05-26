@@ -58,42 +58,53 @@
         <p style="color: var(--text-muted); font-size: 1.1em;">Bisher wurden noch keine Hausaufgaben eingereicht.</p>
     </div>
 {% else %}
-    <div id="submissions-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
-        {% for sub in submissions %}
-        <div class="submission-card content-box" data-name="{{ sub.student_name }}" data-date="{{ sub.created_at|date('U') }}" data-score="{{ sub.score ?? -1 }}" data-status="{{ sub.status }}" style="padding: 20px; border-top: 4px solid {% if sub.status == 'evaluated' %}#2ecc71{% else %}#f1c40f{% endif %};">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
-                <div>
-                    <h3 style="margin: 0;">{{ sub.student_name }}</h3>
-                    <span style="font-size: 0.8em; color: var(--text-muted);">{{ sub.created_at|date('d.m.Y H:i') }}</span>
-                </div>
-                <form action="/admin_homework.php?action=delete_sub" method="POST" class="delete-form" style="margin: 0;">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <input type="hidden" name="submission_id" value="{{ sub.id }}">
-                    <input type="hidden" name="assignment_id" value="{{ assignment.id }}">
-                    <button type="button" class="btn-delete" style="background: none; border: none; color: var(--danger-color); cursor: pointer; font-size: 1.2em; padding: 0;" title="Einreichung löschen">🗑️</button>
-                </form>
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <a href="/{{ sub.image_path }}" target="_blank" style="display: block; width: 100%; height: 150px; background-color: #eee; background-image: url('/{{ sub.image_path }}'); background-size: cover; background-position: center; border-radius: 4px;"></a>
-            </div>
-
-            {% if sub.status == 'evaluated' %}
-                <div style="background: #f8fafc; padding: 10px; border-radius: 4px; font-size: 0.9em; margin-bottom: 10px;">
-                    <strong style="color: var(--danger-color); display: block; margin-bottom: 5px;">⚠️ Lernschwierigkeiten (Für Lehrkraft)</strong>
-                    <div style="white-space: pre-wrap;">{{ sub.teacher_notes }}</div>
-                </div>
-                {% if sub.score is not null %}
-                    <div style="text-align: right; font-weight: bold; color: var(--primary-color);">Punkte: {{ sub.score }}</div>
-                {% endif %}
-            {% else %}
-                <div style="text-align: center; padding: 10px; color: var(--warning-color); font-weight: 600;">
-                    ⏳ Auswertung läuft...
-                </div>
-            {% endif %}
+    <form action="/admin_homework.php?action=delete_submissions_bulk" method="POST" id="bulk-delete-details-form" style="margin: 0;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="assignment_id" value="{{ assignment.id }}">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #f8fafc; padding: 10px 15px; border-radius: 6px; border: 1px solid var(--border-color);">
+            <label style="display: flex; align-items: center; font-weight: 600; cursor: pointer; user-select: none; margin: 0; font-size: 0.95em;">
+                <input type="checkbox" id="select-all-details" style="margin-right: 8px; width: 18px; height: 18px; cursor: pointer;">
+                Alle auswählen
+            </label>
+            <button type="submit" id="bulk-delete-details-btn" class="button-danger" style="padding: 6px 12px; font-size: 0.85em; display: none; font-weight: 600;" onclick="return confirmDetailsBulkDelete(event)">Ausgewählte löschen</button>
         </div>
-        {% endfor %}
-    </div>
+
+        <div id="submissions-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+            {% for sub in submissions %}
+            <div class="submission-card content-box" data-name="{{ sub.student_name }}" data-date="{{ sub.created_at|date('U') }}" data-score="{{ sub.score ?? -1 }}" data-status="{{ sub.status }}" style="padding: 20px; margin: 0; border-top: 4px solid {% if sub.status == 'evaluated' %}#2ecc71{% else %}#f1c40f{% endif %}; box-shadow: var(--shadow-soft);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: flex-start; max-width: 85%;">
+                        <input type="checkbox" name="submission_ids[]" value="{{ sub.id }}" class="sub-detail-checkbox" style="margin-right: 10px; width: 18px; height: 18px; cursor: pointer; margin-top: 2px; flex-shrink: 0;">
+                        <div style="overflow: hidden;">
+                            <h3 style="margin: 0; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">{{ sub.student_name }}</h3>
+                            <span style="font-size: 0.8em; color: var(--text-muted);">{{ sub.created_at|date('d.m.Y H:i') }}</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-delete-single" data-id="{{ sub.id }}" style="background: none; border: none; color: var(--danger-color); cursor: pointer; font-size: 1.2em; padding: 0; flex-shrink: 0;" title="Einreichung löschen">🗑️</button>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <a href="/{{ sub.image_path }}" target="_blank" style="display: block; width: 100%; height: 150px; background-color: #eee; background-image: url('/{{ sub.image_path }}'); background-size: cover; background-position: center; border-radius: 4px; border: 1px solid var(--border-color);" title="Bild in neuem Tab öffnen"></a>
+                </div>
+
+                {% if sub.status == 'evaluated' %}
+                    <div style="background: #f8fafc; padding: 10px; border-radius: 4px; font-size: 0.9em; margin-bottom: 10px; border: 1px solid var(--border-color);">
+                        <strong style="color: var(--danger-color); display: block; margin-bottom: 5px;">⚠️ Lernschwierigkeiten (Für Lehrkraft)</strong>
+                        <div style="white-space: pre-wrap;">{{ sub.teacher_notes }}</div>
+                    </div>
+                    {% if sub.score is not null %}
+                        <div style="text-align: right; font-weight: bold; color: var(--primary-color);">Punkte: {{ sub.score }}</div>
+                    {% endif %}
+                {% else %}
+                    <div style="text-align: center; padding: 10px; color: var(--warning-color); font-weight: 600;">
+                        ⏳ Auswertung läuft...
+                    </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </form>
 {% endif %}
 
 {% endblock %}
@@ -101,11 +112,10 @@
 {% block extra_scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // Delete Confirmation
-    document.querySelectorAll('.btn-delete').forEach(btn => {
+    // Single Delete Trigger via JavaScript (avoids nested forms)
+    document.querySelectorAll('.btn-delete-single').forEach(btn => {
         btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const form = this.closest('form');
+            const submissionId = this.dataset.id;
             Swal.fire({
                 title: 'Einreichung löschen?',
                 text: "Diese Aktion kann nicht rückgängig gemacht werden. Das hochgeladene Bild und die Bewertung werden endgültig gelöscht.",
@@ -117,11 +127,46 @@ document.addEventListener('DOMContentLoaded', () => {
                 cancelButtonText: 'Abbrechen'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    form.submit();
+                    // Uncheck all checkboxes, check only this one, and submit bulk delete form
+                    document.querySelectorAll('.sub-detail-checkbox').forEach(cb => cb.checked = false);
+                    const cb = document.querySelector('.sub-detail-checkbox[value="' + submissionId + '"]');
+                    if (cb) cb.checked = true;
+                    document.getElementById('bulk-delete-details-form').submit();
                 }
             });
         });
     });
+
+    // Select All Checkbox for Details View
+    const selectAllDetails = document.getElementById('select-all-details');
+    if (selectAllDetails) {
+        selectAllDetails.addEventListener('change', function() {
+            const checkBoxes = document.querySelectorAll('.sub-detail-checkbox');
+            checkBoxes.forEach(cb => cb.checked = this.checked);
+            updateDetailsBulkDeleteButton();
+        });
+    }
+
+    // Individual Checkbox Handler for Details View
+    document.querySelectorAll('.sub-detail-checkbox').forEach(cb => {
+        cb.addEventListener('change', function() {
+            const selectAll = document.getElementById('select-all-details');
+            const total = document.querySelectorAll('.sub-detail-checkbox').length;
+            const checked = document.querySelectorAll('.sub-detail-checkbox:checked').length;
+            if (selectAll) {
+                selectAll.checked = (total === checked);
+            }
+            updateDetailsBulkDeleteButton();
+        });
+    });
+
+    function updateDetailsBulkDeleteButton() {
+        const checkedCount = document.querySelectorAll('.sub-detail-checkbox:checked').length;
+        const btn = document.getElementById('bulk-delete-details-btn');
+        if (btn) {
+            btn.style.display = checkedCount > 0 ? 'inline-block' : 'none';
+        }
+    }
 
     const grid = document.getElementById('submissions-grid');
     if (!grid) return;
@@ -182,8 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 groups[groupKey].push(card);
             });
             
-            // Order logic for keys could be improved, but JS object keys maintain insertion order for strings.
-            // Let's sort keys if they are strings like "Sehr Gut" etc. to be safe.
             const orderScores = { 'Sehr Gut (90-100)':1, 'Gut (75-89)':2, 'Befriedigend/Ausreichend (50-74)':3, 'Förderbedarf (<50)':4, 'Ohne Bewertung':5 };
             const orderStatus = { 'Ausgewertet':1, 'Ausstehend (Auswertung läuft)':2 };
             
@@ -216,5 +259,29 @@ document.addEventListener('DOMContentLoaded', () => {
     if(sortSelect) sortSelect.addEventListener('change', updateGrid);
     if(groupSelect) groupSelect.addEventListener('change', updateGrid);
 });
+
+function confirmDetailsBulkDelete(event) {
+    event.preventDefault();
+    const form = document.getElementById('bulk-delete-details-form');
+    const checkedCount = document.querySelectorAll('.sub-detail-checkbox:checked').length;
+    
+    if (checkedCount === 0) return false;
+
+    Swal.fire({
+        title: checkedCount + ' Einreichung(en) löschen?',
+        text: "Diese Aktion kann nicht rückgängig gemacht werden. Die hochgeladenen Bilder und Bewertungen werden endgültig gelöscht.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--danger-color)',
+        cancelButtonColor: 'var(--text-muted)',
+        confirmButtonText: 'Ja, löschen',
+        cancelButtonText: 'Abbrechen'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            form.submit();
+        }
+    });
+    return false;
+}
 </script>
 {% endblock %}

@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $csrf_token = $_POST['csrf_token'] ?? '';
     if (!verify_csrf_token($csrf_token)) {
         $_SESSION['flash_error'] = "Sicherheitsfehler: Ungültiger Token. Bitte laden Sie die Seite neu.";
-        header("Location: /index.php");
+        header("Location: /teacher_feedback.php");
         exit;
     }
 
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         
         if (empty($klasse) || empty($fach)) {
             $_SESSION['flash_error'] = "Bitte Klasse und Fach angeben.";
-            header("Location: /index.php");
+            header("Location: /teacher_feedback.php");
             exit;
         }
         
@@ -57,7 +57,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
         }
         
-        $_SESSION['flash_success'] = "Feedback-Sitzung für $klasse ($fach) gestartet.";
+        // Check if user wants to save this as a template
+        $save_template = !empty($_POST['save_template']);
+        $template_title = trim($_POST['template_title'] ?? '');
+
+        if ($save_template && !empty($template_title)) {
+            try {
+                // Insert template
+                $stmt_t = $conn->prepare("INSERT INTO feedback_templates (teacher_id, title, klasse, fach) VALUES (?, ?, ?, ?)");
+                $stmt_t->execute([$teacher_id, $template_title, $klasse, $fach]);
+                $new_template_id = $conn->lastInsertId();
+                
+                // Insert template questions
+                $stmt_tq = $conn->prepare("INSERT INTO feedback_template_questions (template_id, question_text, sort_order) VALUES (?, ?, ?)");
+                foreach ($questions as $index => $q_text) {
+                    $q_text = trim($q_text);
+                    if (!empty($q_text)) {
+                        $stmt_tq->execute([$new_template_id, $q_text, $index]);
+                    }
+                }
+                $_SESSION['flash_success'] = "Feedback-Sitzung gestartet und Vorlage \"" . htmlspecialchars($template_title) . "\" gespeichert.";
+            } catch (PDOException $e) {
+                error_log("Failed to save template: " . $e->getMessage());
+                $_SESSION['flash_success'] = "Feedback-Sitzung gestartet (Vorlage speichern fehlgeschlagen).";
+            }
+        } else {
+            $_SESSION['flash_success'] = "Feedback-Sitzung für $klasse ($fach) gestartet.";
+        }
+        
         $_SESSION['active_session_token'] = $token;
         
     } elseif ($_POST['action'] === 'stop') {
@@ -65,8 +92,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $stmt->execute([$teacher_id]);
         unset($_SESSION['active_session_token']);
         $_SESSION['flash_success'] = "Feedback-Sitzung beendet.";
+    } elseif ($_POST['action'] === 'delete_template') {
+        $template_id = (int)($_POST['template_id'] ?? 0);
+        if ($template_id > 0) {
+            try {
+                // Ensure the template belongs to the current user
+                $stmt_del = $conn->prepare("DELETE FROM feedback_templates WHERE id = ? AND teacher_id = ?");
+                $stmt_del->execute([$template_id, $teacher_id]);
+                $_SESSION['flash_success'] = "Vorlage erfolgreich gelöscht.";
+            } catch (PDOException $e) {
+                $_SESSION['flash_error'] = "Fehler beim Löschen der Vorlage.";
+            }
+        }
     }
     
-    header("Location: /index.php");
+    header("Location: /teacher_feedback.php");
     exit;
 }

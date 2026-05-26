@@ -33,6 +33,44 @@ try {
     $selected_class_ids = [];
 }
 
+// Fetch saved templates
+$templates = [];
+try {
+    $stmt_templates = $conn->prepare("
+        SELECT t.id, t.title, t.klasse, t.fach, COUNT(q.id) as question_count 
+        FROM feedback_templates t
+        LEFT JOIN feedback_template_questions q ON t.id = q.template_id
+        WHERE t.teacher_id = ?
+        GROUP BY t.id, t.klasse, t.fach
+        ORDER BY t.title ASC
+    ");
+    $stmt_templates->execute([$user_id]);
+    $templates = $stmt_templates->fetchAll(PDO::FETCH_ASSOC);
+
+    // Fetch actual questions for templates
+    $stmt_questions = $conn->prepare("
+        SELECT template_id, question_text 
+        FROM feedback_template_questions 
+        ORDER BY template_id, sort_order ASC
+    ");
+    $stmt_questions->execute();
+    $template_questions_raw = $stmt_questions->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Group questions by template ID
+    $template_questions = [];
+    foreach ($template_questions_raw as $q) {
+        $template_questions[$q['template_id']][] = $q['question_text'];
+    }
+    
+    // Add questions list directly into the templates array
+    foreach ($templates as &$t) {
+        $t['questions'] = $template_questions[$t['id']] ?? [];
+    }
+    unset($t);
+} catch (PDOException $e) {
+    $templates = [];
+}
+
 $csrf_token = get_csrf_token();
 $flash_success = $_SESSION['flash_success'] ?? null;
 $flash_error = $_SESSION['flash_error'] ?? null;
@@ -42,6 +80,7 @@ echo $twig->render('teacher_feedback.twig', [
     'active_session' => $active_session,
     'all_classes' => $all_classes,
     'selected_class_ids' => $selected_class_ids,
+    'templates' => $templates,
     'host_url' => (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]",
     'current_user_name' => get_current_user_name(),
     'is_admin' => is_current_user_admin(),

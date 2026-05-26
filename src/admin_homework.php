@@ -81,7 +81,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash_error'] = "Keine Berechtigung oder Einreichung nicht gefunden.";
         }
         
-        header("Location: admin_homework.php?action=view&id=" . (int)$assignment_id);
+    } elseif ($action === 'delete_submissions_bulk') {
+        $submission_ids = $_POST['submission_ids'] ?? [];
+        $assignment_id = $_POST['assignment_id'] ?? 0;
+
+        if (!empty($submission_ids) && is_array($submission_ids)) {
+            $submission_ids = array_map('intval', $submission_ids);
+            $placeholders = implode(',', array_fill(0, count($submission_ids), '?'));
+
+            try {
+                $conn->beginTransaction();
+
+                // Fetch file paths to unlink
+                $stmt_files = $conn->prepare("SELECT image_path FROM homework_submissions WHERE id IN ($placeholders)");
+                $stmt_files->execute($submission_ids);
+                $files = $stmt_files->fetchAll(PDO::FETCH_COLUMN);
+
+                foreach ($files as $file) {
+                    if (!empty($file)) {
+                        $file_path = __DIR__ . '/public/' . $file;
+                        if (file_exists($file_path)) {
+                            unlink($file_path);
+                        }
+                    }
+                }
+
+                // Delete records
+                $stmt_del = $conn->prepare("DELETE FROM homework_submissions WHERE id IN ($placeholders)");
+                $stmt_del->execute($submission_ids);
+
+                $conn->commit();
+                $_SESSION['flash_success'] = count($submission_ids) . " Einreichung(en) erfolgreich gelöscht.";
+            } catch (Exception $e) {
+                $conn->rollBack();
+                $_SESSION['flash_error'] = "Fehler beim Löschen: " . $e->getMessage();
+            }
+        } else {
+            $_SESSION['flash_error'] = "Keine Einreichungen zum Löschen ausgewählt.";
+        }
+
+        if ($assignment_id) {
+            header("Location: admin_homework.php?action=view&id=" . (int)$assignment_id);
+        } else {
+            header("Location: admin_homework.php");
+        }
         exit;
     }
 }
@@ -91,11 +134,18 @@ if ($action === 'list') {
     $stmt->execute([$user_id]);
     $assignments = $stmt->fetchAll();
 
-    // Fetch submission counts
+    // Fetch submission counts and submissions details
     foreach ($assignments as &$assignment) {
-        $stmt_sub = $conn->prepare("SELECT COUNT(*) FROM homework_submissions WHERE assignment_id = ?");
+        $stmt_sub = $conn->prepare("
+            SELECT s.*, e.teacher_notes, e.student_feedback, e.score 
+            FROM homework_submissions s
+            LEFT JOIN homework_evaluations e ON s.id = e.submission_id
+            WHERE s.assignment_id = ?
+            ORDER BY s.created_at DESC
+        ");
         $stmt_sub->execute([$assignment['id']]);
-        $assignment['submission_count'] = $stmt_sub->fetchColumn();
+        $assignment['submissions'] = $stmt_sub->fetchAll();
+        $assignment['submission_count'] = count($assignment['submissions']);
     }
 
     // Fetch all classes and selected classes
@@ -149,6 +199,7 @@ if ($action === 'list') {
     echo $twig->render('admin_homework_details.twig', [
         'assignment' => $assignment,
         'submissions' => $submissions,
+        'csrf_token' => get_csrf_token(),
         'is_logged_in' => true,
         'is_admin' => is_current_user_admin(),
         'current_user_name' => get_current_user_name(),

@@ -23,7 +23,7 @@ try {
     $conn = db_connect();
     
     // Checken, ob Lehrer bereits existiert
-    $stmt = $conn->prepare("SELECT id, is_admin, name FROM teachers WHERE kuerzel = :kuerzel LIMIT 1");
+    $stmt = $conn->prepare("SELECT id, is_admin, name, force_password_change FROM teachers WHERE kuerzel = :kuerzel LIMIT 1");
     $stmt->execute([':kuerzel' => $sso_response['preferred_username']]);
     $user = $stmt->fetch();
     
@@ -32,14 +32,15 @@ try {
         $dummy_password = password_hash(random_bytes(16), PASSWORD_DEFAULT); // SSO Nutzer brauchen kein lokales PW
         $full_name = $sso_response['given_name'] . ' ' . $sso_response['family_name'];
         
-        $insert = $conn->prepare("INSERT INTO teachers (kuerzel, email, passwort_hash, is_admin, name) VALUES (?, ?, ?, ?, ?)");
+        $insert = $conn->prepare("INSERT INTO teachers (kuerzel, email, passwort_hash, is_admin, name, force_password_change) VALUES (?, ?, ?, ?, ?, 0)");
         $insert->execute([$sso_response['preferred_username'], $sso_response['email'], $dummy_password, 0, $full_name]);
         
         $user_id = $conn->lastInsertId();
         $user = [
             'id' => $user_id,
             'is_admin' => 0,
-            'name' => $full_name
+            'name' => $full_name,
+            'force_password_change' => 0
         ];
     }
     
@@ -48,6 +49,7 @@ try {
     $_SESSION['user_kuerzel'] = $sso_response['preferred_username'];
     $_SESSION['is_admin'] = $user['is_admin'];
     $_SESSION['user_name'] = $user['name'];
+    $_SESSION['force_password_change'] = $user['force_password_change'];
     
     header("Location: /index.php");
     exit;

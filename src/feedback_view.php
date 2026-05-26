@@ -31,20 +31,37 @@ $stmt_res = $conn->prepare("SELECT question_id, score FROM feedback_responses WH
 $stmt_res->execute([$session_id]);
 $responses = $stmt_res->fetchAll(PDO::FETCH_ASSOC);
 
-// 4. Process data for charts
+// 4. Process data for charts and calculate averages
 $data = [];
 foreach ($questions as $q) {
     $data[$q['id']] = [
         'text' => $q['question_text'],
-        'scores' => [1=>0, 2=>0, 3=>0, 4=>0, 5=>0]
+        'scores' => [1=>0, 2=>0, 3=>0, 4=>0, 5=>0],
+        'total_score' => 0,
+        'count' => 0
     ];
 }
+
+$total_score = 0;
+$response_count = count($responses);
 
 foreach ($responses as $r) {
     if (isset($data[$r['question_id']])) {
         $data[$r['question_id']]['scores'][$r['score']]++;
+        $data[$r['question_id']]['total_score'] += $r['score'];
+        $data[$r['question_id']]['count']++;
     }
+    $total_score += $r['score'];
 }
+
+// Calculate individual question averages
+foreach ($data as $q_id => &$q_data) {
+    $q_data['avg'] = ($q_data['count'] > 0) ? ($q_data['total_score'] / $q_data['count']) : 0;
+}
+unset($q_data);
+
+// Calculate overall session average
+$session_average = ($response_count > 0) ? ($total_score / $response_count) : 0;
 
 $num_questions = count($questions);
 $total_votes = ($num_questions > 0) ? count($responses) / $num_questions : 0;
@@ -55,6 +72,7 @@ echo $twig->render('feedback_view.twig', [
     'session' => $session,
     'data' => $data,
     'total_votes' => (int)$total_votes,
+    'session_average' => $session_average,
     'current_user_name' => get_current_user_name(),
     'is_admin' => is_current_user_admin(),
     'is_logged_in' => true

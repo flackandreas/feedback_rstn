@@ -1,0 +1,1 @@
+ALTER TABLE teachers ADD COLUMN IF NOT EXISTS force_password_change TINYINT(1) DEFAULT 1;

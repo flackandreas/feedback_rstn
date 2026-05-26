@@ -6,6 +6,11 @@
 require_once __DIR__ . '/../config/database.php';
 
 function run_all_migrations() {
+    // Session caching to prevent running migrations query on every request
+    if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['migrations_run'])) {
+        return;
+    }
+
     $conn = db_connect();
     
     // Create migration log table if not exists
@@ -21,7 +26,10 @@ function run_all_migrations() {
         'alter_material.sql',
         'alter_step2.sql',
         'alter_teacher_classes.sql',
-        'alter_homework_context.sql'
+        'alter_homework_context.sql',
+        'alter_force_password_change.sql',
+        'alter_feedback_templates.sql',
+        'alter_feedback_templates_klasse_fach.sql'
     ];
 
     foreach ($sql_files as $file) {
@@ -54,5 +62,9 @@ function run_all_migrations() {
                 error_log("Critical error reading migration $file: " . $e->getMessage());
             }
         }
+    }
+
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        $_SESSION['migrations_run'] = true;
     }
 }

@@ -1,0 +1,2 @@
+ALTER TABLE feedback_templates ADD COLUMN klasse VARCHAR(100) DEFAULT NULL;
+ALTER TABLE feedback_templates ADD COLUMN fach VARCHAR(100) DEFAULT NULL;

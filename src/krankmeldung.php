@@ -42,7 +42,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $attachment_path = null;
         if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ERR_OK) {
             $allowed_types = ['application/pdf', 'image/jpeg', 'image/png'];
-            if (in_array($_FILES['attachment']['type'], $allowed_types)) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = finfo_file($finfo, $_FILES['attachment']['tmp_name']);
+            finfo_close($finfo);
+            if (in_array($mimeType, $allowed_types)) {
                 $filename = uniqid('au_') . '_' . basename($_FILES['attachment']['name']);
                 $upload_dir = __DIR__ . '/public/uploads/';
                 if (move_uploaded_file($_FILES['attachment']['tmp_name'], $upload_dir . $filename)) {

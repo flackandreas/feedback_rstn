@@ -20,6 +20,14 @@ function require_login() {
         header("Location: /login.php");
         exit;
     }
+    // Check if password change is forced
+    if (isset($_SESSION['force_password_change']) && $_SESSION['force_password_change'] == 1) {
+        $current_script = basename($_SERVER['SCRIPT_NAME']);
+        if ($current_script !== 'change_password.php' && $current_script !== 'logout.php') {
+            header("Location: /change_password.php");
+            exit;
+        }
+    }
 }
 
 function get_current_user_id() {
@@ -55,7 +63,7 @@ function authenticate_user($conn, $kuerzel, $password) {
         return false;
     }
 
-    $stmt = $conn->prepare("SELECT id, kuerzel, is_admin, passwort_hash, name FROM teachers WHERE kuerzel = :kuerzel LIMIT 1");
+    $stmt = $conn->prepare("SELECT id, kuerzel, is_admin, passwort_hash, name, force_password_change FROM teachers WHERE kuerzel = :kuerzel LIMIT 1");
     $stmt->execute([':kuerzel' => $kuerzel]);
     $user = $stmt->fetch();
 

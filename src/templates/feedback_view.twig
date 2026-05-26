@@ -5,25 +5,42 @@
 {% endblock %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 20px; flex-wrap: wrap;">
     <div>
         <a href="/index.php" style="text-decoration: none; color: var(--text-muted); font-size: 0.9em;">← Zurück zum Dashboard</a>
         <h1>Ergebnisse: {{ session.klasse }} - {{ session.fach }}</h1>
-        <p style="color: var(--text-muted);">Sitzung vom {{ session.created_at|date('d.m.Y H:i') }} | 👥 <strong>{{ total_votes }}</strong> Teilnehmer</p>
+        <p style="color: var(--text-muted); margin-top: 5px;">Sitzung vom {{ session.created_at|date('d.m.Y H:i') }}</p>
     </div>
-    <div style="text-align: right;">
-        {% if session.is_active %}
-            <span class="badge" style="background-color: var(--success-color); color: white; padding: 5px 12px; border-radius: 4px;">Sitzung läuft noch</span>
-        {% else %}
-            <span class="badge" style="background-color: var(--text-muted); color: white; padding: 5px 12px; border-radius: 4px;">Abgeschlossen</span>
-        {% endif %}
+    <div style="display: flex; gap: 15px; align-items: center;">
+        <div class="kpi-box" style="padding: 10px 20px; border-left: 4px solid var(--primary-color); background: white; margin: 0; min-width: 120px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 4px;">
+            <span style="font-size: 0.8em; color: var(--text-muted); display: block;">Teilnehmer</span>
+            <strong style="font-size: 1.5em; color: var(--text-dark);">{{ total_votes }}</strong>
+        </div>
+        <div class="kpi-box" style="padding: 10px 20px; border-left: 4px solid #2ecc71; background: white; margin: 0; min-width: 180px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 4px;">
+            <span style="font-size: 0.8em; color: var(--text-muted); display: block;">Gesamter Mittelwert</span>
+            <strong style="font-size: 1.5em; color: var(--text-dark);">
+                {{ session_average > 0 ? (session_average|number_format(2) ~ ' / 5.0') : '—' }}
+            </strong>
+        </div>
+        <div style="text-align: right; margin-left: 10px;">
+            {% if session.is_active %}
+                <span class="badge" style="background-color: var(--success-color); color: white; padding: 6px 12px; border-radius: 4px; font-weight: 600;">Sitzung läuft noch</span>
+            {% else %}
+                <span class="badge" style="background-color: var(--text-muted); color: white; padding: 6px 12px; border-radius: 4px; font-weight: 600;">Abgeschlossen</span>
+            {% endif %}
+        </div>
     </div>
 </div>
 
-<div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+<div class="form-grid-2" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 500px), 1fr)); gap: 30px;">
     {% for q_id, q_data in data %}
     <div class="content-box">
-        <h3>{{ q_data.text }}</h3>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+            <h3 style="margin: 0; max-width: 70%;">{{ q_data.text }}</h3>
+            <span style="background: #f1f2f6; padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: 600; color: var(--primary-color);">
+                Mittelwert: {{ q_data.avg > 0 ? q_data.avg|number_format(2) ~ ' / 5.0' : '—' }}
+            </span>
+        </div>
         <div style="height: 250px;">
             <canvas id="chart_{{ q_id }}"></canvas>
         </div>

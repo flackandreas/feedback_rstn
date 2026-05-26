@@ -18,8 +18,8 @@
             <label style="display: block; margin-bottom: 5px; font-size: 0.9em;">Klasse Filtern</label>
             <select name="klasse" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
                 <option value="">Alle Klassen</option>
-                {% for f in filters %}
-                    <option value="{{ f.klasse }}" {{ current_klasse == f.klasse ? 'selected' : '' }}>{{ f.klasse }}</option>
+                {% for k in unique_classes %}
+                    <option value="{{ k }}" {{ current_klasse == k ? 'selected' : '' }}>{{ k }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -27,8 +27,8 @@
             <label style="display: block; margin-bottom: 5px; font-size: 0.9em;">Fach Filtern</label>
             <select name="fach" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
                 <option value="">Alle Fächer</option>
-                {% for f in filters %}
-                    <option value="{{ f.fach }}" {{ current_fach == f.fach ? 'selected' : '' }}>{{ f.fach }}</option>
+                {% for s in unique_subjects %}
+                    <option value="{{ s }}" {{ current_fach == s ? 'selected' : '' }}>{{ s }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -37,12 +37,22 @@
     </form>
 </div>
 
-<div class="content-box">
-    <h3>Stimmungs-Barometer</h3>
-    <div style="height: 400px; margin-top: 20px;">
-        <canvas id="trendChart"></canvas>
+{% if grouped_history is empty %}
+    <div class="content-box" style="margin-bottom: 30px;">
+        <p style="text-align: center; color: var(--text-muted); padding: 40px 0; margin: 0;">Keine Trend-Daten für den ausgewählten Zeitraum oder Filter vorhanden.</p>
     </div>
-</div>
+{% else %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 500px), 1fr)); gap: 20px; margin-bottom: 30px;">
+        {% for group_name, group in grouped_history %}
+            <div class="content-box" style="margin-bottom: 0;">
+                <h3>📈 Stimmungs-Barometer: {{ group_name }}</h3>
+                <div style="height: 350px; margin-top: 20px; position: relative;">
+                    <canvas id="trendChart_{{ loop.index }}"></canvas>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
 
 <div class="content-box" style="margin-top: 30px;">
     <h3>Letzte Sitzungen</h3>
@@ -82,70 +92,76 @@
 {% block extra_scripts %}
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    const ctx = document.getElementById('trendChart');
-    
-    const labels = [
-        {% for s in history %}
-            '{{ s.created_at|date('d.m.') }} ({{ s.klasse }})',
-        {% endfor %}
-    ];
-
-    // Data structure to hold scores per question text
-    const datasetsMap = {};
     const colors = ['#4a90e2', '#27ae60', '#f39c12', '#9b59b6', '#e74c3c'];
 
-    {% for s in history %}
-        {% for q in s.questions %}
-            if (!datasetsMap['{{ q.text|escape('js') }}']) {
-                datasetsMap['{{ q.text|escape('js') }}'] = new Array({{ history|length }}).fill(null);
-            }
-            datasetsMap['{{ q.text|escape('js') }}'][{{ loop.parent.loop.index0 }}] = {{ q.avg ?? 'null' }};
+    {% for group_name, group in grouped_history %}
+    (function() {
+        const ctx = document.getElementById('trendChart_{{ loop.index }}');
+        if (!ctx) return;
+
+        const labels = [
+            {% for s in group.sessions %}
+                '{{ s.created_at|date('d.m.') }}',
+            {% endfor %}
+        ];
+
+        // Data structure to hold scores per question text
+        const datasetsMap = {};
+        {% for s in group.sessions %}
+            {% set session_index = loop.index0 %}
+            {% for q in s.questions %}
+                if (!datasetsMap['{{ q.text|escape('js') }}']) {
+                    datasetsMap['{{ q.text|escape('js') }}'] = new Array({{ group.sessions|length }}).fill(null);
+                }
+                datasetsMap['{{ q.text|escape('js') }}'][{{ session_index }}] = {{ q.avg is not null ? q.avg : 'null' }};
+            {% endfor %}
         {% endfor %}
-    {% endfor %}
 
-    const datasets = Object.keys(datasetsMap).map((text, index) => {
-        return {
-            label: text,
-            data: datasetsMap[text],
-            borderColor: colors[index % colors.length],
-            backgroundColor: colors[index % colors.length],
-            tension: 0.3,
-            pointRadius: 5
-        };
-    });
+        const datasets = Object.keys(datasetsMap).map((text, index) => {
+            return {
+                label: text,
+                data: datasetsMap[text],
+                borderColor: colors[index % colors.length],
+                backgroundColor: colors[index % colors.length],
+                tension: 0.3,
+                pointRadius: 5
+            };
+        });
 
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: datasets
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    min: 1,
-                    max: 5,
-                    ticks: {
-                        callback: function(value) {
-                            const labels = {1: '😫', 2: '🙁', 3: '😐', 4: '🙂', 5: '😄'};
-                            return labels[value] || value;
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        min: 1,
+                        max: 5,
+                        ticks: {
+                            callback: function(value) {
+                                const labels = {1: '😫', 2: '🙁', 3: '😐', 4: '🙂', 5: '😄'};
+                                return labels[value] || value;
+                            }
                         }
                     }
-                }
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return context.dataset.label + ': ' + context.parsed.y.toFixed(1);
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.y.toFixed(1);
+                            }
                         }
                     }
                 }
             }
-        }
-    });
+        });
+    })();
+    {% endfor %}
 });
 </script>
 {% endblock %}

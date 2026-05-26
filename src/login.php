@@ -34,6 +34,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['user_kuerzel'] = $user['kuerzel'];
             $_SESSION['user_name'] = $user['name'];
             $_SESSION['is_admin'] = $user['is_admin'];
+            $_SESSION['force_password_change'] = $user['force_password_change'];
             
             header("Location: /index.php");
             exit;

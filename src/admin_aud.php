@@ -14,7 +14,7 @@ $conn = db_connect();
 
 // 1. Extracurricular requests (Ausflüge) grouped and augmented
 $stmt_extra = $conn->query("
-    SELECT r.id, 'Ausflug' as type, r.class_name as class, r.class_name, r.event_date, r.destination, 
+    SELECT r.id, 'Ausflug' as type, r.class_name as class, r.class_name, r.event_date, r.event_date_to, r.destination, 
            CONCAT_WS('<br>', 
                IF(r.aud_type IS NOT NULL AND r.aud_type != '', CONCAT('<strong>Art:</strong> ', r.aud_type), NULL),
                CONCAT('<strong>Ziel:</strong> ', r.destination),

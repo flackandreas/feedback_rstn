@@ -72,9 +72,15 @@
         </div>
 
         {# Zeile 3: Datum #}
-        <div class="form-group" style="margin-top: 15px;">
-            <label for="event_date">am (Datum) *</label>
-            <input type="date" id="event_date" name="event_date" required>
+        <div class="form-grid-2" style="margin-top: 15px;">
+            <div class="form-group">
+                <label for="event_date">Startdatum *</label>
+                <input type="date" id="event_date" name="event_date" value="{{ edit_request ? edit_request.event_date : prefilled_date }}" required>
+            </div>
+            <div class="form-group">
+                <label for="event_date_to">Enddatum *</label>
+                <input type="date" id="event_date_to" name="event_date_to" value="{{ edit_request ? edit_request.event_date_to : (prefilled_date ?: (edit_request ? edit_request.event_date : '')) }}" required>
+            </div>
         </div>
 
         {# Checkbox for AUD #}
@@ -216,6 +222,16 @@
             const btn = document.querySelector('[onclick*="companion_extra_container"]');
             if (btn) btn.style.display = 'none';
         }
+        if (data.aud_type) {
+            const audCb = document.getElementById('is_aud_checkbox');
+            if (audCb) {
+                audCb.checked = true;
+                const audCont = document.getElementById('aud_fields_container');
+                const audSel = document.getElementById('aud_type');
+                if (audCont) audCont.style.display = 'grid';
+                if (audSel) audSel.required = true;
+            }
+        }
     });
 </script>
 {% endif %}
@@ -246,7 +262,13 @@
                         <td>{{ r.class_name }}</td>
                         <td>{{ r.destination }}</td>
                         <td>{{ r.aud_type }}</td>
-                        <td>{{ r.event_date|date('d.m.Y') }}</td>
+                        <td>
+                            {% if r.event_date_to and r.event_date_to != r.event_date %}
+                                {{ r.event_date|date('d.m.Y') }} - {{ r.event_date_to|date('d.m.Y') }}
+                            {% else %}
+                                {{ r.event_date|date('d.m.Y') }}
+                            {% endif %}
+                        </td>
                         <td><span style='color: {{ statusColor }}; font-weight: 600;'>{{ statusText|trim }}</span></td>
                     </tr>
                 {% endfor %}
@@ -279,6 +301,24 @@ document.addEventListener("DOMContentLoaded", function() {
     if (audCheckbox) {
         audCheckbox.addEventListener('change', toggleAudFields);
         toggleAudFields();
+    }
+
+    // Startdatum and Enddatum alignment helper
+    const eventDateInput = document.getElementById('event_date');
+    const eventDateToInput = document.getElementById('event_date_to');
+
+    if (eventDateInput && eventDateToInput) {
+        eventDateInput.addEventListener('change', function() {
+            eventDateToInput.min = eventDateInput.value;
+            if (!eventDateToInput.value || eventDateToInput.value < eventDateInput.value) {
+                eventDateToInput.value = eventDateInput.value;
+            }
+        });
+        
+        // Also run on load
+        if (eventDateInput.value) {
+            eventDateToInput.min = eventDateInput.value;
+        }
     }
 });
 </script>

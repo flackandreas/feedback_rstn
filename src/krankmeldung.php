@@ -63,10 +63,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 if ($post_edit_id) {
                     // Update
                     if ($attachment_path) {
-                        $stmt = $conn->prepare("UPDATE sick_leave_reports SET date_from = ?, date_to = ?, notes = ?, material_link = ?, attachment_path = ?, modified_at = NOW() WHERE id = ? AND teacher_id = ?");
+                        $stmt = $conn->prepare("UPDATE sick_leave_reports SET date_from = ?, date_to = ?, notes = ?, material_link = ?, attachment_path = ?, modified_at = NOW(), is_seen = 0 WHERE id = ? AND teacher_id = ?");
                         $stmt->execute([$date_from, $date_to, $notes, $material_link, $attachment_path, $post_edit_id, $user_id]);
                     } else {
-                        $stmt = $conn->prepare("UPDATE sick_leave_reports SET date_from = ?, date_to = ?, notes = ?, material_link = ?, modified_at = NOW() WHERE id = ? AND teacher_id = ?");
+                        $stmt = $conn->prepare("UPDATE sick_leave_reports SET date_from = ?, date_to = ?, notes = ?, material_link = ?, modified_at = NOW(), is_seen = 0 WHERE id = ? AND teacher_id = ?");
                         $stmt->execute([$date_from, $date_to, $notes, $material_link, $post_edit_id, $user_id]);
                     }
                     $_SESSION['flash_success'] = "Ihre Krankmeldung wurde erfolgreich aktualisiert.";

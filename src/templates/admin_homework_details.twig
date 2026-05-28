@@ -1,5 +1,58 @@
 {% extends "base.twig" %}
 
+{% block extra_head %}
+<style>
+    /* Bounding Box / Tooltip Overlay styles */
+    .image-overlay-container {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+    }
+    .error-box {
+        position: absolute;
+        border: 2px solid var(--danger-color, #e74c3c);
+        background: rgba(231, 76, 60, 0.15);
+        cursor: help;
+        transition: background 0.2s, border-color 0.2s;
+        border-radius: 4px;
+    }
+    .error-box:hover {
+        background: rgba(231, 76, 60, 0.3);
+        border-color: #c0392b;
+        z-index: 10;
+    }
+    .error-box::after {
+        content: attr(data-description);
+        position: absolute;
+        bottom: 105%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #2c3e50;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        line-height: 1.4;
+        white-space: pre-wrap;
+        width: max-content;
+        max-width: 250px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.2s, visibility 0.2s;
+        pointer-events: none;
+        z-index: 100;
+        font-weight: normal;
+        font-family: 'Inter', sans-serif;
+        text-align: left;
+    }
+    .error-box:hover::after {
+        opacity: 1;
+        visibility: visible;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px;">
     <div>
@@ -85,20 +138,116 @@
                 </div>
                 
                 <div style="margin-bottom: 15px;">
-                    <a href="/{{ sub.image_path }}" target="_blank" style="display: block; width: 100%; height: 150px; background-color: #eee; background-image: url('/{{ sub.image_path }}'); background-size: cover; background-position: center; border-radius: 4px; border: 1px solid var(--border-color);" title="Bild in neuem Tab öffnen"></a>
+                    <div class="image-overlay-container">
+                        <a href="/{{ sub.image_path }}" target="_blank" style="display: block; width: 100%;" title="Bild in Originalgröße öffnen">
+                            <img src="/{{ sub.image_path }}" style="width: 100%; display: block; border-radius: 4px; border: 1px solid var(--border-color);" alt="Hausaufgabe">
+                        </a>
+                        
+                        {% if sub.error_markers is not empty %}
+                            {% set markers = sub.error_markers|json_decode %}
+                            {% for marker in markers %}
+                                {% set ymin = marker.box_2d[0] / 10 %}
+                                {% set xmin = marker.box_2d[1] / 10 %}
+                                {% set ymax = marker.box_2d[2] / 10 %}
+                                {% set xmax = marker.box_2d[3] / 10 %}
+                                {% set height = ymax - ymin %}
+                                {% set width = xmax - xmin %}
+                                <div class="error-box" 
+                                     style="position: absolute; top: {{ ymin }}%; left: {{ xmin }}%; width: {{ width }}%; height: {{ height }}%;"
+                                     data-description="{{ marker.description }}">
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
                 </div>
 
                 {% if sub.status == 'evaluated' %}
-                    <div style="background: #f8fafc; padding: 10px; border-radius: 4px; font-size: 0.9em; margin-bottom: 10px; border: 1px solid var(--border-color);">
-                        <strong style="color: var(--danger-color); display: block; margin-bottom: 5px;">⚠️ Lernschwierigkeiten (Für Lehrkraft)</strong>
-                        <div style="white-space: pre-wrap;">{{ sub.teacher_notes }}</div>
+                    <!-- VIEW MODE -->
+                    <div id="view-mode-{{ sub.id }}">
+                        <div style="background: #f8fafc; padding: 12px; border-radius: 6px; font-size: 0.9em; margin-bottom: 12px; border: 1px solid var(--border-color);">
+                            <strong style="color: var(--danger-color); display: block; margin-bottom: 5px;">⚠️ Lernschwierigkeiten (Für Lehrkraft)</strong>
+                            <div style="white-space: pre-wrap; color: #1e293b;">{{ sub.teacher_notes }}</div>
+                        </div>
+                        
+                        <div style="background: #f0fdf4; padding: 12px; border-radius: 6px; font-size: 0.9em; margin-bottom: 15px; border: 1px solid #bdf0d0;">
+                            <strong style="color: var(--primary-dark); display: block; margin-bottom: 5px;">💬 Schüler-Feedback</strong>
+                            <div style="white-space: pre-wrap; color: #1e293b;">{{ sub.student_feedback }}</div>
+                        </div>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                            <button type="button" class="btn" style="padding: 6px 12px; font-size: 0.85em; background: #eee; color: #333; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-weight: 600;" onclick="toggleEditMode({{ sub.id }}, true)">✏️ Bearbeiten</button>
+                            {% if sub.score is not null %}
+                                <div style="font-weight: bold; color: var(--primary-color); font-size: 1.1em;">Punkte: {{ sub.score }} / 100</div>
+                            {% endif %}
+                        </div>
                     </div>
-                    {% if sub.score is not null %}
-                        <div style="text-align: right; font-weight: bold; color: var(--primary-color);">Punkte: {{ sub.score }}</div>
-                    {% endif %}
+                    
+                    <!-- EDIT MODE -->
+                    <div id="edit-mode-{{ sub.id }}" style="display: none;">
+                        <form action="/admin_homework.php?action=edit_evaluation" method="POST" style="margin: 0;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <input type="hidden" name="submission_id" value="{{ sub.id }}">
+                            <input type="hidden" name="assignment_id" value="{{ assignment.id }}">
+                            
+                            <div class="form-group" style="margin-bottom: 12px;">
+                                <label style="font-size: 0.85em; font-weight: bold; color: var(--text-dark); display: block; margin-bottom: 5px;">Punkte (0-100)</label>
+                                <input type="number" name="score" value="{{ sub.score }}" min="0" max="100" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 12px;">
+                                <label style="font-size: 0.85em; font-weight: bold; color: var(--text-dark); display: block; margin-bottom: 5px;">Lernschwierigkeiten (Für Lehrkraft)</label>
+                                <textarea name="teacher_notes" style="width: 100%; height: 80px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; font-size: 0.9em; resize: vertical;">{{ sub.teacher_notes }}</textarea>
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label style="font-size: 0.85em; font-weight: bold; color: var(--text-dark); display: block; margin-bottom: 5px;">Schüler-Feedback</label>
+                                <textarea name="student_feedback" style="width: 100%; height: 100px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; font-size: 0.9em; resize: vertical;">{{ sub.student_feedback }}</textarea>
+                            </div>
+                            
+                            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                                <button type="button" class="btn" style="padding: 6px 12px; font-size: 0.85em; background: #eee; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;" onclick="toggleEditMode({{ sub.id }}, false)">Abbrechen</button>
+                                <button type="submit" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.85em; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Speichern</button>
+                            </div>
+                        </form>
+                    </div>
                 {% else %}
-                    <div style="text-align: center; padding: 10px; color: var(--warning-color); font-weight: 600;">
-                        ⏳ Auswertung läuft...
+                    <!-- PENDING / MANUALLY GRADING -->
+                    <div id="view-mode-{{ sub.id }}">
+                        <div style="text-align: center; padding: 15px; color: var(--warning-color); font-weight: 600; margin-bottom: 10px;">
+                            ⏳ Auswertung läuft...
+                        </div>
+                        <div style="text-align: center;">
+                            <button type="button" class="btn" style="padding: 6px 12px; font-size: 0.85em; background: #eee; color: #333; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-weight: 600;" onclick="toggleEditMode({{ sub.id }}, true)">Manuell bewerten</button>
+                        </div>
+                    </div>
+                    
+                    <!-- EDIT MODE -->
+                    <div id="edit-mode-{{ sub.id }}" style="display: none;">
+                        <form action="/admin_homework.php?action=edit_evaluation" method="POST" style="margin: 0;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <input type="hidden" name="submission_id" value="{{ sub.id }}">
+                            <input type="hidden" name="assignment_id" value="{{ assignment.id }}">
+                            
+                            <div class="form-group" style="margin-bottom: 12px;">
+                                <label style="font-size: 0.85em; font-weight: bold; color: var(--text-dark); display: block; margin-bottom: 5px;">Punkte (0-100)</label>
+                                <input type="number" name="score" value="" min="0" max="100" placeholder="z.B. 85" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 12px;">
+                                <label style="font-size: 0.85em; font-weight: bold; color: var(--text-dark); display: block; margin-bottom: 5px;">Lernschwierigkeiten (Für Lehrkraft)</label>
+                                <textarea name="teacher_notes" placeholder="Welche Fehler liegen vor?" style="width: 100%; height: 80px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; font-size: 0.9em; resize: vertical;"></textarea>
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label style="font-size: 0.85em; font-weight: bold; color: var(--text-dark); display: block; margin-bottom: 5px;">Schüler-Feedback</label>
+                                <textarea name="student_feedback" placeholder="Feedback an Schüler..." style="width: 100%; height: 100px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; font-size: 0.9em; resize: vertical;"></textarea>
+                            </div>
+                            
+                            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                                <button type="button" class="btn" style="padding: 6px 12px; font-size: 0.85em; background: #eee; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;" onclick="toggleEditMode({{ sub.id }}, false)">Abbrechen</button>
+                                <button type="submit" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.85em; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Speichern</button>
+                            </div>
+                        </form>
                     </div>
                 {% endif %}
             </div>
@@ -282,6 +431,15 @@ function confirmDetailsBulkDelete(event) {
         }
     });
     return false;
+}
+
+function toggleEditMode(subId, edit) {
+    const viewDiv = document.getElementById('view-mode-' + subId);
+    const editDiv = document.getElementById('edit-mode-' + subId);
+    if (viewDiv && editDiv) {
+        viewDiv.style.display = edit ? 'none' : 'block';
+        editDiv.style.display = edit ? 'block' : 'none';
+    }
 }
 </script>
 {% endblock %}

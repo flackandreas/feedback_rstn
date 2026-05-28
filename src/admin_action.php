@@ -35,7 +35,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // First, get teacher email, name, and request details
             $details_query = "";
             if ($table === 'extracurricular_requests') {
-                $details_query = "SELECT t.email, t.name as teacher_name, r.class_name, r.event_date, r.destination 
+                $details_query = "SELECT t.email, t.name as teacher_name, r.class_name, r.event_date, r.event_date_to, r.destination 
                                   FROM extracurricular_requests r 
                                   JOIN teachers t ON r.teacher_id = t.id 
                                   WHERE r.id = ?";
@@ -78,7 +78,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     }
                     
                     if ($table === 'extracurricular_requests') {
-                        $body .= "<p>Details: {$request_details['class_name']} nach {$request_details['destination']} am " . date('d.m.Y', strtotime($request_details['event_date'])) . "</p>";
+                        $start = date('d.m.Y', strtotime($request_details['event_date']));
+                        $end = (!empty($request_details['event_date_to']) && $request_details['event_date_to'] !== $request_details['event_date']) 
+                            ? date('d.m.Y', strtotime($request_details['event_date_to'])) 
+                            : null;
+                        
+                        $date_str = $end ? "vom $start bis $end" : "am $start";
+                        $body .= "<p>Details: {$request_details['class_name']} nach {$request_details['destination']} $date_str</p>";
                     } else {
                         $body .= "<p>Details: Zeitraum vom " . date('d.m.Y', strtotime($request_details['date_from'])) . " bis " . date('d.m.Y', strtotime($request_details['date_to'])) . "</p>";
                     }

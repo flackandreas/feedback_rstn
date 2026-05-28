@@ -79,6 +79,7 @@
                             id: r.id,
                             teacher: r.teacher_name ~ ' (' ~ r.kuerzel ~ ')',
                             event_date: r.event_date|date('d.m.Y'),
+                            event_date_to: r.event_date_to ? r.event_date_to|date('d.m.Y') : '',
                             class_name: r.class_name|default(''),
                             destination: r.destination|default(''),
                             role: r.role|default(''),
@@ -104,7 +105,13 @@
                             <td style="font-weight: 600;">
                                 {{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span>
                             </td>
-                            <td>{{ r.event_date|date('d.m.Y') }}</td>
+                            <td>
+                                {% if r.event_date_to and r.event_date_to != r.event_date %}
+                                    {{ r.event_date|date('d.m.Y') }} - {{ r.event_date_to|date('d.m.Y') }}
+                                {% else %}
+                                    {{ r.event_date|date('d.m.Y') }}
+                                {% endif %}
+                            </td>
                             <td>{{ r.class_name }}</td>
                             <td>{{ r.destination }}</td>
                             <td onclick="event.stopPropagation();">
@@ -188,7 +195,11 @@ function openDetailPanel(d) {
     body += row('Als', d.role);
     body += row('Klasse(n)', d.class_name);
     body += row('Begleitperson', d.companion);
-    body += row('Datum', d.event_date);
+    let dateVal = d.event_date;
+    if (d.event_date_to && d.event_date_to !== d.event_date) {
+        dateVal = `${d.event_date} - ${d.event_date_to}`;
+    }
+    body += row('Datum', dateVal);
     body += row('Veranstaltung', d.event_name);
     body += row('Ziel / Strecke', d.destination);
     body += row('Kosten ca.', d.costs);

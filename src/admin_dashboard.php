@@ -42,50 +42,6 @@ while ($row = $stmt_settings->fetch()) {
     $app_settings[$row['setting_key']] = $row['setting_value'];
 }
 
-// 1. Sick leaves (Aktuelle)
-$stmt_sick_curr = $conn->query("
-    SELECT r.id, r.teacher_id, 'Krankmeldung' as type, r.notes as details, r.date_from as date_main, r.date_to, r.created_at, r.modified_at, t.name as teacher_name, t.kuerzel, r.attachment_path, r.material_link
-    FROM sick_leave_reports r
-    JOIN teachers t ON r.teacher_id = t.id
-    WHERE r.date_to >= DATE_SUB(CURDATE(), INTERVAL 2 DAY)
-    ORDER BY r.date_from ASC
-");
-$sick_leaves_current = $stmt_sick_curr->fetchAll();
-
-// 1.1 Sick leaves (Historie)
-$stmt_sick_hist = $conn->query("
-    SELECT r.id, r.teacher_id, 'Krankmeldung' as type, r.notes as details, r.date_from as date_main, r.date_to, r.created_at, r.modified_at, t.name as teacher_name, t.kuerzel, r.attachment_path, r.material_link
-    FROM sick_leave_reports r
-    JOIN teachers t ON r.teacher_id = t.id
-    WHERE r.date_to < DATE_SUB(CURDATE(), INTERVAL 2 DAY)
-    ORDER BY r.date_from DESC
-");
-$sick_leaves_old_raw = $stmt_sick_hist->fetchAll();
-
-$sick_history_by_teacher = [];
-foreach ($sick_leaves_old_raw as $r) {
-    $tid = $r['teacher_id'];
-    if (!isset($sick_history_by_teacher[$tid])) {
-        $sick_history_by_teacher[$tid] = [
-            'id' => $tid,
-            'name' => $r['teacher_name'],
-            'kuerzel' => $r['kuerzel'],
-            'total_days' => 0,
-            'records' => []
-        ];
-    }
-    
-    $d1 = new DateTime($r['date_main']);
-    $d2 = new DateTime($r['date_to']);
-    $days = $d2->diff($d1)->days + 1;
-    
-    $sick_history_by_teacher[$tid]['total_days'] += $days;
-    $sick_history_by_teacher[$tid]['records'][] = $r;
-}
-usort($sick_history_by_teacher, function($a, $b) {
-    return strcmp($a['name'], $b['name']);
-});
-
 // 2. Exemption requests (Freistellungen)
 $stmt_exempt = $conn->query("
     SELECT r.id, r.reason_type, r.days_of_week, r.classes, r.hourly_exemption, r.hour_from, r.hour_to, r.reason,
@@ -112,8 +68,6 @@ echo $twig->render('admin_dashboard.twig', [
     'csrf_token' => $csrf_token,
     'flash_success' => $flash_success,
     'flash_error' => $flash_error,
-    'sick_leaves_current' => $sick_leaves_current,
-    'sick_history_by_teacher' => $sick_history_by_teacher,
     'exempt_requests' => $exempt_requests,
     'app_settings' => $app_settings,
     'current_user_name' => get_current_user_name(),

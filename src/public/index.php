@@ -34,6 +34,8 @@ $routes = [
     'admin/system' => 'admin_system.php',
     'admin/homework' => 'admin_homework.php',
     'admin/dashboard' => 'admin_dashboard.php',
+    'admin/krankmeldungen' => 'admin_sick_leaves.php',
+    'admin/sick-leaves' => 'admin_sick_leaves.php',
     'student/homework' => 'student_homework.php',
     'student/feedback' => 'student_feedback.php',
     'krankmeldung' => 'krankmeldung.php',
@@ -41,7 +43,9 @@ $routes = [
     'antrag/ausserunterrichtlich' => 'antrag_ausserunterrichtlich.php',
     'meine-antraege' => 'meine_antraege.php',
     'feedback/trends' => 'feedback_trends.php',
-    'feedback/view' => 'feedback_view.php'
+    'feedback/view' => 'feedback_view.php',
+    'schulkalender' => 'calendar.php',
+    'calendar' => 'calendar.php'
 ];
 
 // Fallback for legacy .php requests or exact matches

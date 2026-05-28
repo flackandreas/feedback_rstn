@@ -24,6 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } else {
         $class_name = trim($_POST['class_name'] ?? '');
         $event_date = $_POST['event_date'] ?? '';
+        $event_date_to = $_POST['event_date_to'] ?? '';
         $destination = trim($_POST['destination'] ?? '');
         $aud_type = $_POST['aud_type'] ?? null;
         $participating_teacher_id = !empty($_POST['participating_teacher_id']) ? $_POST['participating_teacher_id'] : null;
@@ -43,8 +44,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $consent_form      = in_array($_POST['consent_form'] ?? '', ['ja', 'nein']) ? $_POST['consent_form'] : null;
         $schedule_notified = isset($_POST['schedule_notified']) ? 1 : 0;
         
-        if (empty($class_name) || empty($event_date) || empty($destination)) {
-            $_SESSION['flash_error'] = "Bitte füllen Sie alle Pflichtfelder aus (Klasse, Datum, Ziel).";
+        if (empty($class_name) || empty($event_date) || empty($event_date_to) || empty($destination)) {
+            $_SESSION['flash_error'] = "Bitte füllen Sie alle Pflichtfelder aus (Klasse, Startdatum, Enddatum, Ziel).";
         } else {
             try {
                 $conn = db_connect();
@@ -60,12 +61,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         
                         $stmt = $conn->prepare("
                             UPDATE extracurricular_requests SET
-                            role=?, class_name=?, companion=?, event_date=?, event_name=?, destination=?, costs=?, transport=?, start_time=?, start_location=?, return_time=?, return_location=?, return_trip_arranged=?, supervisors=?, consent_form=?, schedule_notified=?, aud_type=?, participating_teacher_id=?, modified_after_approval=?, 
+                            role=?, class_name=?, companion=?, event_date=?, event_date_to=?, event_name=?, destination=?, costs=?, transport=?, start_time=?, start_location=?, return_time=?, return_location=?, return_trip_arranged=?, supervisors=?, consent_form=?, schedule_notified=?, aud_type=?, participating_teacher_id=?, modified_after_approval=?, 
                             modified_at = CASE WHEN ? = 1 THEN NOW() ELSE modified_at END
                             WHERE id = ? AND teacher_id = ?
                         ");
                         $stmt->execute([
-                            $role, $class_name, $companion, $event_date, $event_name, $destination,
+                            $role, $class_name, $companion, $event_date, $event_date_to, $event_name, $destination,
                             $costs, $transport, $start_time, $start_location, $return_time, $return_location,
                             $return_trip_arranged, $supervisors, $consent_form, $schedule_notified, $aud_type, $participating_teacher_id, $is_modified,
                             $is_modified, $edit_id, $user_id
@@ -94,11 +95,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 } else {
                     $stmt = $conn->prepare("
                         INSERT INTO extracurricular_requests 
-                        (teacher_id, role, class_name, companion, event_date, event_name, destination, costs, transport, start_time, start_location, return_time, return_location, return_trip_arranged, supervisors, consent_form, schedule_notified, aud_type, participating_teacher_id)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (teacher_id, role, class_name, companion, event_date, event_date_to, event_name, destination, costs, transport, start_time, start_location, return_time, return_location, return_trip_arranged, supervisors, consent_form, schedule_notified, aud_type, participating_teacher_id)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ");
                     $stmt->execute([
-                        $user_id, $role, $class_name, $companion, $event_date, $event_name, $destination,
+                        $user_id, $role, $class_name, $companion, $event_date, $event_date_to, $event_name, $destination,
                         $costs, $transport, $start_time, $start_location, $return_time, $return_location,
                         $return_trip_arranged, $supervisors, $consent_form, $schedule_notified, $aud_type, $participating_teacher_id
                     ]);
@@ -135,7 +136,7 @@ if ($edit_id) {
     $edit_request['companion_extra'] = implode(', ', array_slice($comps, 1));
 }
 
-$stmt = $conn->prepare("SELECT class_name, event_date, destination, status, aud_type, participating_teacher_id FROM extracurricular_requests WHERE teacher_id = ? ORDER BY created_at DESC LIMIT 5");
+$stmt = $conn->prepare("SELECT class_name, event_date, event_date_to, destination, status, aud_type, participating_teacher_id FROM extracurricular_requests WHERE teacher_id = ? ORDER BY created_at DESC LIMIT 5");
 $stmt->execute([$user_id]);
 $requests = $stmt->fetchAll();
 
@@ -161,6 +162,8 @@ $flash_success = $_SESSION['flash_success'] ?? null;
 $flash_error = $_SESSION['flash_error'] ?? null;
 unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 
+$prefilled_date = $_GET['date'] ?? null;
+
 echo $twig->render('form_ausserunterrichtlich.twig', [
     'csrf_token' => $csrf_token,
     'flash_success' => $flash_success,
@@ -171,6 +174,7 @@ echo $twig->render('form_ausserunterrichtlich.twig', [
     'all_classes' => $all_classes,
     'selected_class_ids' => $selected_class_ids,
     'all_teachers_full' => $all_teachers_full,
+    'prefilled_date' => $prefilled_date,
     'current_user_name' => get_current_user_name(),
     'is_admin' => is_current_user_admin(),
     'is_logged_in' => true

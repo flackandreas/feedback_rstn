@@ -44,7 +44,11 @@
                         
                         <tr>
                             <td style="font-weight: 500;">
-                                {{ r.date_main|date('d.m.Y') }}
+                                {% if r.date_end and r.date_end != r.date_main %}
+                                    {{ r.date_main|date('d.m.Y') }} - {{ r.date_end|date('d.m.Y') }}
+                                {% else %}
+                                    {{ r.date_main|date('d.m.Y') }}
+                                {% endif %}
                                 {% if r.modified_at %}
                                     <br><span style="color: #8e44ad; font-size: 0.75em; font-weight: 600;">(Geändert am {{ r.modified_at|date('d.m.Y') }})</span>
                                 {% endif %}

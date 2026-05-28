@@ -69,6 +69,8 @@ $flash_success = $_SESSION['flash_success'] ?? null;
 $flash_error = $_SESSION['flash_error'] ?? null;
 unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 
+$prefilled_date = $_GET['date'] ?? null;
+
 echo $twig->render('form_freistellung.twig', [
     'csrf_token' => $csrf_token,
     'flash_success' => $flash_success,
@@ -76,6 +78,7 @@ echo $twig->render('form_freistellung.twig', [
     'requests' => $requests,
     'all_classes' => $all_classes,
     'selected_class_ids' => $selected_class_ids,
+    'prefilled_date' => $prefilled_date,
     'current_user_name' => get_current_user_name(),
     'is_admin' => is_current_user_admin(),
     'is_logged_in' => true

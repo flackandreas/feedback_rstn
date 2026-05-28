@@ -8,13 +8,39 @@ require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/twig_setup.php';
 require_once __DIR__ . '/includes/AIService.php';
 
+$conn = db_connect();
+
+// Handle secure submission viewing
+$view_token = $_GET['view'] ?? '';
+if (!empty($view_token)) {
+    $stmt = $conn->prepare("
+        SELECT s.*, a.title as assignment_title, a.klasse, a.fach, a.description,
+               e.student_feedback, e.score, e.error_markers
+        FROM homework_submissions s
+        JOIN homework_assignments a ON s.assignment_id = a.id
+        LEFT JOIN homework_evaluations e ON s.id = e.submission_id
+        WHERE s.token = ?
+    ");
+    $stmt->execute([$view_token]);
+    $submission = $stmt->fetch();
+    
+    if (!$submission) {
+        die("Einreichung nicht gefunden oder ungültiger Link.");
+    }
+    
+    require_once __DIR__ . '/includes/twig_setup.php';
+    echo $twig->render('student_homework_view.twig', [
+        'sub' => $submission,
+        'host_url' => (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]"
+    ]);
+    exit;
+}
+
 $token = $_GET['t'] ?? '';
 
 if (empty($token)) {
     die("Ungültiger Link.");
 }
-
-$conn = db_connect();
 
 $stmt = $conn->prepare("SELECT * FROM homework_assignments WHERE token = ?");
 $stmt->execute([$token]);
@@ -62,8 +88,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $relativePath = 'uploads/homework/' . $filename;
                 
                 // Submission speichern
-                $stmt_sub = $conn->prepare("INSERT INTO homework_submissions (assignment_id, student_name, student_pseudonym, image_path) VALUES (?, ?, ?, ?)");
-                $stmt_sub->execute([$assignment['id'], $student_name, $pseudonym, $relativePath]);
+                $sub_token = bin2hex(random_bytes(16));
+                $stmt_sub = $conn->prepare("INSERT INTO homework_submissions (assignment_id, student_name, student_pseudonym, image_path, token) VALUES (?, ?, ?, ?, ?)");
+                $stmt_sub->execute([$assignment['id'], $student_name, $pseudonym, $relativePath, $sub_token]);
                 $submission_id = $conn->lastInsertId();
                 
                 // KI Auswertung
@@ -90,7 +117,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'student_feedback' => $eval['student_feedback'] ?? 'Kein Feedback generiert.',
                         'score' => $eval['score'] ?? null,
                         'errors' => $eval['errors'] ?? [],
-                        'image_path' => $relativePath
+                        'image_path' => $relativePath,
+                        'token' => $sub_token
                     ];
                 } catch (\Exception $e) {
                     $error = "Fehler bei der KI-Auswertung: " . $e->getMessage();

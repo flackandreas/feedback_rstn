@@ -37,10 +37,10 @@ if ($action === 'export') {
     file_put_contents($tmp_dir . "/Krankmeldungen/krankmeldungen_$year.csv", "\xEF\xBB\xBF" . $csv);
 
     // --- 2. Export Extracurricular Events ---
-    $stmt = $conn->prepare("SELECT * FROM extracurricular_requests WHERE YEAR(event_date) = ?");
+    $stmt = $conn->prepare("SELECT id, teacher_id, role, class_name, companion, event_date, event_date_to, event_name, destination, aud_type, participating_teacher_id, costs, transport, start_time, start_location, return_time, return_location, return_trip_arranged, supervisors, consent_form, schedule_notified, status, created_at, modified_at, modified_after_approval FROM extracurricular_requests WHERE YEAR(event_date) = ?");
     $stmt->execute([$year]);
     $extra_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $csv = "ID;Lehrer_ID;Rolle;Klasse;Begleitung;Datum;Event;Ziel;AUD_Typ;Begleitlehrer_ID;Kosten;Transport;Start_Zeit;Start_Ort;Rueck_Zeit;Rueck_Ort;Rueck_Arrangiert;Aufsicht;Einverstaendnis;Stundenplan;Status;Erstellt_am;Geaendert_am;Geaendert_nach_Appr\n";
+    $csv = "ID;Lehrer_ID;Rolle;Klasse;Begleitung;Datum;Enddatum;Event;Ziel;AUD_Typ;Begleitlehrer_ID;Kosten;Transport;Start_Zeit;Start_Ort;Rueck_Zeit;Rueck_Ort;Rueck_Arrangiert;Aufsicht;Einverstaendnis;Stundenplan;Status;Erstellt_am;Geaendert_am;Geaendert_nach_Appr\n";
     foreach ($extra_data as $r) {
         $csv .= implode(';', array_values($r)) . "\n";
     }

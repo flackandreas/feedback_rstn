@@ -21,6 +21,11 @@ $twig->addFunction(new \Twig\TwigFunction('is_current_page', function ($page) {
     return basename($_SERVER['PHP_SELF']) === $page;
 }));
 
+// Add json_decode filter
+$twig->addFilter(new \Twig\TwigFilter('json_decode', function ($string) {
+    return json_decode($string, true) ?: [];
+}));
+
 // Global pending counts for admin badges
 if (isset($conn) && isset($_SESSION['is_admin']) && $_SESSION['is_admin'] == 1) {
     require_once __DIR__ . '/admin_helpers.php';

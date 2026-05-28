@@ -1,0 +1,1 @@
+ALTER TABLE sick_leave_reports ADD COLUMN IF NOT EXISTS is_seen TINYINT(1) DEFAULT 0;

@@ -1,0 +1,1 @@
+ALTER TABLE homework_submissions ADD COLUMN token VARCHAR(64) DEFAULT NULL;

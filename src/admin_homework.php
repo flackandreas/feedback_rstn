@@ -126,6 +126,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header("Location: admin_homework.php");
         }
         exit;
+    } elseif ($action === 'edit_evaluation') {
+        $submission_id = (int)($_POST['submission_id'] ?? 0);
+        $assignment_id = (int)($_POST['assignment_id'] ?? 0);
+        $score = isset($_POST['score']) && $_POST['score'] !== '' ? (int)$_POST['score'] : null;
+        $teacher_notes = trim($_POST['teacher_notes'] ?? '');
+        $student_feedback = trim($_POST['student_feedback'] ?? '');
+        
+        // Verify ownership of the submission first
+        $stmt_sub_verify = $conn->prepare("
+            SELECT s.id, e.id as evaluation_id 
+            FROM homework_submissions s
+            JOIN homework_assignments a ON s.assignment_id = a.id
+            LEFT JOIN homework_evaluations e ON s.id = e.submission_id
+            WHERE s.id = ? AND a.teacher_id = ?
+        ");
+        $stmt_sub_verify->execute([$submission_id, $user_id]);
+        $sub_info = $stmt_sub_verify->fetch();
+        
+        if ($sub_info) {
+            if ($sub_info['evaluation_id']) {
+                // Update existing evaluation
+                $stmt_update = $conn->prepare("
+                    UPDATE homework_evaluations 
+                    SET score = ?, teacher_notes = ?, student_feedback = ? 
+                    WHERE submission_id = ?
+                ");
+                if ($stmt_update->execute([$score, $teacher_notes, $student_feedback, $submission_id])) {
+                    $_SESSION['flash_success'] = "Bewertung erfolgreich aktualisiert.";
+                } else {
+                    $_SESSION['flash_error'] = "Fehler beim Aktualisieren.";
+                }
+            } else {
+                // Create new evaluation from scratch (manual grading)
+                $stmt_insert = $conn->prepare("
+                    INSERT INTO homework_evaluations (submission_id, score, teacher_notes, student_feedback) 
+                    VALUES (?, ?, ?, ?)
+                ");
+                if ($stmt_insert->execute([$submission_id, $score, $teacher_notes, $student_feedback])) {
+                    // Update submission status to 'evaluated'
+                    $conn->prepare("UPDATE homework_submissions SET status = 'evaluated' WHERE id = ?")->execute([$submission_id]);
+                    $_SESSION['flash_success'] = "Manuelle Bewertung erfolgreich gespeichert.";
+                } else {
+                    $_SESSION['flash_error'] = "Fehler beim Speichern der Bewertung.";
+                }
+            }
+        } else {
+            $_SESSION['flash_error'] = "Keine Berechtigung oder Einreichung nicht gefunden.";
+        }
+        
+        header("Location: admin_homework.php?action=view&id=" . $assignment_id);
+        exit;
     }
 }
 
@@ -137,7 +188,7 @@ if ($action === 'list') {
     // Fetch submission counts and submissions details
     foreach ($assignments as &$assignment) {
         $stmt_sub = $conn->prepare("
-            SELECT s.*, e.teacher_notes, e.student_feedback, e.score 
+            SELECT s.*, e.teacher_notes, e.student_feedback, e.score, e.error_markers 
             FROM homework_submissions s
             LEFT JOIN homework_evaluations e ON s.id = e.submission_id
             WHERE s.assignment_id = ?
@@ -187,7 +238,7 @@ if ($action === 'list') {
     }
 
     $stmt_subs = $conn->prepare("
-        SELECT s.*, e.teacher_notes, e.student_feedback, e.score 
+        SELECT s.*, e.teacher_notes, e.student_feedback, e.score, e.error_markers 
         FROM homework_submissions s 
         LEFT JOIN homework_evaluations e ON s.id = e.submission_id 
         WHERE s.assignment_id = ? 

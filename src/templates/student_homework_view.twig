@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auswertung: {{ sub.assignment_title }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2ecc71;
+            --primary-dark: #27ae60;
+            --bg-color: #f8fafc;
+            --text-dark: #2c3e50;
+            --border-color: #e2e8f0;
+            --danger-color: #e74c3c;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+            align-self: flex-start;
+        }
+        h1 { margin-top: 0; color: var(--primary-dark); font-size: 1.5rem; }
+        .meta { color: #64748b; font-size: 0.9rem; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); }
+        .section-title { font-size: 1.1rem; font-weight: 600; margin: 25px 0 10px 0; color: #1e293b; }
+        .feedback-box {
+            background: #f0fdf4;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+            white-space: pre-wrap;
+            line-height: 1.5;
+            color: #1e293b;
+            font-size: 0.95rem;
+        }
+        
+        /* Bounding Box / Tooltip Overlay styles */
+        .image-overlay-container {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .error-box {
+            position: absolute;
+            border: 2px solid var(--danger-color);
+            background: rgba(231, 76, 60, 0.15);
+            cursor: help;
+            transition: background 0.2s, border-color 0.2s;
+            border-radius: 4px;
+        }
+        .error-box:hover {
+            background: rgba(231, 76, 60, 0.3);
+            border-color: #c0392b;
+            z-index: 10;
+        }
+        .error-box::after {
+            content: attr(data-description);
+            position: absolute;
+            bottom: 105%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            width: max-content;
+            max-width: 250px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+            pointer-events: none;
+            z-index: 100;
+            font-weight: normal;
+            font-family: 'Inter', sans-serif;
+            text-align: left;
+        }
+        .error-box:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Hausaufgabe: {{ sub.assignment_title }}</h1>
+    <div class="meta">
+        Klasse/Fach: <strong>{{ sub.klasse }} - {{ sub.fach }}</strong><br>
+        Schüler: <strong>{{ sub.student_name }}</strong><br>
+        Datum: <strong>{{ sub.created_at|date('d.m.Y H:i') }}</strong>
+    </div>
+
+    {% if sub.status == 'evaluated' %}
+        <div class="section-title">Feedback für dich:</div>
+        <div class="feedback-box">{{ sub.student_feedback }}</div>
+        
+        {% if sub.score is not null %}
+            <div style="text-align: right; margin-top: 15px; font-weight: bold; font-size: 1.25em; color: var(--primary-dark);">
+                Erreichte Punkte: {{ sub.score }} / 100
+            </div>
+        {% endif %}
+
+        {% if sub.image_path %}
+            <div class="section-title">Markierte Fehler im Bild (Fahre mit der Maus über die roten Boxen):</div>
+            <div class="image-overlay-container">
+                <img src="/{{ sub.image_path }}" style="width: 100%; display: block; border-radius: 8px; border: 1px solid var(--border-color);" alt="Hausaufgabe">
+                
+                {% if sub.error_markers is not empty %}
+                    {% set markers = sub.error_markers|json_decode %}
+                    {% for marker in markers %}
+                        {% set ymin = marker.box_2d[0] / 10 %}
+                        {% set xmin = marker.box_2d[1] / 10 %}
+                        {% set ymax = marker.box_2d[2] / 10 %}
+                        {% set xmax = marker.box_2d[3] / 10 %}
+                        {% set height = ymax - ymin %}
+                        {% set width = xmax - xmin %}
+                        <div class="error-box" 
+                             style="position: absolute; top: {{ ymin }}%; left: {{ xmin }}%; width: {{ width }}%; height: {{ height }}%;"
+                             data-description="{{ marker.description }}">
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        {% endif %}
+    {% else %}
+        <div style="text-align: center; padding: 40px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; color: #b45309;">
+            <div style="font-size: 2em; margin-bottom: 10px;">⏳</div>
+            <h3 style="margin: 0 0 10px 0;">Auswertung ausstehend</h3>
+            <p style="margin: 0; font-size: 0.95em;">Deine Hausaufgabe wurde hochgeladen, aber die Bewertung läuft noch. Bitte lade diese Seite in ein paar Sekunden neu.</p>
+        </div>
+    {% endif %}
+</div>
+
+</body>
+</html>

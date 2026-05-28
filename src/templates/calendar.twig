@@ -1,0 +1,561 @@
+{% extends "base.twig" %}
+
+{% block extra_head %}
+<style>
+    :root {
+        --cal-border: #e2e8f0;
+        --cal-header-bg: #f8fafc;
+        --cal-weekend-bg: #f8fafc;
+        --cal-event-sick: #e74c3c;
+        --cal-event-exempt: #f39c12;
+        --cal-event-extra: #3498db;
+        --cal-event-iserv: #9b59b6;
+    }
+    
+    .calendar-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--cal-border);
+        overflow: hidden;
+        margin-bottom: 30px;
+    }
+    
+    .calendar-control-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        background: white;
+        border-bottom: 1px solid var(--cal-border);
+    }
+    
+    .calendar-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin: 0;
+    }
+    
+    .calendar-nav-btn {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        color: var(--text-dark);
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .calendar-nav-btn:hover {
+        background: #e2e8f0;
+    }
+    
+    .calendar-legend {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        padding: 10px 24px;
+        background: #f8fafc;
+        border-bottom: 1px solid var(--cal-border);
+        font-size: 0.85em;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+        color: var(--text-muted);
+    }
+    
+    .legend-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    
+    .grid-weekdays {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        background: var(--cal-header-bg);
+        border-bottom: 1px solid var(--cal-border);
+        text-align: center;
+        font-weight: 600;
+        color: var(--text-muted);
+        font-size: 0.9em;
+    }
+    
+    .weekday-name {
+        padding: 12px 5px;
+    }
+    
+    .grid-days {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        background: #e2e8f0; /* Border spacing color */
+        gap: 1px;
+    }
+    
+    .day-cell {
+        background: white;
+        min-height: 120px;
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        cursor: pointer;
+        transition: background 0.15s;
+        position: relative;
+    }
+    
+    .day-cell:hover {
+        background: #f8fafc;
+    }
+    
+    .day-cell.other-month {
+        color: #cbd5e1;
+        background: #fafafa;
+    }
+    
+    .day-cell.today {
+        background: #eff6ff;
+    }
+    
+    .day-cell.today .day-number {
+        background: var(--primary-color);
+        color: white;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+    
+    .day-cell.weekend {
+        background: var(--cal-weekend-bg);
+    }
+    
+    .day-cell.weekend.other-month {
+        background: #fdfdfd;
+    }
+    
+    .day-number {
+        font-weight: 600;
+        font-size: 0.9em;
+        margin-bottom: 6px;
+        align-self: flex-start;
+        color: #475569;
+    }
+    
+    .day-cell.other-month .day-number {
+        color: #cbd5e1;
+    }
+    
+    .events-container {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        overflow: hidden;
+        flex-grow: 1;
+    }
+    
+    .event-bar {
+        padding: 3px 6px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: white;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+        line-height: 1.2;
+    }
+    
+    .event-bar.sick {
+        background-color: var(--cal-event-sick);
+    }
+    .event-bar.exempt {
+        background-color: var(--cal-event-exempt);
+    }
+    .event-bar.extra {
+        background-color: var(--cal-event-extra);
+    }
+    .event-bar.iserv {
+        background-color: var(--cal-event-iserv);
+    }
+    
+    /* MODAL OVERLAY STYLES */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.3);
+        backdrop-filter: blur(4px);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .modal-card {
+        background: white;
+        border-radius: 12px;
+        width: min(500px, 90vw);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
+        border: 1px solid var(--cal-border);
+        animation: scaleIn 0.2s ease-out;
+    }
+    
+    @keyframes scaleIn {
+        from { transform: scale(0.95); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+    
+    .modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--cal-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--cal-header-bg);
+    }
+    
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.2rem;
+        color: var(--text-dark);
+    }
+    
+    .modal-close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--text-muted);
+    }
+    
+    .modal-body {
+        padding: 20px 24px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .modal-event-item {
+        padding: 10px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        border-left: 4px solid #ccc;
+        background: #f8fafc;
+    }
+    
+    .modal-event-item.sick {
+        border-left-color: var(--cal-event-sick);
+    }
+    .modal-event-item.exempt {
+        border-left-color: var(--cal-event-exempt);
+    }
+    .modal-event-item.extra {
+        border-left-color: var(--cal-event-extra);
+    }
+    .modal-event-item.iserv {
+        border-left-color: var(--cal-event-iserv);
+    }
+    
+    .modal-event-title {
+        font-weight: 700;
+        font-size: 0.9em;
+        margin-bottom: 4px;
+        color: var(--text-dark);
+    }
+    
+    .modal-event-desc {
+        font-size: 0.85em;
+        color: #475569;
+        white-space: pre-wrap;
+        line-height: 1.4;
+    }
+    
+    .modal-footer {
+        padding: 15px 24px;
+        border-top: 1px solid var(--cal-border);
+        background: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 25px;">
+    <h2>Schulkalender</h2>
+    <p style="color: var(--text-muted); margin-top: 5px;">Übersicht aller Krankmeldungen und genehmigten Abwesenheiten. Klicken Sie auf einen Tag, um Details zu sehen oder Anträge einzureichen.</p>
+</div>
+
+<div class="calendar-container">
+    <!-- Header control bar -->
+    <div class="calendar-control-bar">
+        <button class="calendar-nav-btn" onclick="navigateMonth(-1)">&larr; Vorheriger</button>
+        <h3 class="calendar-title" id="calendar-month-year-label">Month Year</h3>
+        <button class="calendar-nav-btn" onclick="navigateMonth(1)">Nächster &rarr;</button>
+    </div>
+    
+    <!-- Legend -->
+    <div class="calendar-legend">
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: var(--cal-event-sick);"></span>
+            <span>🤒 Krankmeldungen</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: var(--cal-event-exempt);"></span>
+            <span>🏖️ Genehmigte Freistellungen</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: var(--cal-event-extra);"></span>
+            <span>🚌 Genehmigte Ausflüge (AUD)</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: var(--cal-event-iserv);"></span>
+            <span>📅 Schultermine (IServ)</span>
+        </div>
+    </div>
+    
+    <!-- Weekdays Header -->
+    <div class="grid-weekdays">
+        <div class="weekday-name">Montag</div>
+        <div class="weekday-name">Dienstag</div>
+        <div class="weekday-name">Mittwoch</div>
+        <div class="weekday-name">Donnerstag</div>
+        <div class="weekday-name">Freitag</div>
+        <div class="weekday-name">Samstag</div>
+        <div class="weekday-name">Sonntag</div>
+    </div>
+    
+    <!-- Days Grid -->
+    <div class="grid-days" id="calendar-days-grid">
+        <!-- Rendered dynamically by Javascript -->
+    </div>
+</div>
+
+<!-- POPUP MODAL -->
+<div class="modal-overlay" id="calendar-modal" onclick="closeModal()">
+    <div class="modal-card" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3 id="modal-date-title">Termine</h3>
+            <button class="modal-close-btn" onclick="closeModal()">&times;</button>
+        </div>
+        
+        <div class="modal-body" id="modal-events-list">
+            <!-- Populated dynamically -->
+        </div>
+        
+        <div class="modal-footer">
+            <p style="font-weight: 600; font-size: 0.85em; color: var(--text-muted); margin: 0 0 5px 0;">Neuen Antrag stellen für diesen Tag:</p>
+            <div style="display: flex; gap: 10px;">
+                <a id="btn-request-extra" href="#" class="btn btn-primary" style="flex: 1; text-align: center; text-decoration: none; padding: 10px; font-size: 0.85em; display: inline-flex; align-items: center; justify-content: center; gap: 5px;">
+                    <span>🚌</span> Ausflug beantragen
+                </a>
+                <a id="btn-request-exempt" href="#" class="btn" style="flex: 1; text-align: center; text-decoration: none; border: 1px solid #ccc; background: white; color: var(--text-dark); padding: 10px; font-size: 0.85em; display: inline-flex; align-items: center; justify-content: center; gap: 5px;">
+                    <span>🏖️</span> Freistellung beantragen
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Load events from PHP
+    const events = {{ events_json|raw }};
+    
+    // Track calendar state
+    const today = new Date();
+    let currentYear = today.getFullYear();
+    let currentMonth = today.getMonth(); // 0-indexed
+    
+    const monthNames = [
+        "Januar", "Februar", "März", "April", "Mai", "Juni",
+        "Juli", "August", "September", "Oktober", "November", "Dezember"
+    ];
+    
+    function navigateMonth(direction) {
+        currentMonth += direction;
+        if (currentMonth < 0) {
+            currentMonth = 11;
+            currentYear--;
+        } else if (currentMonth > 11) {
+            currentMonth = 0;
+            currentYear++;
+        }
+        renderCalendar();
+    }
+    
+    function getFormattedDate(year, month, day) {
+        const yStr = year.toString();
+        const mStr = (month + 1).toString().padStart(2, '0');
+        const dStr = day.toString().padStart(2, '0');
+        return `${yStr}-${mStr}-${dStr}`;
+    }
+    
+    function renderCalendar() {
+        const grid = document.getElementById('calendar-days-grid');
+        const label = document.getElementById('calendar-month-year-label');
+        if (!grid || !label) return;
+        
+        grid.innerHTML = '';
+        label.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+        
+        // Find weekday of 1st day of month (0 = Sun, 1 = Mon ... 6 = Sat)
+        const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+        let firstDayIndex = firstDayOfMonth.getDay();
+        // Convert Sun-based (0) to Mon-based (0 = Mon, 6 = Sun)
+        firstDayIndex = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+        
+        // Find total days in current month
+        const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+        
+        // Find total days in previous month
+        const totalDaysPrev = new Date(currentYear, currentMonth, 0).getDate();
+        
+        // Render previous month's trailing days
+        for (let i = firstDayIndex - 1; i >= 0; i--) {
+            const prevDay = totalDaysPrev - i;
+            const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+            const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+            createDayCell(prevYear, prevMonth, prevDay, true);
+        }
+        
+        // Render current month's days
+        for (let day = 1; day <= totalDays; day++) {
+            createDayCell(currentYear, currentMonth, day, false);
+        }
+        
+        // Render next month's leading days to complete grid (multiples of 7)
+        const renderedCount = firstDayIndex + totalDays;
+        const remainingCells = (7 - (renderedCount % 7)) % 7;
+        for (let day = 1; day <= remainingCells; day++) {
+            const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
+            const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+            createDayCell(nextYear, nextMonth, day, true);
+        }
+    }
+    
+    function createDayCell(year, month, day, isOtherMonth) {
+        const grid = document.getElementById('calendar-days-grid');
+        const dateStr = getFormattedDate(year, month, day);
+        
+        // Create cell element
+        const cell = document.createElement('div');
+        cell.className = 'day-cell';
+        if (isOtherMonth) cell.classList.add('other-month');
+        
+        // Check if today
+        const cellDateObj = new Date(year, month, day);
+        const todayDateObj = new Date();
+        const isToday = cellDateObj.toDateString() === todayDateObj.toDateString();
+        if (isToday) cell.classList.add('today');
+        
+        // Check weekend (Sat = 6, Sun = 0)
+        const weekdayIndex = cellDateObj.getDay();
+        const isWeekend = (weekdayIndex === 0 || weekdayIndex === 6);
+        if (isWeekend) cell.classList.add('weekend');
+        
+        // Add Day number
+        const numDiv = document.createElement('div');
+        numDiv.className = 'day-number';
+        numDiv.textContent = day;
+        cell.appendChild(numDiv);
+        
+        // Add events container
+        const evContainer = document.createElement('div');
+        evContainer.className = 'events-container';
+        
+        // Filter events spanning this date
+        const cellEvents = events.filter(e => dateStr >= e.start && dateStr <= e.end);
+        
+        cellEvents.forEach(e => {
+            const bar = document.createElement('div');
+            bar.className = `event-bar ${e.type}`;
+            bar.textContent = e.title;
+            bar.title = e.title;
+            evContainer.appendChild(bar);
+        });
+        
+        cell.appendChild(evContainer);
+        
+        // Add click listener
+        cell.addEventListener('click', () => {
+            openModal(dateStr, cellEvents);
+        });
+        
+        grid.appendChild(cell);
+    }
+    
+    function openModal(dateStr, cellEvents) {
+        const modal = document.getElementById('calendar-modal');
+        const title = document.getElementById('modal-date-title');
+        const list = document.getElementById('modal-events-list');
+        
+        const requestExtraBtn = document.getElementById('btn-request-extra');
+        const requestExemptBtn = document.getElementById('btn-request-exempt');
+        
+        if (!modal || !title || !list) return;
+        
+        // Parse date for title
+        const parsedDate = new Date(dateStr);
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        title.textContent = parsedDate.toLocaleDateString('de-DE', options);
+        
+        // Setup request redirects
+        requestExtraBtn.href = `/antrag_ausserunterrichtlich.php?date=${dateStr}`;
+        requestExemptBtn.href = `/antrag_freistellung.php?date=${dateStr}`;
+        
+        list.innerHTML = '';
+        
+        if (cellEvents.length === 0) {
+            list.innerHTML = '<p style="color: var(--text-muted); text-align: center; margin: 20px 0;">Keine Abwesenheiten oder Veranstaltungen für diesen Tag gemeldet.</p>';
+        } else {
+            cellEvents.forEach(e => {
+                const item = document.createElement('div');
+                item.className = `modal-event-item ${e.type}`;
+                
+                const evTitle = document.createElement('div');
+                evTitle.className = 'modal-event-title';
+                evTitle.textContent = e.title;
+                item.appendChild(evTitle);
+                
+                const evDesc = document.createElement('div');
+                evDesc.className = 'modal-event-desc';
+                evDesc.textContent = e.details;
+                item.appendChild(evDesc);
+                
+                list.appendChild(item);
+            });
+        }
+        
+        modal.style.display = 'flex';
+    }
+    
+    function closeModal() {
+        const modal = document.getElementById('calendar-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+    
+    // Initial Render
+    document.addEventListener("DOMContentLoaded", () => {
+        renderCalendar();
+    });
+</script>
+{% endblock %}

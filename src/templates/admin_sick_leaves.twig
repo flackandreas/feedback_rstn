@@ -1,0 +1,330 @@
+{% extends "base.twig" %}
+
+{% block extra_head %}
+<style>
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .badge-count {
+        background-color: var(--danger-color);
+        color: white;
+        padding: 3px 8px;
+        border-radius: 20px;
+        font-size: 0.8em;
+        font-weight: bold;
+        margin-left: 8px;
+    }
+    .action-btn {
+        padding: 5px 12px;
+        font-size: 0.85em;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        transition: background 0.2s, transform 0.1s;
+    }
+    .btn-seen {
+        background-color: var(--success-color);
+        color: white;
+        border: none;
+    }
+    .btn-seen:hover {
+        background-color: #27ae60;
+        transform: translateY(-1px);
+    }
+    .btn-all-seen {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        font-size: 0.9em;
+    }
+    .btn-all-seen:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+    .status-badge {
+        font-size: 0.75em;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-weight: 600;
+        color: white;
+        background-color: var(--danger-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2>Krankmeldungen verwalten</h2>
+    <a href="/admin_dashboard.php" class="btn" style="background-color: #eee; border: 1px solid #ccc; color: var(--text-dark); padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">&larr; Zur Antragsverwaltung</a>
+</div>
+
+{% if flash_success %}
+    <div class="alert alert-success">{{ flash_success }}</div>
+{% endif %}
+{% if flash_error %}
+    <div class="alert alert-error">{{ flash_error }}</div>
+{% endif %}
+
+{# =====================================================================
+   SECTION 1: Neue Krankmeldungen
+   ===================================================================== #}
+<div class="content-box" style="border-top: 4px solid var(--danger-color);">
+    <div class="section-header">
+        <h3 style="margin: 0; display: flex; align-items: center;">
+            <span style="font-size: 1.2em; margin-right: 8px;">🆕</span> 
+            Neue Krankmeldungen
+            {% if sick_leaves_new|length > 0 %}
+                <span class="badge-count">{{ sick_leaves_new|length }}</span>
+            {% endif %}
+        </h3>
+        {% if sick_leaves_new|length > 0 %}
+            <form method="POST" action="/admin_sick_leaves.php" class="confirm-all-form" style="margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="action" value="mark_all_seen">
+                <button type="button" class="action-btn btn-all-seen" onclick="confirmAllSeen(event)">✓ Alle als gelesen markieren</button>
+            </form>
+        {% endif %}
+    </div>
+
+    {% if sick_leaves_new is empty %}
+        <p style="color: var(--text-muted); margin: 15px 0 5px 0;">Keine neuen (ungelesenen) Krankmeldungen vorhanden.</p>
+    {% else %}
+        <div style="overflow-x: auto;">
+            <table class="data-table simple">
+                <thead>
+                    <tr>
+                        <th>Eingang</th>
+                        <th>Lehrkraft</th>
+                        <th>Von</th>
+                        <th>Bis</th>
+                        <th>Notizen</th>
+                        <th>Vertretungsmaterial</th>
+                        <th>Anlage</th>
+                        <th>Aktion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in sick_leaves_new %}
+                        <tr>
+                            <td style="font-size: 0.85em; color: var(--text-muted);">{{ r.created_at|date('d.m.y H:i') }}</td>
+                            <td style="font-weight: 600;">
+                                {{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span>
+                                {% if r.modified_at %}
+                                    <div style="margin-top: 4px;">
+                                        <span class="badge" style="background-color: #8e44ad; color: white; font-size: 0.7em; padding: 2px 5px; border-radius: 3px;">GEÄNDERT (am {{ r.modified_at|date('d.m.Y') }})</span>
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td style="color: var(--danger-color); font-weight: 600;">{{ r.date_main|date('d.m.Y') }}</td>
+                            <td style="color: var(--danger-color); font-weight: 600;">{{ r.date_to|date('d.m.Y') }}</td>
+                            <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.details }}">{{ r.details|default('-') }}</td>
+                            <td>
+                                {% if r.material_link %}
+                                    <a href="{{ r.material_link }}" target="_blank" class="button-secondary" style="padding: 2px 8px; font-size: 0.8em; color: var(--primary-color);">🚀 Material</a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if r.attachment_path %}
+                                    <a href="/{{ r.attachment_path }}" target="_blank" class="button-secondary" style="padding: 2px 8px; font-size: 0.8em;">Ansehen</a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="POST" action="/admin_sick_leaves.php" style="margin:0;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="action" value="mark_seen">
+                                    <input type="hidden" name="id" value="{{ r.id }}">
+                                    <button type="submit" class="action-btn btn-seen" title="Als gelesen markieren">✓ Gelesen</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+
+{# =====================================================================
+   SECTION 2: Laufende Krankmeldungen
+   ===================================================================== #}
+<div class="content-box" style="border-top: 4px solid #f39c12; margin-top: 25px;">
+    <div class="section-header">
+        <h3 style="margin: 0; display: flex; align-items: center;">
+            <span style="font-size: 1.2em; margin-right: 8px;">🤒</span>
+            Laufende & Zukünftige Krankmeldungen
+        </h3>
+    </div>
+    {% if sick_leaves_current is empty %}
+        <p style="color: var(--text-muted); margin: 15px 0 5px 0;">Keine aktuellen Krankmeldungen vorhanden.</p>
+    {% else %}
+        <div style="overflow-x: auto;">
+            <table class="data-table simple">
+                <thead>
+                    <tr>
+                        <th>Eingang</th>
+                        <th>Lehrkraft</th>
+                        <th>Von</th>
+                        <th>Bis</th>
+                        <th>Notizen</th>
+                        <th>Vertretungsmaterial</th>
+                        <th>Anlage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in sick_leaves_current %}
+                        <tr>
+                            <td style="font-size: 0.85em; color: var(--text-muted);">{{ r.created_at|date('d.m.y H:i') }}</td>
+                            <td style="font-weight: 600;">
+                                {{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span>
+                                {% if r.modified_at %}
+                                    <div style="margin-top: 4px;">
+                                        <span class="badge" style="background-color: #8e44ad; color: white; font-size: 0.7em; padding: 2px 5px; border-radius: 3px;">GEÄNDERT (am {{ r.modified_at|date('d.m.Y') }})</span>
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td>{{ r.date_main|date('d.m.Y') }}</td>
+                            <td>{{ r.date_to|date('d.m.Y') }}</td>
+                            <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.details }}">{{ r.details|default('-') }}</td>
+                            <td>
+                                {% if r.material_link %}
+                                    <a href="{{ r.material_link }}" target="_blank" class="button-secondary" style="padding: 2px 8px; font-size: 0.8em; color: var(--primary-color);">🚀 Material</a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if r.attachment_path %}
+                                    <a href="/{{ r.attachment_path }}" target="_blank" class="button-secondary" style="padding: 2px 8px; font-size: 0.8em;">Ansehen</a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+
+{# =====================================================================
+   SECTION 3: Vergangene Krankmeldungen (Historie)
+   ===================================================================== #}
+<div class="content-box" style="border-top: 4px solid #6c757d; margin-top: 25px;">
+    <div class="section-header">
+        <h3 style="margin: 0; display: flex; align-items: center;">
+            <span style="font-size: 1.2em; margin-right: 8px;">⏳</span>
+            Vergangene Krankmeldungen (Archiv)
+        </h3>
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+        <label for="history_teacher_select" style="font-weight: 600;">Lehrkraft auswählen:</label>
+        <select id="history_teacher_select" style="padding: 10px; width: 300px; border: 1px solid #ccc; border-radius: 4px; margin-left: 10px;">
+            <option value="">-- Bitte wählen --</option>
+            {% for teacher in sick_history_by_teacher %}
+                <option value="tid_{{ teacher.id }}">{{ teacher.name }} ({{ teacher.kuerzel }})</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    {% for teacher in sick_history_by_teacher %}
+    <div class="history-teacher-block" id="tid_{{ teacher.id }}" style="display: none; padding: 15px; border: 1px solid #eee; background: #fcfcfc; border-radius: 6px; margin-bottom: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h4 style="margin: 0; font-size: 1.1em;">
+                {{ teacher.name }} ({{ teacher.kuerzel }})
+            </h4>
+            <div style="text-align: right;">
+                <span style="font-weight: 600; color: var(--danger-color); display: block; font-size: 1.1em;">Bisherige Krankheitstage: {{ teacher.total_days }}</span>
+                <a href="/export_sick_leaves.php?teacher_id={{ teacher.id }}" target="_blank" class="button-secondary" style="font-size: 0.8em; margin-top: 5px; display: inline-block;">📄 Als PDF Exportieren</a>
+            </div>
+        </div>
+        
+        <table class="data-table simple" style="font-size: 0.9em;">
+            <thead>
+                <tr>
+                    <th>Gültig Von</th>
+                    <th>Bis</th>
+                    <th>Notizen</th>
+                    <th>Anlage</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in teacher.records %}
+                    <tr>
+                        <td>
+                            {{ r.date_main|date('d.m.Y') }}
+                            {% if r.modified_at %}
+                                <br><span style="color: #8e44ad; font-size: 0.75em; font-weight: 600;">(Geändert am {{ r.modified_at|date('d.m.Y') }})</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ r.date_to|date('d.m.Y') }}</td>
+                        <td>{{ r.details|default('-') }}</td>
+                        <td>
+                            {% if r.attachment_path %}
+                                <a href="/{{ r.attachment_path }}" target="_blank">Ansehen</a>
+                            {% else %}-{% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Handle teacher history dropdown visibility
+        var historySelect = document.getElementById('history_teacher_select');
+        if (historySelect) {
+            historySelect.addEventListener('change', function() {
+                // Hide all
+                document.querySelectorAll('.history-teacher-block').forEach(function(el) {
+                    el.style.display = 'none';
+                });
+                // Show selected
+                if (this.value !== "") {
+                    var target = document.getElementById(this.value);
+                    if (target) {
+                        target.style.display = 'block';
+                    }
+                }
+            });
+        }
+    });
+
+    function confirmAllSeen(event) {
+        event.preventDefault();
+        const form = event.target.closest('form');
+        Swal.fire({
+            title: 'Alle Krankmeldungen als gelesen markieren?',
+            text: "Hiermit werden alle neuen Krankmeldungen in die laufende bzw. vergangene Liste verschoben.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: 'var(--primary-color)',
+            cancelButtonColor: 'var(--text-muted)',
+            confirmButtonText: 'Ja, alle markieren',
+            cancelButtonText: 'Abbrechen'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
+    }
+</script>
+{% endblock %}

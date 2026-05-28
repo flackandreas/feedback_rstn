@@ -78,7 +78,7 @@ while ($r = $stmt_exempt->fetch()) {
 
 // 3. Ausflüge (Gelöst/Approved)
 $stmt_extra = $conn->query("
-    SELECT r.id, r.event_date, r.event_name, r.class_name, t.name as teacher_name 
+    SELECT r.id, r.event_date, r.event_date_to, r.event_name, r.class_name, t.name as teacher_name 
     FROM extracurricular_requests r 
     JOIN teachers t ON r.teacher_id = t.id 
     WHERE r.status = 'approved' AND r.event_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
@@ -87,7 +87,7 @@ while ($r = $stmt_extra->fetch()) {
     create_ics_event(
         'extra_'.$r['id'],
         $r['event_date'],
-        $r['event_date'],
+        $r['event_date_to'] ?: $r['event_date'],
         'Ausflug (' . $r['class_name'] . '): ' . $r['event_name'],
         'Leitung: ' . $r['teacher_name']
     );

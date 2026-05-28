@@ -29,7 +29,10 @@ function run_all_migrations() {
         'alter_homework_context.sql',
         'alter_force_password_change.sql',
         'alter_feedback_templates.sql',
-        'alter_feedback_templates_klasse_fach.sql'
+        'alter_feedback_templates_klasse_fach.sql',
+        'alter_homework_submission_token.sql',
+        'alter_sick_leave_is_seen.sql',
+        'alter_extracurricular_end_date.sql'
     ];
 
     foreach ($sql_files as $file) {

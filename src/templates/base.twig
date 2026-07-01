@@ -121,6 +121,7 @@
                 </a>
             </li>
             
+            {% if not is_admin %}
             <li class="nav-label">Unterricht</li>
             <li class="nav-item">
                 <a href="/admin_homework.php" class="{{ is_current_page('admin_homework.php') ? 'active' : '' }}">
@@ -174,60 +175,62 @@
                     </ul>
                 </details>
             </li>
+            {% endif %}
             
             {% if is_admin %}
             <div class="nav-separator"></div>
             
-            <li class="nav-label">Administration</li>
+            <li class="nav-label">Verwaltung</li>
             <li class="nav-item">
-                <details class="nav-details" {% if is_current_page('admin_dashboard.php') or is_current_page('admin_aud.php') or is_current_page('admin_sick_leaves.php') or is_current_page('admin_lehrer.php') or is_current_page('admin_klassen.php') or is_current_page('admin_system.php') %}open{% endif %}>
-                    <summary class="nav-summary">
-                        <span class="nav-icon">🛡️</span>
-                        <span class="nav-text">Verwaltung</span>
-                        <span class="nav-summary-arrow">&rsaquo;</span>
-                    </summary>
-                    <ul class="nav-submenu">
-                        <li>
-                            <a href="/admin_dashboard.php" class="{{ is_current_page('admin_dashboard.php') ? 'active' : '' }}" style="justify-content: space-between;">
-                                <span>🏖️ Freistellungen</span>
-                                {% if pending_counts.exemption > 0 %}
-                                    <span class="badge" style="background-color: var(--danger-color); color: white; padding: 1px 6px; border-radius: 10px; font-size: 0.75em; margin-left: 5px;">{{ pending_counts.exemption }}</span>
-                                {% endif %}
-                            </a>
-                        </li>
-                        <li>
-                            <a href="/admin_aud.php" class="{{ is_current_page('admin_aud.php') ? 'active' : '' }}" style="justify-content: space-between;">
-                                <span>🚌 AUD-Termine</span>
-                                {% if pending_counts.aud > 0 %}
-                                    <span class="badge" style="background-color: var(--danger-color); color: white; padding: 1px 6px; border-radius: 10px; font-size: 0.75em; margin-left: 5px;">{{ pending_counts.aud }}</span>
-                                {% endif %}
-                            </a>
-                        </li>
-                        <li>
-                            <a href="/admin_sick_leaves.php" class="{{ is_current_page('admin_sick_leaves.php') ? 'active' : '' }}" style="justify-content: space-between;">
-                                <span>🤒 Krankmeldungen</span>
-                                {% if pending_counts.sick_leaves > 0 %}
-                                    <span class="badge" style="background-color: var(--danger-color); color: white; padding: 1px 6px; border-radius: 10px; font-size: 0.75em; margin-left: 5px;">{{ pending_counts.sick_leaves }}</span>
-                                {% endif %}
-                            </a>
-                        </li>
-                        <li>
-                            <a href="/admin_lehrer.php" class="{{ is_current_page('admin_lehrer.php') ? 'active' : '' }}">
-                                <span>👥 Lehrerverwaltung</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="/admin_klassen.php" class="{{ is_current_page('admin_klassen.php') ? 'active' : '' }}">
-                                <span>🏫 Klassenverwaltung</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="/admin_system.php" class="{{ is_current_page('admin_system.php') ? 'active' : '' }}">
-                                <span>⚙️ Systemverwaltung</span>
-                            </a>
-                        </li>
-                    </ul>
-                </details>
+                <a href="/admin_dashboard.php" class="{{ is_current_page('admin_dashboard.php') ? 'active' : '' }}" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center;">
+                        <span class="nav-icon">🏖️</span>
+                        <span class="nav-text">Freistellungen</span>
+                    </div>
+                    {% if pending_counts.exemption > 0 %}
+                        <span class="badge" style="background-color: var(--danger-color); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.75em; margin-left: 5px;">{{ pending_counts.exemption }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin_aud.php" class="{{ is_current_page('admin_aud.php') ? 'active' : '' }}" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center;">
+                        <span class="nav-icon">🚌</span>
+                        <span class="nav-text">AUD-Termine</span>
+                    </div>
+                    {% if pending_counts.aud > 0 %}
+                        <span class="badge" style="background-color: var(--danger-color); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.75em; margin-left: 5px;">{{ pending_counts.aud }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin_sick_leaves.php" class="{{ is_current_page('admin_sick_leaves.php') ? 'active' : '' }}" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center;">
+                        <span class="nav-icon">🤒</span>
+                        <span class="nav-text">Krankmeldungen</span>
+                    </div>
+                    {% if pending_counts.sick_leaves > 0 %}
+                        <span class="badge" style="background-color: var(--danger-color); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.75em; margin-left: 5px;">{{ pending_counts.sick_leaves }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin_lehrer.php" class="{{ is_current_page('admin_lehrer.php') ? 'active' : '' }}">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text">Lehrerverwaltung</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin_klassen.php" class="{{ is_current_page('admin_klassen.php') ? 'active' : '' }}">
+                    <span class="nav-icon">🏫</span>
+                    <span class="nav-text">Klassenverwaltung</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin_system.php" class="{{ is_current_page('admin_system.php') ? 'active' : '' }}">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">Systemverwaltung</span>
+                </a>
             </li>
             {% endif %}
             

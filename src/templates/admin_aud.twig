@@ -20,34 +20,112 @@
 </div>
 
 <div class="content-box">
-    <h3 style="border-left: 4px solid var(--primary-color); padding-left: 10px;">Freie Lehrkräfte Übersicht</h3>
-    <p style="color: var(--text-muted); margin-bottom: 15px;">Lehrkräfte, die für den jeweiligen AUD-Tag noch nicht eingeteilt sind.</p>
+    <h3 style="border-left: 4px solid var(--primary-color); padding-left: 10px;">AUD-Tage Übersicht</h3>
+    <p style="color: var(--text-muted); margin-bottom: 15px;">Übersicht der angemeldeten außerunterrichtlichen Veranstaltungen und freien Lehrkräfte für jeden AUD-Tag.</p>
     
     <div class="aud-accordions">
         {% for aud_name, free_teachers in aud_free %}
+            {# Find requests for this AUD #}
+            {% set aud_requests = [] %}
+            {% for r in extra_requests %}
+                {% if r.aud_type == aud_name %}
+                    {% set aud_requests = aud_requests|merge([r]) %}
+                {% endif %}
+            {% endfor %}
+            
             <div style="margin-bottom: 10px; background: white; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;">
                 <button type="button" style="width: 100%; text-align: left; padding: 12px 15px; background: #f8f9fa; color: #333; border: none; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="const p = this.nextElementSibling; const isHidden = p.style.display === 'none'; p.style.display = isHidden ? 'block' : 'none'; this.children[1].textContent = isHidden ? '▲' : '▼';">
-                    <span>{{ aud_name }}</span>
+                    <span>
+                        {{ aud_name }} 
+                        <span style="font-weight: normal; font-size: 0.85em; color: var(--text-muted); margin-left: 10px;">
+                            ({{ aud_requests|length }} Veranstaltung(en), {{ free_teachers|length }} freie Lehrkräfte)
+                        </span>
+                    </span>
                     <span>▼</span>
                 </button>
                 <div style="display: none; padding: 15px; border-top: 1px solid #ddd;">
-                    {% if free_teachers is empty %}
-                        <p style="color: var(--text-muted); margin: 0 0 10px 0;">Alle Lehrkräfte sind eingeteilt.</p>
-                    {% else %}
-                        <ul style="margin: 0 0 15px 0; padding-left: 20px;">
-                        {% for teacher in free_teachers %}
-                            <li>{{ teacher.name }} ({{ teacher.kuerzel }})</li>
-                        {% endfor %}
-                        </ul>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
                         
-                        <textarea id="copy-aud-{{ loop.index }}" style="display:none;">
+                        <!-- Section: Extracurricular Events -->
+                        <div>
+                            <h4 style="margin-top: 0; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 5px; color: var(--primary-color);">
+                                🚌 Angemeldete Veranstaltungen
+                            </h4>
+                            {% if aud_requests is empty %}
+                                <p style="color: var(--text-muted); font-size: 0.9em; margin: 5px 0;">Keine Veranstaltungen für diesen AUD angemeldet.</p>
+                            {% else %}
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                {% for r in aud_requests %}
+                                    {% set data = {
+                                        type: 'ausflug',
+                                        id: r.id,
+                                        teacher: r.teacher_name ~ ' (' ~ r.kuerzel ~ ')',
+                                        event_date: r.event_date|date('d.m.Y'),
+                                        event_date_to: r.event_date_to ? r.event_date_to|date('d.m.Y') : '',
+                                        class_name: r.class_name|default(''),
+                                        destination: r.destination|default(''),
+                                        role: r.role|default(''),
+                                        companion: r.companion|default(''),
+                                        event_name: r.event_name|default(''),
+                                        costs: r.costs|default(''),
+                                        transport: r.transport|default(''),
+                                        start_time: r.start_time|default(''),
+                                        start_location: r.start_location|default(''),
+                                        return_time: r.return_time|default(''),
+                                        return_location: r.return_location|default(''),
+                                        return_trip_arranged: r.return_trip_arranged,
+                                        supervisors: r.supervisors|default(''),
+                                        consent_form: r.consent_form|default(''),
+                                        schedule_notified: r.schedule_notified,
+                                        status: r.status
+                                    } %}
+                                    <div class="detail-row" 
+                                         data-info="{{ data|json_encode|e('html_attr') }}"
+                                         style="padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f8fafc; font-size: 0.9em; cursor: pointer; transition: background-color 0.2s;"
+                                         onmouseover="this.style.backgroundColor='#edf2f7'"
+                                         onmouseout="this.style.backgroundColor='#f8fafc'"
+                                         title="Klicken für Details">
+                                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 3px;">
+                                            <strong style="color: var(--text-dark);">{{ r.event_name }}</strong>
+                                            <span class="badge" style="font-size: 0.75em; padding: 2px 6px; border-radius: 4px; background: {% if r.status == 'approved' %}var(--success-color){% elseif r.status == 'pending' %}var(--warning-color-dark){% else %}var(--danger-color){% endif %}; color: white; font-weight: 600;">
+                                                {{ r.status }}
+                                            </span>
+                                        </div>
+                                        <div style="color: var(--text-muted); font-size: 0.85em; line-height: 1.4;">
+                                            <strong>Klassen:</strong> {{ r.class_name }} | <strong>Ziel:</strong> {{ r.destination }} <br>
+                                            <strong>Leitung:</strong> {{ r.teacher_name }} ({{ r.kuerzel }})
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Section: Free Teachers -->
+                        <div>
+                            <h4 style="margin-top: 0; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 5px; color: var(--success-color);">
+                                👥 Freie Lehrkräfte
+                            </h4>
+                            {% if free_teachers is empty %}
+                                <p style="color: var(--text-muted); font-size: 0.9em; margin: 5px 0;">Alle Lehrkräfte sind eingeteilt.</p>
+                            {% else %}
+                                <ul style="margin: 0 0 12px 0; padding-left: 20px; font-size: 0.9em; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 5px;">
+                                {% for teacher in free_teachers %}
+                                    <li>{{ teacher.name }} ({{ teacher.kuerzel }})</li>
+                                {% endfor %}
+                                </ul>
+                                
+                                <textarea id="copy-aud-{{ loop.index }}" style="display:none;">
 === Freie Lehrkräfte - {{ aud_name }} ===
 {% for teacher in free_teachers %}
 - {{ teacher.name }} ({{ teacher.kuerzel }})
 {% endfor %}
-                        </textarea>
-                        <button type="button" class="button-secondary" style="font-size: 0.85em;" onclick="copyAudContent('copy-aud-{{ loop.index }}')">📋 In Zwischenablage kopieren</button>
-                    {% endif %}
+                                </textarea>
+                                <button type="button" class="button-secondary" style="font-size: 0.8em; padding: 6px 12px;" onclick="copyAudContent('copy-aud-{{ loop.index }}')">📋 Freie kopieren</button>
+                            {% endif %}
+                        </div>
+                        
+                    </div>
                 </div>
             </div>
         {% endfor %}

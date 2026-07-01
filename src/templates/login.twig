@@ -24,8 +24,10 @@
 {% block content_public %}
 <div class="content-box" style="width: 100%; max-width: 400px; padding: 40px;">
     <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: var(--primary-color); margin-bottom: 5px;">E-Anträge</h1>
-        <p style="color: var(--text-muted); font-size: 0.9em;">Lehrer-Login</p>
+        <h1 style="color: var(--primary-color); margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 4px; font-weight: 700; font-size: 2.2rem;">
+            <img src="/favicon.png" alt="S" style="width: 1.05em; height: 1.05em; border-radius: 6px; vertical-align: bottom;">coolHub
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.9em; margin-top: 8px;">Lehrer-Login</p>
     </div>
 
     <form method="POST" action="/login.php">

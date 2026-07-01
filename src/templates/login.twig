@@ -1,5 +1,26 @@
 {% extends "base.twig" %}
 
+{% block extra_head %}
+<style>
+    /* Make the login page background use the wertvoll.png image */
+    .login-layout {
+        background-image: url('/img/wertvoll.png') !important;
+        background-size: 80% auto !important;
+        background-position: center !important;
+        background-repeat: no-repeat !important;
+        background-color: #cbd5e1 !important; /* Dunklerer Hintergrund für besseren Bildkontrast */
+    }
+    
+    /* Ensure the login card is beautifully visible on top of the background */
+    .content-box {
+        background: rgba(255, 255, 255, 0.85) !important;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2) !important;
+        border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    }
+</style>
+{% endblock %}
+
 {% block content_public %}
 <div class="content-box" style="width: 100%; max-width: 400px; padding: 40px;">
     <div style="text-align: center; margin-bottom: 30px;">

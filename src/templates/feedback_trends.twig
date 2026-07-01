@@ -15,8 +15,8 @@
 <div class="content-box" style="margin-bottom: 30px;">
     <form method="GET" style="display: flex; gap: 15px; align-items: flex-end;">
         <div class="form-group" style="margin: 0;">
-            <label style="display: block; margin-bottom: 5px; font-size: 0.9em;">Klasse Filtern</label>
-            <select name="klasse" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            <label for="filter-klasse" style="display: block; margin-bottom: 5px; font-size: 0.9em;">Klasse Filtern</label>
+            <select id="filter-klasse" name="klasse" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
                 <option value="">Alle Klassen</option>
                 {% for k in unique_classes %}
                     <option value="{{ k }}" {{ current_klasse == k ? 'selected' : '' }}>{{ k }}</option>
@@ -24,8 +24,8 @@
             </select>
         </div>
         <div class="form-group" style="margin: 0;">
-            <label style="display: block; margin-bottom: 5px; font-size: 0.9em;">Fach Filtern</label>
-            <select name="fach" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            <label for="filter-fach" style="display: block; margin-bottom: 5px; font-size: 0.9em;">Fach Filtern</label>
+            <select id="filter-fach" name="fach" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
                 <option value="">Alle Fächer</option>
                 {% for s in unique_subjects %}
                     <option value="{{ s }}" {{ current_fach == s ? 'selected' : '' }}>{{ s }}</option>

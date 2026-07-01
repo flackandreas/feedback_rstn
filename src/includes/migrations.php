@@ -20,11 +20,24 @@ function run_all_migrations() {
         executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 
+    // Self-healing: if teacher_classes table doesn't exist but alter_teacher_classes.sql
+    // is logged as executed, delete that entry from migration_log so it runs again after db_update_klassen.sql.
+    try {
+        $check = $conn->query("SHOW TABLES LIKE 'teacher_classes'")->fetch();
+        if (!$check) {
+            $conn->exec("DELETE FROM migration_log WHERE filename = 'alter_teacher_classes.sql'");
+        }
+    } catch (PDOException $e) {
+        error_log("Self-healing check failed: " . $e->getMessage());
+    }
+
     $sql_files = [
+        'alter_homework.sql',
         'alter_extracurricular.sql',
         'alter_feedback.sql',
         'alter_material.sql',
         'alter_step2.sql',
+        'db_update_klassen.sql',
         'alter_teacher_classes.sql',
         'alter_homework_context.sql',
         'alter_force_password_change.sql',
@@ -48,18 +61,22 @@ function run_all_migrations() {
             try {
                 $sql = file_get_contents($path);
                 $queries = array_filter(array_map('trim', explode(';', $sql)));
+                $success = true;
                 foreach ($queries as $query) {
                     if (empty($query)) continue;
                     try {
                         $conn->exec($query);
                     } catch (PDOException $e) {
                         error_log("Statement failed in $file: " . $e->getMessage());
+                        $success = false;
                     }
                 }
                 
                 // Log successful execution
-                $stmt_log = $conn->prepare("INSERT INTO migration_log (filename) VALUES (?)");
-                $stmt_log->execute([$file]);
+                if ($success) {
+                    $stmt_log = $conn->prepare("INSERT INTO migration_log (filename) VALUES (?)");
+                    $stmt_log->execute([$file]);
+                }
                 
             } catch (Exception $e) {
                 error_log("Critical error reading migration $file: " . $e->getMessage());

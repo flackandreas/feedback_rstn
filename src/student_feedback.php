@@ -108,23 +108,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             text-align: center;
         }
         .emoji-item input {
-            display: none;
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+            pointer-events: none;
         }
         .emoji-item label {
-            font-size: 1.8rem;
+            font-size: 2rem;
             cursor: pointer;
             padding: 10px 5px;
             border-radius: 8px;
             display: block;
             transition: all 0.2s;
             filter: grayscale(100%);
-            opacity: 0.4;
+            opacity: 0.7;
+        }
+        .emoji-item label:hover {
+            filter: grayscale(30%);
+            opacity: 0.9;
+            background: rgba(74, 144, 226, 0.05);
         }
         .emoji-item input:checked + label {
             filter: grayscale(0%);
             opacity: 1;
-            background: rgba(74,144,226, 0.1);
-            transform: scale(1.1);
+            background: rgba(74, 144, 226, 0.15);
+            transform: scale(1.15);
+            box-shadow: 0 4px 10px rgba(74, 144, 226, 0.15);
+        }
+        .emoji-item input:focus-visible + label {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
         }
         
         .btn-send {
@@ -143,6 +157,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .btn-send:hover { background: #357abd; }
         
         .success-msg { color: var(--success); }
+
+        /* Screen reader utility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
     </style>
 </head>
 <body>
@@ -162,20 +189,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <p class="subtitle"><?php echo htmlspecialchars($session['klasse'] . " - " . $session['fach']); ?></p>
         
         <form method="POST">
-            <?php foreach ($questions as $q): ?>
-                <div class="question-box">
-                    <span class="question-label"><?php echo htmlspecialchars($q['question_text']); ?></span>
+            <?php 
+            $emoji_labels = [
+                1 => "1 von 5 Sterne (Sehr unzufrieden)",
+                2 => "2 von 5 Sterne (Unzufrieden)",
+                3 => "3 von 5 Sterne (Neutral)",
+                4 => "4 von 5 Sterne (Zufrieden)",
+                5 => "5 von 5 Sterne (Sehr zufrieden)"
+            ];
+            foreach ($questions as $q): ?>
+                <fieldset class="question-box" style="border: none; padding: 0; margin: 0 0 30px 0;">
+                    <legend class="question-label" style="font-weight: 600; display: block; margin-bottom: 15px; padding: 0; font-size: 1rem; color: var(--text);">
+                        <?php echo htmlspecialchars($q['question_text']); ?>
+                    </legend>
                     <div class="emoji-group">
                         <?php 
                         $emojis = ['😫', '🙁', '😐', '🙂', '😄'];
                         foreach($emojis as $i => $emoji): $val = $i + 1; ?>
                             <div class="emoji-item">
                                 <input type="radio" name="scores[<?php echo $q['id']; ?>]" id="q<?php echo $q['id']; ?>_<?php echo $val; ?>" value="<?php echo $val; ?>" <?php echo $val == 3 ? 'checked' : ''; ?>>
-                                <label for="q<?php echo $q['id']; ?>_<?php echo $val; ?>"><?php echo $emoji; ?></label>
+                                <label for="q<?php echo $q['id']; ?>_<?php echo $val; ?>">
+                                    <span class="sr-only"><?php echo $emoji_labels[$val]; ?></span>
+                                    <span aria-hidden="true"><?php echo $emoji; ?></span>
+                                </label>
                             </div>
                         <?php endforeach; ?>
                     </div>
-                </div>
+                </fieldset>
             <?php endforeach; ?>
             
             <button type="submit" class="btn-send">Feedback senden</button>

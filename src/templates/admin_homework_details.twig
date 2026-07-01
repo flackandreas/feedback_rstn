@@ -50,6 +50,30 @@
         opacity: 1;
         visibility: visible;
     }
+
+    #qrDialog {
+        border: none;
+        border-radius: 12px;
+        padding: 25px;
+        max-width: 450px;
+        width: 90%;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        text-align: center;
+        overflow: visible;
+        background: white;
+    }
+    #qrDialog::backdrop {
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+    }
+    .qr-thumbnail {
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .qr-thumbnail:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
 </style>
 {% endblock %}
 
@@ -70,9 +94,29 @@
         <div style="flex: 1;">
             <input type="text" readonly value="{{ host_url }}/student_homework.php?t={{ assignment.token }}" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; background: white; font-family: monospace; font-size: 1.1em;" onclick="this.select();">
         </div>
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ (host_url ~ '/student_homework.php?t=' ~ assignment.token)|url_encode }}" alt="QR Code" style="border: 5px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ (host_url ~ '/student_homework.php?t=' ~ assignment.token)|url_encode }}" 
+             alt="QR Code" 
+             class="qr-thumbnail" 
+             style="border: 5px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);"
+             onclick="openQrModal()"
+             title="QR-Code vergrößern">
     </div>
 </div>
+
+<!-- QR Code Dialog -->
+<dialog id="qrDialog">
+    <form method="dialog" style="position: absolute; top: 15px; right: 15px; margin: 0;">
+        <button style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+    </form>
+    <h3 style="margin-top: 0; margin-bottom: 20px; font-family: 'Inter', sans-serif;">QR-Code für Schüler</h3>
+    <div style="display: inline-block; padding: 15px; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={{ (host_url ~ '/student_homework.php?t=' ~ assignment.token)|url_encode }}" alt="QR Code Gross" style="display: block; width: 300px; height: 300px; border-radius: 4px;">
+    </div>
+    <p style="margin: 0 0 20px 0; font-size: 0.95em; color: var(--text-muted); line-height: 1.4;">Schüler können diesen Code mit ihrem Smartphone scannen, um ihre Hausaufgabe direkt abzugeben.</p>
+    <form method="dialog" style="margin: 0;">
+        <button class="btn btn-primary" style="background-color: var(--primary-color); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-family: inherit;">Schließen</button>
+    </form>
+</dialog>
 
 <div class="content-box" style="margin-bottom: 30px;">
     <h3 style="margin-top: 0;">Aufgabenstellung</h3>
@@ -260,7 +304,29 @@
 
 {% block extra_scripts %}
 <script>
+function openQrModal() {
+    const dialog = document.getElementById('qrDialog');
+    if (dialog) dialog.showModal();
+}
+
+function closeQrModal() {
+    const dialog = document.getElementById('qrDialog');
+    if (dialog) dialog.close();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    // Close QR Dialog when clicking backdrop
+    const qrDialog = document.getElementById('qrDialog');
+    if (qrDialog) {
+        qrDialog.addEventListener('click', (e) => {
+            const rect = qrDialog.getBoundingClientRect();
+            const isInDialog = (rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
+                rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
+            if (!isInDialog) {
+                qrDialog.close();
+            }
+        });
+    }
     // Single Delete Trigger via JavaScript (avoids nested forms)
     document.querySelectorAll('.btn-delete-single').forEach(btn => {
         btn.addEventListener('click', function(e) {

@@ -48,6 +48,9 @@
         font-size: 40px;
         font-weight: bold;
         cursor: pointer;
+        background: none;
+        border: none;
+        padding: 0;
     }
 </style>
 {% endblock %}
@@ -100,8 +103,8 @@
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
                 <div class="form-group" style="margin: 0;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Klasse</label>
-                    <select name="klasse" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; background-color: white;">
+                    <label for="klasse-select" style="display: block; margin-bottom: 8px; font-weight: 600;">Klasse</label>
+                    <select id="klasse-select" name="klasse" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; background-color: white;">
                         <option value="">Bitte wählen</option>
                         {% if selected_class_ids|length > 0 %}
                             <optgroup label="Meine Klassen">
@@ -124,13 +127,13 @@
                     </select>
                 </div>
                 <div class="form-group" style="margin: 0;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Fach</label>
-                    <input type="text" name="fach" placeholder="z.B. Mathe" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px;">
+                    <label for="fach-input" style="display: block; margin-bottom: 8px; font-weight: 600;">Fach</label>
+                    <input type="text" id="fach-input" name="fach" placeholder="z.B. Mathe" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px;">
                 </div>
             </div>
 
             <div class="form-group" style="margin-bottom: 25px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Vorlage laden</label>
+                <label for="template-select" style="display: block; margin-bottom: 8px; font-weight: 600;">Vorlage laden</label>
                 <select id="template-select" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; background-color: white;">
                     <option value="default" data-klasse="" data-fach="" data-questions='["Wie war die heutige Stunde?", "Wie ist aktuell das Klassenklima?"]'>Standard-Fragen (2 Fragen)</option>
                     <option value="empty" data-klasse="" data-fach="" data-questions='[]'>Leere Fragenliste</option>
@@ -143,24 +146,24 @@
             <div id="questions-container" style="margin-bottom: 15px;">
                 <label style="display: block; margin-bottom: 12px; font-weight: 600;">Fragen festlegen</label>
                 <div class="question-row" style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <input type="text" name="questions[]" value="Wie war die heutige Stunde?" required style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
-                    <button type="button" onclick="this.parentElement.remove()" style="background: #ff7675; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer;">✕</button>
+                    <input type="text" name="questions[]" value="Wie war die heutige Stunde?" aria-label="Frage" required style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    <button type="button" onclick="this.parentElement.remove()" aria-label="Frage löschen" style="background: #ff7675; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer;">✕</button>
                 </div>
                 <div class="question-row" style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <input type="text" name="questions[]" value="Wie ist aktuell das Klassenklima?" required style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
-                    <button type="button" onclick="this.parentElement.remove()" style="background: #ff7675; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer;">✕</button>
+                    <input type="text" name="questions[]" value="Wie ist aktuell das Klassenklima?" aria-label="Frage" required style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    <button type="button" onclick="this.parentElement.remove()" aria-label="Frage löschen" style="background: #ff7675; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer;">✕</button>
                 </div>
             </div>
 
             <button type="button" onclick="addQuestion()" style="background: #eee; border: 1px dashed #ccc; width: 100%; padding: 10px; border-radius: 6px; cursor: pointer; margin-bottom: 25px; color: #666;">+ Weitere Frage hinzufügen</button>
 
             <div style="margin-bottom: 25px; padding: 15px; background: #fff; border: 1px solid #eee; border-radius: 6px;">
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600;">
+                <label for="save-as-template-checkbox" style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600;">
                     <input type="checkbox" id="save-as-template-checkbox" name="save_template" value="1" onchange="toggleTemplateTitle(this.checked)">
                     <span>Aktuelle Fragen als Vorlage speichern</span>
                 </label>
                 <div id="template-title-container" style="display: none; margin-top: 15px;">
-                    <label style="display: block; margin-bottom: 8px; font-size: 0.9em; color: var(--text-muted);">Name der Vorlage</label>
+                    <label for="template-title-input" style="display: block; margin-bottom: 8px; font-size: 0.9em; color: var(--text-muted);">Name der Vorlage</label>
                     <input type="text" name="template_title" id="template-title-input" placeholder="z.B. Feedback zum Projektunterricht" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
                 </div>
             </div>
@@ -198,7 +201,7 @@
 
 {% if active_session %}
 <div id="qrModal" class="qr-modal" onclick="closeQRModal()">
-    <span class="close-modal">&times;</span>
+    <button class="close-modal" onclick="closeQRModal()" aria-label="Schließen">&times;</button>
     <div class="qr-modal-content" onclick="event.stopPropagation()">
         <h2 style="margin-top: 0; color: var(--primary-color);">{{ active_session.klasse }} - {{ active_session.fach }}</h2>
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data={{ (host_url ~ '/student_feedback.php?t=' ~ active_session.token)|url_encode }}" class="qr-large" alt="QR Code Large">
@@ -225,8 +228,8 @@ function addQuestionWithText(text = '') {
     div.style.gap = '10px';
     div.style.marginBottom = '10px';
     div.innerHTML = `
-        <input type="text" name="questions[]" value="${escapeHtml(text)}" placeholder="Eigene Frage eingeben..." required style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
-        <button type="button" onclick="this.parentElement.remove()" style="background: #ff7675; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer;">✕</button>
+        <input type="text" name="questions[]" value="${escapeHtml(text)}" placeholder="Eigene Frage eingeben..." aria-label="Frage" required style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+        <button type="button" onclick="this.parentElement.remove()" aria-label="Frage löschen" style="background: #ff7675; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer;">✕</button>
     `;
     container.appendChild(div);
 }

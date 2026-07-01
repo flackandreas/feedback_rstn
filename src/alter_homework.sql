@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS homework_assignments (
     description TEXT NOT NULL,
     token VARCHAR(64) NOT NULL UNIQUE,
     due_date DATETIME DEFAULT NULL,
+    context_image_path VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -19,6 +20,7 @@ CREATE TABLE IF NOT EXISTS homework_submissions (
     student_name VARCHAR(150) NOT NULL,
     student_pseudonym VARCHAR(64) NOT NULL,
     image_path VARCHAR(255) NOT NULL,
+    token VARCHAR(64) DEFAULT NULL,
     status ENUM('pending', 'evaluated') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (assignment_id) REFERENCES homework_assignments(id) ON DELETE CASCADE

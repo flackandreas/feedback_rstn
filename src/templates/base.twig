@@ -13,6 +13,70 @@
     <style>
         /* Fallback quick fixes if app_styles.css isn't perfectly carrying over all resets */
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+        
+        /* Collapsible Navigation Dropdowns styling */
+        .nav-details {
+            margin: 3px 0;
+            outline: none;
+        }
+        .nav-summary {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            color: #f0ebe6;
+            border-radius: 6px;
+            cursor: pointer;
+            user-select: none;
+            list-style: none; /* Hide default arrow */
+            transition: background-color 0.2s;
+            outline: none;
+        }
+        .nav-summary::-webkit-details-marker {
+            display: none; /* Hide default Safari arrow */
+        }
+        .nav-summary:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .nav-details[open] .nav-summary {
+            background-color: rgba(255, 255, 255, 0.05);
+            font-weight: 500;
+        }
+        .nav-summary-arrow {
+            margin-left: auto;
+            font-size: 0.8em;
+            transition: transform 0.2s ease;
+            color: var(--text-muted);
+        }
+        .nav-details[open] .nav-summary-arrow {
+            transform: rotate(90deg);
+        }
+        .nav-submenu {
+            list-style: none;
+            padding: 2px 0 2px 25px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .nav-submenu a {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            text-decoration: none;
+            color: #d1c7bd;
+            font-size: 0.9em;
+            border-radius: 6px;
+            transition: color 0.2s, background-color 0.2s;
+        }
+        .nav-submenu a:hover {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+        .nav-submenu a.active {
+            color: var(--primary-color);
+            background-color: rgba(255, 255, 255, 0.1);
+            font-weight: 600;
+        }
     </style>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#2c3e50">
@@ -48,12 +112,6 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="/meine_antraege.php" class="{{ is_current_page('meine_antraege.php') ? 'active' : '' }}">
-                    <span class="nav-icon">📂</span>
-                    <span class="nav-text">Meine Anträge</span>
-                </a>
-            </li>
-            <li class="nav-item">
                 <a href="/calendar.php" class="{{ is_current_page('calendar.php') ? 'active' : '' }}">
                     <span class="nav-icon">📅</span>
                     <span class="nav-text">Schulkalender</span>
@@ -80,81 +138,93 @@
                 </a>
             </li>
             
-            <li class="nav-label">Anträge</li>
+            <li class="nav-label">Eigene Anträge</li>
             <li class="nav-item">
-                <a href="/antrag_ausserunterrichtlich.php" class="{{ is_current_page('antrag_ausserunterrichtlich.php') ? 'active' : '' }}">
-                    <span class="nav-icon">🚌</span>
-                    <span class="nav-text">Außerunterrichtlich</span>
+                <a href="/meine_antraege.php" class="{{ is_current_page('meine_antraege.php') ? 'active' : '' }}">
+                    <span class="nav-icon">📂</span>
+                    <span class="nav-text">Meine Anträge</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="/antrag_freistellung.php" class="{{ is_current_page('antrag_freistellung.php') ? 'active' : '' }}">
-                    <span class="nav-icon">🏖️</span>
-                    <span class="nav-text">Freistellung</span>
-                </a>
+                <details class="nav-details" {% if is_current_page('antrag_ausserunterrichtlich.php') or is_current_page('antrag_freistellung.php') or is_current_page('krankmeldung.php') %}open{% endif %}>
+                    <summary class="nav-summary">
+                        <span class="nav-icon">📝</span>
+                        <span class="nav-text">Neuer Antrag</span>
+                        <span class="nav-summary-arrow">&rsaquo;</span>
+                    </summary>
+                    <ul class="nav-submenu">
+                        <li>
+                            <a href="/antrag_ausserunterrichtlich.php" class="{{ is_current_page('antrag_ausserunterrichtlich.php') ? 'active' : '' }}">
+                                <span>🚌 Außerunterrichtlich</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/antrag_freistellung.php" class="{{ is_current_page('antrag_freistellung.php') ? 'active' : '' }}">
+                                <span>🏖️ Freistellung</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/krankmeldung.php" class="{{ is_current_page('krankmeldung.php') ? 'active' : '' }}">
+                                <span>🤒 Krankmeldung</span>
+                            </a>
+                        </li>
+                    </ul>
+                </details>
             </li>
-            <li class="nav-item">
-                <a href="/krankmeldung.php" class="{{ is_current_page('krankmeldung.php') ? 'active' : '' }}">
-                    <span class="nav-icon">🤒</span>
-                    <span class="nav-text">Krankmeldung</span>
-                </a>
-            </li>
-            
             
             {% if is_admin %}
             <div class="nav-separator"></div>
             
             <li class="nav-label">Administration</li>
             <li class="nav-item">
-                <a href="/admin_dashboard.php" class="{{ is_current_page('admin_dashboard.php') ? 'active' : '' }}" style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center;">
+                <details class="nav-details" {% if is_current_page('admin_dashboard.php') or is_current_page('admin_aud.php') or is_current_page('admin_sick_leaves.php') or is_current_page('admin_lehrer.php') or is_current_page('admin_klassen.php') or is_current_page('admin_system.php') %}open{% endif %}>
+                    <summary class="nav-summary">
                         <span class="nav-icon">🛡️</span>
-                        <span class="nav-text">Antragsverwaltung</span>
-                    </div>
-                    {% if pending_counts.exemption > 0 %}
-                        <span class="badge" style="background-color: var(--danger-color); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.75em; margin-left: 5px;">{{ pending_counts.exemption }}</span>
-                    {% endif %}
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/admin_aud.php" class="{{ is_current_page('admin_aud.php') ? 'active' : '' }}" style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center;">
-                        <span class="nav-icon">🚌</span>
-                        <span class="nav-text">AUD Verwaltung</span>
-                    </div>
-                    {% if pending_counts.aud > 0 %}
-                        <span class="badge" style="background-color: var(--danger-color); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.75em; margin-left: 5px;">{{ pending_counts.aud }}</span>
-                    {% endif %}
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/admin_sick_leaves.php" class="{{ is_current_page('admin_sick_leaves.php') ? 'active' : '' }}" style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center;">
-                        <span class="nav-icon">🤒</span>
-                        <span class="nav-text">Krankmeldungen</span>
-                    </div>
-                    {% if pending_counts.sick_leaves > 0 %}
-                        <span class="badge" style="background-color: var(--danger-color); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.75em; margin-left: 5px;">{{ pending_counts.sick_leaves }}</span>
-                    {% endif %}
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/admin_lehrer.php" class="{{ is_current_page('admin_lehrer.php') ? 'active' : '' }}">
-                    <span class="nav-icon">👥</span>
-                    <span class="nav-text">Lehrerverwaltung</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/admin_klassen.php" class="{{ is_current_page('admin_klassen.php') ? 'active' : '' }}">
-                    <span class="nav-icon">🏫</span>
-                    <span class="nav-text">Klassenverwaltung</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/admin_system.php" class="{{ is_current_page('admin_system.php') ? 'active' : '' }}">
-                    <span class="nav-icon">⚙️</span>
-                    <span class="nav-text">Systemverwaltung</span>
-                </a>
+                        <span class="nav-text">Verwaltung</span>
+                        <span class="nav-summary-arrow">&rsaquo;</span>
+                    </summary>
+                    <ul class="nav-submenu">
+                        <li>
+                            <a href="/admin_dashboard.php" class="{{ is_current_page('admin_dashboard.php') ? 'active' : '' }}" style="justify-content: space-between;">
+                                <span>🏖️ Freistellungen</span>
+                                {% if pending_counts.exemption > 0 %}
+                                    <span class="badge" style="background-color: var(--danger-color); color: white; padding: 1px 6px; border-radius: 10px; font-size: 0.75em; margin-left: 5px;">{{ pending_counts.exemption }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/admin_aud.php" class="{{ is_current_page('admin_aud.php') ? 'active' : '' }}" style="justify-content: space-between;">
+                                <span>🚌 AUD-Termine</span>
+                                {% if pending_counts.aud > 0 %}
+                                    <span class="badge" style="background-color: var(--danger-color); color: white; padding: 1px 6px; border-radius: 10px; font-size: 0.75em; margin-left: 5px;">{{ pending_counts.aud }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/admin_sick_leaves.php" class="{{ is_current_page('admin_sick_leaves.php') ? 'active' : '' }}" style="justify-content: space-between;">
+                                <span>🤒 Krankmeldungen</span>
+                                {% if pending_counts.sick_leaves > 0 %}
+                                    <span class="badge" style="background-color: var(--danger-color); color: white; padding: 1px 6px; border-radius: 10px; font-size: 0.75em; margin-left: 5px;">{{ pending_counts.sick_leaves }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/admin_lehrer.php" class="{{ is_current_page('admin_lehrer.php') ? 'active' : '' }}">
+                                <span>👥 Lehrerverwaltung</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/admin_klassen.php" class="{{ is_current_page('admin_klassen.php') ? 'active' : '' }}">
+                                <span>🏫 Klassenverwaltung</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/admin_system.php" class="{{ is_current_page('admin_system.php') ? 'active' : '' }}">
+                                <span>⚙️ Systemverwaltung</span>
+                            </a>
+                        </li>
+                    </ul>
+                </details>
             </li>
             {% endif %}
             

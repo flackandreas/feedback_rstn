@@ -1,0 +1,393 @@
+{% extends "base.twig" %}
+
+{% block extra_head %}
+<style>
+    /* Styling elements for the new Admin Dashboard */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 30px;
+        margin-top: 25px;
+    }
+    
+    @media (max-width: 900px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .quick-access-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .quick-card {
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 22px;
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: var(--text-dark);
+        box-shadow: var(--shadow-soft);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        position: relative;
+    }
+    
+    .quick-card:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-medium);
+        border-color: var(--primary-color);
+    }
+    
+    .quick-card-icon {
+        font-size: 2.2rem;
+        margin-right: 18px;
+    }
+    
+    .quick-card-info {
+        flex-grow: 1;
+    }
+    
+    .quick-card-title {
+        font-weight: 700;
+        margin: 0;
+        font-size: 1.05em;
+        color: var(--text-dark);
+    }
+    
+    .quick-card-desc {
+        font-size: 0.8em;
+        color: var(--text-muted);
+        margin: 3px 0 0 0;
+    }
+    
+    .quick-card .badge-counter {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background-color: var(--danger-color);
+        color: white;
+        font-size: 0.8em;
+        font-weight: bold;
+        min-width: 22px;
+        height: 22px;
+        border-radius: 11px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0 6px;
+        box-sizing: border-box;
+    }
+
+    .absent-category {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        margin-bottom: 15px;
+        background-color: white;
+        overflow: hidden;
+    }
+
+    .absent-category-header {
+        background-color: #f8fafc;
+        padding: 12px 15px;
+        font-weight: 600;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .absent-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .absent-item {
+        padding: 12px 15px;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .absent-item:last-child {
+        border-bottom: none;
+    }
+
+    .absent-info {
+        flex-grow: 1;
+    }
+
+    .absent-name {
+        font-weight: 600;
+        color: var(--text-dark);
+        font-size: 0.95em;
+    }
+
+    .absent-details {
+        font-size: 0.8em;
+        color: var(--text-muted);
+        margin-top: 3px;
+    }
+
+    .absent-duration {
+        font-size: 0.85em;
+        font-weight: 500;
+        background: #f1f5f9;
+        padding: 4px 8px;
+        border-radius: 4px;
+        color: var(--text-dark);
+    }
+
+    .calendar-widget-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .calendar-widget-item {
+        background: white;
+        border-left: 4px solid var(--primary-color);
+        padding: 12px 15px;
+        border-top: 1px solid var(--border-color);
+        border-right: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border-color);
+        border-radius: 0 8px 8px 0;
+        box-shadow: var(--shadow-soft);
+    }
+
+    .calendar-widget-item.type-sick {
+        border-left-color: var(--danger-color);
+    }
+
+    .calendar-widget-item.type-exempt {
+        border-left-color: var(--warning-color);
+    }
+
+    .calendar-widget-item.type-extra {
+        border-left-color: var(--primary-color);
+    }
+
+    .calendar-widget-item.type-iserv {
+        border-left-color: #2c3e50;
+    }
+
+    .calendar-widget-title {
+        font-weight: 600;
+        font-size: 0.95em;
+        margin: 0;
+        color: var(--text-dark);
+    }
+
+    .calendar-widget-time {
+        font-size: 0.8em;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    .calendar-widget-desc {
+        font-size: 0.8em;
+        color: #475569;
+        margin-top: 5px;
+        white-space: pre-wrap;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 30px;">
+    <h2 style="margin: 0;">Zentrale Schulleitungs-Verwaltung</h2>
+    <p style="color: var(--text-muted); margin: 5px 0 0 0;">Willkommen, {{ current_user_name }}. Hier ist die Übersicht für den heutigen Tag.</p>
+</div>
+
+<!-- Quick Access Panel with Counter Badges -->
+<div class="quick-access-grid">
+    <a href="/admin_sick_leaves.php" class="quick-card">
+        <span class="quick-card-icon">🤒</span>
+        <div class="quick-card-info">
+            <h4 class="quick-card-title">Krankmeldungen</h4>
+            <p class="quick-card-desc">Krankheitsberichte einsehen</p>
+        </div>
+        {% if counts.unread_sick > 0 %}
+            <div class="badge-counter">{{ counts.unread_sick }}</div>
+        {% endif %}
+    </a>
+    
+    <a href="/admin_aud.php" class="quick-card">
+        <span class="quick-card-icon">🚌</span>
+        <div class="quick-card-info">
+            <h4 class="quick-card-title">Außerunterrichtlich (AUD)</h4>
+            <p class="quick-card-desc">Ausflüge & Klassenfahrten freigeben</p>
+        </div>
+        {% if counts.pending_aud > 0 %}
+            <div class="badge-counter">{{ counts.pending_aud }}</div>
+        {% endif %}
+    </a>
+    
+    <a href="/admin_dashboard.php" class="quick-card">
+        <span class="quick-card-icon">🏖️</span>
+        <div class="quick-card-info">
+            <h4 class="quick-card-title">Freistellungsanträge</h4>
+            <p class="quick-card-desc">Beurlaubungsanträge bearbeiten</p>
+        </div>
+        {% if counts.pending_exemptions > 0 %}
+            <div class="badge-counter">{{ counts.pending_exemptions }}</div>
+        {% endif %}
+    </a>
+</div>
+
+<!-- Main Dashboard Grid -->
+<div class="dashboard-grid">
+    
+    <!-- LEFT: Absent Teachers Live Status -->
+    <div class="content-box">
+        <h3 style="margin-top: 0; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <span>Live-Abwesenheitsstatistik (Heute)</span>
+            <span class="badge" style="background-color: {% if total_absent > 0 %}var(--danger-color){% else %}var(--success-color){% endif %}; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.8em;">
+                {{ total_absent }} Lehrkraft/Lehrkräfte abwesend
+            </span>
+        </h3>
+        
+        {% if total_absent == 0 %}
+            <div style="text-align: center; padding: 40px 20px;">
+                <span style="font-size: 3rem; display: block; margin-bottom: 10px;">🟢</span>
+                <strong style="font-size: 1.1em; color: var(--success-color);">Alle Lehrkräfte im Dienst</strong>
+                <p style="color: var(--text-muted); margin-top: 5px; font-size: 0.9em;">Für den heutigen Tag liegen keine Krankmeldungen oder genehmigten Anträge vor.</p>
+            </div>
+        {% else %}
+            
+            <!-- Category: Sick Leaves -->
+            <div class="absent-category">
+                <div class="absent-category-header" style="border-left: 4px solid var(--danger-color);">
+                    <span>🤒 Krankmeldungen</span>
+                    <span class="badge" style="background-color: var(--danger-color); color: white; border-radius: 10px; padding: 1px 8px; font-size: 0.8em;">{{ sick_today|length }}</span>
+                </div>
+                {% if sick_today is empty %}
+                    <div style="padding: 15px; color: var(--text-muted); font-size: 0.9em; text-align: center;">Keine Krankmeldungen heute.</div>
+                {% else %}
+                    <ul class="absent-list">
+                        {% for s in sick_today %}
+                            <li class="absent-item">
+                                <div class="absent-info">
+                                    <div class="absent-name">{{ s.name }} <span style="font-size: 0.85em; color: var(--text-muted); font-weight: normal;">({{ s.kuerzel }})</span></div>
+                                    {% if s.notes %}
+                                        <div class="absent-details"><em>Notizen:</em> {{ s.notes }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="absent-duration">
+                                    {{ s.date_from|date('d.m.') }} - {{ s.date_to|date('d.m.Y') }}
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+            
+            <!-- Category: Exemptions -->
+            <div class="absent-category">
+                <div class="absent-category-header" style="border-left: 4px solid var(--warning-color);">
+                    <span>🏖️ Genehmigte Freistellungen</span>
+                    <span class="badge" style="background-color: var(--warning-color); color: white; border-radius: 10px; padding: 1px 8px; font-size: 0.8em;">{{ exempt_today|length }}</span>
+                </div>
+                {% if exempt_today is empty %}
+                    <div style="padding: 15px; color: var(--text-muted); font-size: 0.9em; text-align: center;">Keine Beurlaubungen heute.</div>
+                {% else %}
+                    <ul class="absent-list">
+                        {% for e in exempt_today %}
+                            <li class="absent-item">
+                                <div class="absent-info">
+                                    <div class="absent-name">{{ e.name }} <span style="font-size: 0.85em; color: var(--text-muted); font-weight: normal;">({{ e.kuerzel }})</span></div>
+                                    <div class="absent-details">
+                                        <strong>Grund:</strong> {{ e.reason_type }}{% if e.reason %} ({{ e.reason }}){% endif %}
+                                        {% if e.hourly_exemption %}
+                                            <span style="color: var(--danger-color); font-weight: bold; margin-left: 8px;">🕒 Stunde {{ e.hour_from }} bis {{ e.hour_to }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="absent-duration">
+                                    {{ e.date_from|date('d.m.') }} - {{ e.date_to|date('d.m.Y') }}
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+            
+            <!-- Category: Extracurricular Trips -->
+            <div class="absent-category">
+                <div class="absent-category-header" style="border-left: 4px solid var(--primary-color);">
+                    <span>🚌 Außerunterrichtliche Veranstaltungen (Ausflüge)</span>
+                    <span class="badge" style="background-color: var(--primary-color); color: white; border-radius: 10px; padding: 1px 8px; font-size: 0.8em;">{{ extra_today|length }}</span>
+                </div>
+                {% if extra_today is empty %}
+                    <div style="padding: 15px; color: var(--text-muted); font-size: 0.9em; text-align: center;">Keine Ausflüge heute.</div>
+                {% else %}
+                    <ul class="absent-list">
+                        {% for ex in extra_today %}
+                            <li class="absent-item">
+                                <div class="absent-info">
+                                    <div class="absent-name">{{ ex.name }} <span style="font-size: 0.85em; color: var(--text-muted); font-weight: normal;">({{ ex.kuerzel }})</span></div>
+                                    <div class="absent-details">
+                                        <strong>Klasse:</strong> {{ ex.class_name }} | <strong>Ziel:</strong> {{ ex.destination }} <br>
+                                        <strong>Event:</strong> {{ ex.event_name }}
+                                    </div>
+                                </div>
+                                <div class="absent-duration">
+                                    {{ ex.event_date|date('d.m.Y') }}
+                                    {% if ex.event_date_to and ex.event_date_to != ex.event_date %}
+                                        - {{ ex.event_date_to|date('d.m.Y') }}
+                                    {% endif %}
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+            
+        {% endif %}
+    </div>
+    
+    <!-- RIGHT: Today's Calendar events -->
+    <div class="content-box">
+        <h3 style="margin-top: 0; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 8px;">📅 Schulkalender heute</h3>
+        
+        {% if today_events is empty %}
+            <div style="text-align: center; padding: 40px 10px; color: var(--text-muted);">
+                <span style="font-size: 2.5rem; display: block; margin-bottom: 10px;">📅</span>
+                <p style="margin: 0; font-size: 0.95em;">Keine Kalendertermine für heute eingetragen.</p>
+            </div>
+        {% else %}
+            <div class="calendar-widget-list">
+                {% for event in today_events %}
+                    <div class="calendar-widget-item type-{{ event.type }}">
+                        <h4 class="calendar-widget-title">{{ event.title }}</h4>
+                        <div class="calendar-widget-time">
+                            {% if event.type == 'sick' %}
+                                Krankheitszeitraum
+                            {% elseif event.type == 'exempt' %}
+                                Freigestellt
+                            {% elseif event.type == 'extra' %}
+                                Schulveranstaltung
+                            {% else %}
+                                Externer Kalendereintrag
+                            {% endif %}
+                        </div>
+                        {% if event.details %}
+                            <div class="calendar-widget-desc">{{ event.details }}</div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        <div style="margin-top: 20px; text-align: center;">
+            <a href="/calendar.php" class="btn btn-secondary" style="display: block; text-decoration: none; padding: 10px; font-weight: 600; text-align: center;">Vollständigen Kalender öffnen &rarr;</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

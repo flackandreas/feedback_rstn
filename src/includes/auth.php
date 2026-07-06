@@ -4,6 +4,7 @@
  * Session management and authentication checks.
  */
 
+session_name('feedback_session');
 session_set_cookie_params([
     'httponly' => true,
     'samesite' => 'Strict',

@@ -20,7 +20,6 @@ if ($action === 'export') {
     if (!is_dir($tmp_dir . "/Krankmeldungen")) mkdir($tmp_dir . "/Krankmeldungen");
     if (!is_dir($tmp_dir . "/Veranstaltungen")) mkdir($tmp_dir . "/Veranstaltungen");
     if (!is_dir($tmp_dir . "/Freistellungen")) mkdir($tmp_dir . "/Freistellungen");
-    if (!is_dir($tmp_dir . "/Feedback")) mkdir($tmp_dir . "/Feedback");
     if (!is_dir($tmp_dir . "/Anhaenge")) mkdir($tmp_dir . "/Anhaenge");
 
     // --- 1. Export Sick Leave Reports ---
@@ -56,15 +55,6 @@ if ($action === 'export') {
     }
     file_put_contents($tmp_dir . "/Freistellungen/freistellungen_$year.csv", "\xEF\xBB\xBF" . $csv);
 
-    // --- 4. Export Feedback ---
-    $stmt = $conn->prepare("SELECT * FROM feedback_sessions WHERE YEAR(created_at) = ?");
-    $stmt->execute([$year]);
-    $fb_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $csv = "ID;Lehrer_ID;Klasse;Fach;Token;Aktiv;Ablauf;Erstellt_am\n";
-    foreach ($fb_data as $r) {
-        $csv .= implode(';', array_values($r)) . "\n";
-    }
-    file_put_contents($tmp_dir . "/Feedback/sessions_$year.csv", "\xEF\xBB\xBF" . $csv);
 
     // Create Archive using tar (fallback for ZipArchive)
     $archive_file = $archive_name . ".tar.gz";
@@ -109,12 +99,7 @@ if ($action === 'cleanup' && isset($_POST['confirm_year'])) {
     $stmt->execute([$cleanup_year]);
     $count_exempt = $stmt->rowCount();
     
-    // Feedback is slightly more complex due to cascading? Assume ON DELETE CASCADE exists.
-    $stmt = $conn->prepare("DELETE FROM feedback_sessions WHERE YEAR(created_at) = ?");
-    $stmt->execute([$cleanup_year]);
-    $count_feedback = $stmt->rowCount();
-
-    $_SESSION['flash_success'] = "Archiv-Cleanup für $cleanup_year abgeschlossen. $count_sick Krankmeldungen, $count_extra Veranstaltungen, $count_exempt Freistellungen und $count_feedback Feedback-Sitzungen wurden entfernt.";
+    $_SESSION['flash_success'] = "Archiv-Cleanup für $cleanup_year abgeschlossen. $count_sick Krankmeldungen, $count_extra Veranstaltungen und $count_exempt Freistellungen wurden entfernt.";
     header("Location: /admin_dashboard.php");
     exit;
 }

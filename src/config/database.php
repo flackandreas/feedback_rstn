@@ -39,10 +39,6 @@ function db_connect() {
             $conn->exec("ALTER TABLE extracurricular_requests ADD COLUMN modified_after_approval TINYINT(1) DEFAULT 0");
         } catch (PDOException $e) {}
         
-        try {
-            $conn->exec("ALTER TABLE homework_evaluations ADD COLUMN error_markers TEXT DEFAULT NULL");
-        } catch (PDOException $e) {}
-        
         return $conn;
     } catch (PDOException $e) {
         error_log("Datenbankfehler: " . $e->getMessage());

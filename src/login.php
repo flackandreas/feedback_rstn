@@ -14,6 +14,45 @@ if (is_logged_in()) {
     exit;
 }
 
+// Check for autologin token
+if (isset($_GET['autologin']) && $_GET['autologin'] === '1') {
+    $kuerzel = trim($_GET['kuerzel'] ?? '');
+    $token = $_GET['token'] ?? '';
+    
+    if (!empty($kuerzel) && !empty($token)) {
+        $conn = db_connect();
+        $stmt = $conn->prepare("SELECT * FROM teachers WHERE kuerzel = ? LIMIT 1");
+        $stmt->execute([$kuerzel]);
+        $user = $stmt->fetch();
+        
+        if ($user) {
+            $sso_secret = 'SchulHub_SSO_Secret_Key_2026';
+            $time_bucket = floor(time() / 300);
+            $token_valid = false;
+            for ($i = 0; $i <= 1; $i++) {
+                $bucket = $time_bucket - $i;
+                $expected = hash('sha256', $user['kuerzel'] . $sso_secret . $bucket);
+                if (hash_equals($expected, $token)) {
+                    $token_valid = true;
+                    break;
+                }
+            }
+            
+            if ($token_valid) {
+                session_regenerate_id(true);
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['user_kuerzel'] = $user['kuerzel'];
+                $_SESSION['user_name'] = $user['name'];
+                $_SESSION['is_admin'] = $user['is_admin'];
+                $_SESSION['force_password_change'] = $user['force_password_change'];
+                
+                header("Location: /index.php");
+                exit;
+            }
+        }
+    }
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $kuerzel = trim($_POST['kuerzel'] ?? '');
     $password = $_POST['passwort'] ?? '';

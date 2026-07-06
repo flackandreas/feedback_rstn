@@ -24,26 +24,20 @@ $request = trim($request, '/');
 // Mapping routes to controller files
 $routes = [
     '' => 'index.php',
+    'dashboard' => 'dashboard_antraege.php',
     'login' => 'login.php',
     'logout' => 'logout.php',
     'change_password' => 'change_password.php',
-    'profile_action' => 'profile_action.php',
     'admin/lehrer' => 'admin_lehrer.php',
-    'admin/klassen' => 'admin_klassen.php',
     'admin/aud' => 'admin_aud.php',
     'admin/system' => 'admin_system.php',
-    'admin/homework' => 'admin_homework.php',
     'admin/dashboard' => 'admin_dashboard.php',
     'admin/krankmeldungen' => 'admin_sick_leaves.php',
     'admin/sick-leaves' => 'admin_sick_leaves.php',
-    'student/homework' => 'student_homework.php',
-    'student/feedback' => 'student_feedback.php',
     'krankmeldung' => 'krankmeldung.php',
     'antrag/freistellung' => 'antrag_freistellung.php',
     'antrag/ausserunterrichtlich' => 'antrag_ausserunterrichtlich.php',
     'meine-antraege' => 'meine_antraege.php',
-    'feedback/trends' => 'feedback_trends.php',
-    'feedback/view' => 'feedback_view.php',
     'schulkalender' => 'calendar.php',
     'calendar' => 'calendar.php'
 ];

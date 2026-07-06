@@ -32,18 +32,10 @@ function run_all_migrations() {
     }
 
     $sql_files = [
-        'alter_homework.sql',
         'alter_extracurricular.sql',
-        'alter_feedback.sql',
         'alter_material.sql',
         'alter_step2.sql',
-        'db_update_klassen.sql',
-        'alter_teacher_classes.sql',
-        'alter_homework_context.sql',
         'alter_force_password_change.sql',
-        'alter_feedback_templates.sql',
-        'alter_feedback_templates_klasse_fach.sql',
-        'alter_homework_submission_token.sql',
         'alter_sick_leave_is_seen.sql',
         'alter_extracurricular_end_date.sql'
     ];

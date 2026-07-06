@@ -41,61 +41,8 @@
             <div style="font-size: 2em; margin-bottom: 15px;">🤒</div>
             <span style="color: var(--text-dark); margin: 0; align-self: center;">Neue Meldung:<br>Krankmeldung</span>
         </a>
-
-        <a href="/teacher_feedback.php" class="kpi-box" style="text-decoration: none; cursor: pointer; border-left: 5px solid #3498db;">
-            <div style="font-size: 2em; margin-bottom: 15px;">⚡</div>
-            <span style="color: var(--text-dark); margin: 0; align-self: center;">Sitzung:<br>Schüler-Feedback</span>
-        </a>
-
-        <a href="/admin_homework.php" class="kpi-box" style="text-decoration: none; cursor: pointer; border-left: 5px solid #2ecc71;">
-            <div style="font-size: 2em; margin-bottom: 15px;">📚</div>
-            <span style="color: var(--text-dark); margin: 0; align-self: center;">KI-Auswertung:<br>Hausaufgaben</span>
-        </a>
-
-        <div onclick="openClassesModal()" class="kpi-box" style="text-decoration: none; cursor: pointer; border-left: 5px solid #9b59b6;">
-            <div style="font-size: 2em; margin-bottom: 15px;">🏫</div>
-            <span style="color: var(--text-dark); margin: 0; align-self: center;">Meine Klassen<br>auswählen</span>
-        </div>
     </div>
 </div>
-
-{# Class Selection Modal #}
-<div id="classesModal" class="qr-modal" onclick="closeClassesModal()">
-    <div class="qr-modal-content" onclick="event.stopPropagation()" style="text-align: left; max-width: 500px;">
-        <h2 style="margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 15px;">Meine Klassen auswählen</h2>
-        <p style="color: var(--text-muted); font-size: 0.9em; margin-bottom: 20px;">Wählen Sie die Klassen aus, für die Sie zuständig sind. Dies filtert Ihre Ansichten.</p>
-        
-        <form action="/profile_action.php" method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="action" value="update_classes">
-            
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-height: 300px; overflow-y: auto; padding: 10px; background: #fdfdfd; border: 1px solid #eee; border-radius: 8px;">
-                {% for c in all_classes %}
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 5px; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'">
-                        <input type="checkbox" name="classes[]" value="{{ c.id }}" {% if c.id in selected_class_ids %}checked{% endif %}>
-                        <span style="font-weight: 500;">{{ c.name }}</span>
-                    </label>
-                {% endfor %}
-            </div>
-
-            <div style="margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px;">
-                <button type="button" onclick="closeClassesModal()" class="btn" style="background: #eee; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Abbrechen</button>
-                <button type="submit" class="btn btn-primary" style="background: var(--primary-color); color: white; border: none; padding: 10px 25px; border-radius: 6px; cursor: pointer; font-weight: 600;">Speichern</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<script>
-function openClassesModal() {
-    document.getElementById('classesModal').classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-function closeClassesModal() {
-    document.getElementById('classesModal').classList.remove('active');
-    document.body.style.overflow = 'auto';
-}
-</script>
 
 {% if total_queries > 0 %}
 <script>

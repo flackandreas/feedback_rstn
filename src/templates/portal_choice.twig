@@ -1,0 +1,205 @@
+{% extends "base.twig" %}
+
+{% block extra_head %}
+<style>
+    /* Full-screen light design portal styling */
+    .login-layout {
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+        background-color: #f1f5f9 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        min-height: 100vh !important;
+        padding: 20px !important;
+        box-sizing: border-box;
+    }
+
+    .portal-container {
+        width: 100%;
+        max-width: 900px;
+        text-align: center;
+        z-index: 10;
+    }
+
+    .portal-header {
+        margin-bottom: 45px;
+    }
+
+    .portal-title {
+        color: #0f172a;
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin: 0 0 10px 0;
+        letter-spacing: -0.025em;
+    }
+
+    .portal-subtitle {
+        color: #475569;
+        font-size: 1.1rem;
+        margin: 0;
+    }
+
+    .portal-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 30px;
+        margin-bottom: 40px;
+    }
+
+    @media (max-width: 600px) {
+        .portal-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .portal-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        border-radius: 20px;
+        padding: 40px 30px;
+        text-align: left;
+        text-decoration: none;
+        color: #1e293b;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        cursor: pointer;
+    }
+
+    .portal-card:hover {
+        transform: translateY(-6px);
+        background: rgba(255, 255, 255, 0.95);
+        border-color: var(--primary-color);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.05);
+    }
+
+    .portal-card.card-unterricht:hover {
+        border-color: #3498db;
+    }
+
+    .portal-icon {
+        font-size: 3.2rem;
+        margin-bottom: 25px;
+        background: rgba(0, 0, 0, 0.03);
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 16px;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .portal-card:hover .portal-icon {
+        background: rgba(0, 0, 0, 0.05);
+    }
+
+    .card-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin: 0 0 12px 0;
+        color: #0f172a;
+    }
+
+    .card-desc {
+        color: #475569;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        margin: 0 0 30px 0;
+        flex-grow: 1;
+    }
+
+    .portal-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        color: white;
+        background: var(--primary-color);
+        padding: 12px 24px;
+        border-radius: 10px;
+        width: fit-content;
+        transition: background-color 0.2s;
+    }
+
+    .card-unterricht .portal-btn {
+        background: #3498db;
+    }
+
+    .portal-card:hover .portal-btn {
+        filter: brightness(0.95);
+    }
+
+    .portal-footer {
+        color: #64748b;
+        font-size: 0.9rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+        margin-top: 10px;
+    }
+
+    .portal-footer a {
+        color: #475569;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s;
+    }
+
+    .portal-footer a:hover {
+        color: #0f172a;
+    }
+</style>
+{% endblock %}
+
+{% block content_public %}
+<div class="portal-container">
+    <div class="portal-header">
+        <h1 class="portal-title">Willkommen, {{ current_user_name }}</h1>
+        <p class="portal-subtitle">Wählen Sie das gewünschte System aus, um fortzufahren.</p>
+    </div>
+
+    <div class="portal-grid">
+        <!-- Card: Antragsverwaltung -->
+        <a href="{{ url_antraege }}" class="portal-card">
+            <div>
+                <div class="portal-icon">📝</div>
+                <h2 class="card-title">Antragsverwaltung</h2>
+                <p class="card-desc">
+                    Reichen Sie Krankmeldungen ein, stellen Sie Freistellungsanträge oder verwalten Sie außerunterrichtliche Veranstaltungen (AUD) und Klassenfahrten.
+                </p>
+            </div>
+            <div class="portal-btn">
+                Zu den Anträgen ➔
+            </div>
+        </a>
+
+        <!-- Card: Unterricht & Feedback -->
+        <a href="{{ url_unterricht }}" class="portal-card card-unterricht">
+            <div>
+                <div class="portal-icon">📚</div>
+                <h2 class="card-title">Unterrichts-Assistent</h2>
+                <p class="card-desc">
+                    Erstellen Sie Feedback-Sitzungen für Klassen, werten Sie Hausaufgaben automatisiert mit KI aus und verwalten Sie Ihre Unterrichtsklassen.
+                </p>
+            </div>
+            <div class="portal-btn">
+                Zum Unterricht ➔
+            </div>
+        </a>
+    </div>
+
+    <div class="portal-footer">
+        <span>Angemeldet als <strong>{{ current_user_name }}</strong></span>
+        <span>•</span>
+        <a href="/logout.php">🚪 Abmelden</a>
+    </div>
+</div>
+{% endblock %}

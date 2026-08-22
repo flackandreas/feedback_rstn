@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SchoolHub</title>
+    <title>{% block title %}Übersicht{% endblock %} · Antragssystem</title>
     <link rel="stylesheet" href="/css/app_styles.css">
-    <!-- Quick external font fallback to match the app style vibes -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- SweetAlert2 CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {# Schriften lokal, nicht von fonts.googleapis.com: sonst ginge die
+       IP-Adresse jeder Lehrkraft und jedes Elternteils an Google in die USA. #}
+    <link href="/css/fonts.css" rel="stylesheet">
+    {# SweetAlert2 mitgeliefert statt vom CDN - aus demselben Grund. #}
+    <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
     <script src="/js/app.js" defer></script>
     <style>
         /* Fallback quick fixes if app_styles.css isn't perfectly carrying over all resets */

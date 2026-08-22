@@ -1,4 +1,4 @@
-# Schulverwaltung – Digitales Antragssystem
+# Schulverwaltung – Digitales Antragssystem (SchoolHub)
 
 Ein webbasiertes Tool für Lehrkräfte und die Schulleitung der Realschule Titisee-Neustadt zur digitalen Erfassung und Verwaltung von Krankmeldungen, Freistellungsanträgen und Anträgen auf außerunterrichtliche Veranstaltungen.
 
@@ -11,15 +11,21 @@ Ein webbasiertes Tool für Lehrkräfte und die Schulleitung der Realschule Titis
 - [Voraussetzungen](#voraussetzungen)
 - [Schnellstart mit Docker](#schnellstart-mit-docker)
 - [Projektstruktur](#projektstruktur)
-- [Konfiguration](#konfiguration)
+- [Konfiguration & `.env`](#konfiguration--env)
   - [Datenbank](#datenbank)
+  - [IServ SSO (OpenID Connect)](#iserv-sso-openid-connect)
   - [E-Mail / SMTP](#e-mail--smtp)
-- [Benutzer & Rollen](#benutzer--rollen)
+- [Benutzer, Rollen & Login](#benutzer-rollen--login)
+  - [Klassisches Login](#klassisches-login)
+  - [IServ Single Sign-On (SSO)](#iserv-single-sign-on-sso)
+  - [Pflicht zur Passwortänderung](#pflicht-zur-passwortänderung)
 - [Funktionsübersicht](#funktionsübersicht)
   - [Lehrkraft-Bereich](#lehrkraft-bereich)
   - [Schulleitungs-Bereich (Admin)](#schulleitungs-bereich-admin)
-- [CSV-Import von Lehrkräften](#csv-import-von-lehrkräften)
-- [E-Mail-Benachrichtigungen](#e-mail-benachrichtigungen)
+- [Kalender & iCal-Feed](#kalender--ical-feed)
+- [CSV-Import & Export](#csv-import--export)
+- [E-Mail-Benachrichtigungen & Cronjob](#e-mail-benachrichtigungen--cronjob)
+- [Datenbank-Migrationen](#datenbank-migrationen)
 - [Standard-Zugangsdaten](#standard-zugangsdaten)
 - [Sicherheit](#sicherheit)
 
@@ -27,14 +33,17 @@ Ein webbasiertes Tool für Lehrkräfte und die Schulleitung der Realschule Titis
 
 ## Features
 
-- 🔐 **Rollenbasiertes Login** – Lehrkräfte und Administrator haben getrennte Ansichten
-- 📝 **Krankmeldung** einreichen
-- 🏖️ **Freistellungsantrag** mit vollständigen Detailfeldern (Tage, Grund, Stundenweise, etc.)
-- 🚌 **Antrag auf außerunterrichtliche Veranstaltung** – digitale Version des offiziellen Papierformulars
-- ✅ **Admin-Dashboard** – Übersicht aller Anträge mit Genehmigen / Ablehnen
-- 📋 **Slide-In Detailpanel** – Alle Felder eines Antrags auf Klick sichtbar, ohne Seite zu verlassen
-- 📧 **E-Mail-Benachrichtigung** per PHPMailer – Lehrer wird informiert, sobald ein Antrag bearbeitet wird
-- 👥 **CSV-Import** für Lehrkräfte (Kürzel, Name, E-Mail)
+- 🔐 **Rollenbasiertes Login & IServ SSO** – Klassischer Login oder nahtloses Single Sign-On via IServ OpenID Connect (OIDC).
+- 📝 **Krankmeldung** – Schnelle Erfassung von Abwesenheiten inklusive automatischer Benachrichtigung und Admin-Übersicht.
+- 🏖️ **Freistellungsantrag** – Digitale Beantragung von Freistellungen mit Details zu Tagen, Grund und stundenweiser Option.
+- 🚌 **Antrag auf außerunterrichtliche Veranstaltung (AUD)** – Vollständiges digitales Formular für Exkursionen, Studienfahrten und Unterrichtsgänge (inkl. Mehrtages-Zeiträumen, Begleitung, Kosten uvm.).
+- 📊 **Strukturierte Admin-Verwaltung** – Aufgeteilter Schulleitungsbereich für Übersicht, Krankmeldungen, AUD-Anträge, Lehrerverwaltung, Archiv und Systemsteuerung.
+- 📋 **Slide-In Detailpanel** – Antragsdetails lassen sich in der Admin-Ansicht ohne Seitenwechsel einsehen und bearbeiten.
+- 📅 **Kalender & iCal Feed** – Übersicht über alle genehmigten Anträge und Termine sowie iCal-Feed-Schnittstelle.
+- 📧 **E-Mail-Benachrichtigungen & Cronjob** – Automatische Benachrichtigungen bei Entscheidungen sowie optionaler täglicher Zusammenfassungs-Report (`cron_report.php`).
+- 👥 **CSV-Import & Export** – Bequemer Import von Lehrkräften sowie Export von Krankmeldungen.
+- 🔑 **Passwort-Änderungszwang** – Pflicht zur Passwortänderung bei neu angelegten oder zurückgesetzten Konten.
+- 🔄 **Automatische DB-Migrationen** – Integriertes Schemamanagement für reibungslose Updates.
 
 ---
 
@@ -46,7 +55,9 @@ Ein webbasiertes Tool für Lehrkräfte und die Schulleitung der Realschule Titis
 | Sprache | PHP 8.2 |
 | Datenbank | MariaDB 10.11 |
 | Templates | Twig 3 |
+| SSO / Auth | OpenID Connect (Guzzle / OIDC Client via `.env`) |
 | E-Mail | PHPMailer 6 |
+| Umgebungsverwaltung | `vlucas/phpdotenv` |
 | Container | Docker / Docker Compose |
 
 ---
@@ -54,7 +65,7 @@ Ein webbasiertes Tool für Lehrkräfte und die Schulleitung der Realschule Titis
 ## Voraussetzungen
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (inkl. Docker Compose)
-- Kein lokales PHP oder MySQL erforderlich
+- Kein lokales PHP oder MariaDB zwingend erforderlich
 
 ---
 
@@ -64,17 +75,19 @@ Ein webbasiertes Tool für Lehrkräfte und die Schulleitung der Realschule Titis
 # 1. Repository klonen / Projektordner öffnen
 cd /pfad/zum/projekt
 
-# 2. Container starten
+# 2. Umgebungsdatei anlegen
+cp src/.env.example src/.env
+
+# 3. Container starten und bauen
 docker compose up -d --build
 
-# 3. Datenbank wird automatisch initialisiert
-#    (via init.sql beim ersten Start)
+# 4. Datenbank wird via init.sql und automatischen Migrationen initialisiert
 
-# 4. Anwendung im Browser öffnen
+# 5. Anwendung im Browser öffnen
 open http://localhost:8080
 ```
 
-> **Hinweis:** Beim ersten Start kann es einen Moment dauern, bis die MariaDB-Datenbank bereit ist. Falls die Seite sofort einen Datenbankfehler zeigt, einfach kurz warten und neu laden.
+> **Hinweis:** Beim ersten Start baut Docker das Image und startet den MariaDB-Container. Falls beim ersten Aufruf eine Datenbankverbindung fehlschlägt, kurz ein paar Sekunden warten, bis MariaDB vollständig gestartet ist.
 
 Um die Container zu stoppen:
 
@@ -87,84 +100,117 @@ docker compose down
 ## Projektstruktur
 
 ```
-feedback/
+feedback_rstn/
 ├── Dockerfile                  # PHP 8.2 + Apache + Composer Image
 ├── docker-compose.yml          # Web + MariaDB Services
 ├── init.sql                    # Initiales Datenbankschema + Testdaten
-├── src/                        # Webroot (wird in Container gemountet)
-│   ├── index.php               # Dashboard für Lehrkräfte
-│   ├── login.php               # Loginseite
-│   ├── logout.php
+├── README.md                   # Dokumentation
+├── src/                        # Webroot
+│   ├── .env                    # Aktive Umgebungskonfiguration (gitignored)
+│   ├── .env.example            # Vorlage für Umgebungsvariablen
+│   ├── index.php               # Haupt-Dashboard / Navigation
+│   ├── login.php               # Klassisches Login
+│   ├── login_sso.php           # IServ OIDC Single Sign-On Handler
+│   ├── logout.php              # Session-Beendigung
+│   ├── change_password.php     # Passwortänderung
 │   ├── krankmeldung.php        # Krankmeldung einreichen
 │   ├── antrag_freistellung.php # Freistellungsantrag
-│   ├── antrag_ausserunterrichtlich.php
+│   ├── antrag_ausserunterrichtlich.php # AUD-Antrag
 │   ├── meine_antraege.php      # Eigene Anträge der Lehrkraft
-│   ├── admin_dashboard.php     # Schulleitungs-Übersicht
-│   ├── admin_action.php        # Genehmigen / Ablehnen (POST-Endpunkt)
+│   ├── calendar.php            # Kalenderansicht
+│   ├── calendar_feed.php       # iCal Feed Endpunkt
+│   ├── admin_dashboard.php     # Schulleitung: Gesamtübersicht & Statistik
+│   ├── admin_sick_leaves.php   # Schulleitung: Krankmeldungen
+│   ├── admin_aud.php           # Schulleitung: Außerunterrichtliche Veranstaltungen
+│   ├── admin_lehrer.php        # Schulleitung: Lehrerverwaltung & CSV-Import
+│   ├── admin_archive.php       # Schulleitung: Archiv für Anträge
+│   ├── admin_system.php       # Schulleitung: System & Migrationen
+│   ├── admin_action.php        # Genehmigen / Ablehnen Endpunkt
+│   ├── export_sick_leaves.php  # CSV-Export von Krankmeldungen
+│   ├── cron_report.php         # Tägliches Cronjob-Skript für E-Mail-Reports
 │   ├── config/
-│   │   ├── database.php        # DB-Verbindung
-│   │   └── mail.php            # SMTP-Konfiguration ⚠️
+│   │   ├── database.php        # DB-Verbindung & Dotenv-Initialisierung
+│   │   ├── mail.php            # SMTP-Konfiguration
+│   │   └── config_untis.php    # Untis-Schnittstellen-Konfiguration
 │   ├── includes/
-│   │   ├── auth.php            # Session, Login, CSRF
+│   │   ├── auth.php            # Session, Auth-Prüfung, CSRF-Schutz
+│   │   ├── admin_helpers.php   # Hilfsfunktionen für Admin-Auswertungen
+│   │   ├── calendar_helper.php# Kalender-Hilfsfunktionen
 │   │   ├── mailer.php          # PHPMailer Wrapper
+│   │   ├── migrations.php      # Automatische DB-Schema-Migrationen
 │   │   └── twig_setup.php      # Twig-Initialisierung
 │   ├── templates/              # Twig-Templates
-│   ├── css/
-│   ├── js/
-│   └── vendor/                 # Composer-Abhängigkeiten (Twig, PHPMailer)
+│   └── vendor/                 # Composer-Abhängigkeiten
 └── db-data/                    # Persistente MariaDB-Daten (gitignored)
 ```
 
 ---
 
-## Konfiguration
+## Konfiguration & `.env`
+
+Die Konfiguration wird zentral über die Datei **`src/.env`** gesteuert. Erstellen Sie vor dem ersten Start eine Kopie von `src/.env.example`:
+
+```ini
+# Datenbank-Konfiguration
+DB_HOST=db
+DB_USER=root
+DB_PASS=db_user
+DB_NAME=db_feedback
+
+# IServ OIDC-Konfiguration (für SSO)
+ISERV_HOST=https://iserv.meine-schule.de
+ISERV_CLIENT_ID=deine-client-id
+ISERV_CLIENT_SECRET=dein-client-secret
+```
 
 ### Datenbank
 
-Die Datenbankverbindung ist in `src/config/database.php` definiert. Standardmäßig sind die Werte auf die Docker-Umgebung abgestimmt:
+Die Datenbankverbindung liest die Zugangsdaten aus der `.env`-Datei. Falls keine `.env` vorhanden ist, greift `src/config/database.php` auf Standardwerte für die Docker-Umgebung zurück.
 
-```php
-$host = 'db';          // Docker-Service-Name
-$db   = 'db_feedback';
-$user = 'root';
-$pass = 'db_user';
-```
+### IServ SSO (OpenID Connect)
 
-Bei Betrieb außerhalb von Docker diese Werte entsprechend anpassen.
+Für die Anbindung an den schuleigenen IServ-Server müssen `ISERV_HOST`, `ISERV_CLIENT_ID` und `ISERV_CLIENT_SECRET` in der `.env` hinterlegt sein. Die Redirect-URI lautet:
+`https://<DEIN-HOST>/login_sso.php`
 
 ### E-Mail / SMTP
 
-Die SMTP-Konfiguration befindet sich in **`src/config/mail.php`**. Diese Datei enthält Platzhalter und muss mit echten Zugangsdaten befüllt werden:
+Die SMTP-Konfiguration befindet sich in **`src/config/mail.php`**. Tragen Sie dort Ihre SMTP-Zugangsdaten für den Benachrichtigungsversand ein:
 
 ```php
 return [
-    'host'       => 'smtp.example.com',    // z.B. smtp.gmail.com, mail.schule.de
-    'port'       => 587,                   // 587 (STARTTLS) oder 465 (SSL)
-    'username'   => 'your_username',
-    'password'   => 'your_password',
-    'from_email' => 'noreply@school.edu',
-    'from_name'  => 'Feedback System',
-    'encryption' => 'tls',                 // 'tls' oder 'ssl'
+    'host'       => 'smtp.example.com',
+    'port'       => 587,
+    'username'   => 'user@example.com',
+    'password'   => 'secret',
+    'from_email' => 'noreply@schule.de',
+    'from_name'  => 'SchoolHub Feedback',
+    'encryption' => 'tls',
     'auth'       => true
 ];
 ```
 
-> ⚠️ Diese Datei sollte **nie** in die Versionskontrolle eingecheckt werden, wenn echte Credentials enthalten sind. Sie ist bereits in `.gitignore` aufgeführt.
-
-Wenn die SMTP-Konfiguration fehlt oder falsch ist, wird beim Bearbeiten eines Antrags trotzdem eine Erfolgsmeldung gezeigt – lediglich die E-Mail-Benachrichtigung entfällt (der Fehler wird in die PHP-Error-Log geschrieben).
-
 ---
 
-## Benutzer & Rollen
+## Benutzer, Rollen & Login
 
-Das System kennt zwei Rollen:
+Das System unterscheidet zwei Benutzerrollen:
 
 | Rolle | Beschreibung |
 |---|---|
-| **Lehrkraft** | Kann Anträge einreichen und eigene Anträge einsehen |
-| **Admin (Schulleitung)** | Sieht alle Anträge, kann genehmigen/ablehnen, verwaltet Lehrkräfte |
+| **Lehrkraft** (`is_admin = 0`) | Anträge einreichen, eigene Anträge verwalten, Kalender einsehen |
+| **Admin / Schulleitung** (`is_admin = 1`) | Anträge prüfen, genehmigen/ablehnen, Lehrer verwalten, Archiv & System einsehen |
 
-Die Rolle wird über das Feld `is_admin` in der `teachers`-Tabelle gesteuert (`0` = Lehrkraft, `1` = Admin).
+### Klassisches Login
+
+Benutzer können sich über `/login.php` mit ihrem Lehrerkürzel und Passwort anmelden.
+
+### IServ Single Sign-On (SSO)
+
+Über `/login_sso.php` ist eine Anmeldung per IServ OIDC möglich. Meldet sich eine Lehrkraft zum ersten Mal per SSO an, wird automatisch ein entsprechendes Benutzerkonto in der Datenbank angelegt (`is_admin = 0`).
+
+### Pflicht zur Passwortänderung
+
+Wenn das Flag `force_password_change` bei einer Lehrkraft auf `1` steht (z.B. nach Neuanlage mit Standardpasswort), wird der Benutzer nach dem Login automatisch auf `/change_password.php` umgeleitet und kann erst fortfahren, nachdem ein neues Passwort vergeben wurde.
 
 ---
 
@@ -174,81 +220,88 @@ Die Rolle wird über das Feld `is_admin` in der `teachers`-Tabelle gesteuert (`0
 
 | Seite | URL | Beschreibung |
 |---|---|---|
-| Dashboard | `/index.php` | Startseite mit Links zu allen Formularen |
-| Krankmeldung | `/krankmeldung.php` | Kurze Abwesenheitsmeldung mit Zeitraum & Notiz |
-| Freistellungsantrag | `/antrag_freistellung.php` | Detaillierter Antrag mit Tagen, Grund, Stundenweise-Option |
-| Außerunterrichtliche Veranstaltung | `/antrag_ausserunterrichtlich.php` | Vollständiges Formular nach dem offiziellen Papierformular (Begleitung, Kosten, Rückkehr, Aufsicht, Einverständnis, ...) |
-| Meine Anträge | `/meine_antraege.php` | Übersicht der eigenen letzten Anträge mit Status |
+| Dashboard | `/index.php` | Übersicht mit Schnellzugriffen |
+| Krankmeldung | `/krankmeldung.php` | Abwesenheitsmeldung (Zeitraum, Vertretung, Notiz) |
+| Freistellungsantrag | `/antrag_freistellung.php` | Antrag auf Freistellung (Tage, Grund, Stundenweise) |
+| Außerunterrichtliche Veranstaltung | `/antrag_ausserunterrichtlich.php` | Ausflüge, Exkursionen, Studienfahrten |
+| Meine Anträge | `/meine_antraege.php` | Status-Übersicht der eigenen Anträge |
+| Kalender | `/calendar.php` | Kalenderdarstellung aller relevanten Termine |
+| Passwort ändern | `/change_password.php` | Eigenes Passwort aktualisieren |
 
 ### Schulleitungs-Bereich (Admin)
 
 | Seite | URL | Beschreibung |
 |---|---|---|
-| Admin-Dashboard | `/admin_dashboard.php` | Übersicht aller Anträge; Zeile anklicken → Slide-In-Panel mit allen Details; ✓/✗ Buttons zum Genehmigen/Ablehnen |
-| CSV-Import | Im Admin-Dashboard integriert | Lehrkräfte aus CSV-Datei importieren |
-
-#### Detailpanel im Admin-Dashboard
-
-- Jede Tabellenzeile ist **anklickbar** und öffnet ein **Slide-In-Panel** von rechts
-- Das Panel zeigt alle Felder des Antrags übersichtlich an
-- Panel schließen: **× Button**, **Klick auf den abgedunkelten Hintergrund** oder **Escape-Taste**
-- Die Genehmigen (✓) / Ablehnen (✗) Buttons sind direkt in der Tabellenzeile und öffnen zur Sicherheit einen SweetAlert2-Bestätigungsdialog
+| Admin-Dashboard | `/admin_dashboard.php` | Hauptansicht mit Kennzahlen, Event-Statistik und Schnellaktionen |
+| Krankmeldungen | `/admin_sick_leaves.php` | Übersicht & Bearbeitung aller Krankmeldungen |
+| Außerunterrichtliche Veranstaltungen | `/admin_aud.php` | Übersicht & Genehmigung aller AUD-Anträge |
+| Lehrerverwaltung | `/admin_lehrer.php` | Verwaltung von Lehrkraft-Konten & CSV-Import |
+| Archiv | `/admin_archive.php` | Durchsuchbares Archiv vergangener Anträge |
+| System & Migrationen | `/admin_system.php` | Systemstatus, Ausführung von DB-Migrationen |
 
 ---
 
-## CSV-Import von Lehrkräften
+## Kalender & iCal-Feed
 
-Im Admin-Dashboard gibt es den Bereich **„Lehrerverwaltung"**. Dort kann eine CSV-Datei mit Lehrkräften hochgeladen werden.
+- **Interner Kalender**: Unter `/calendar.php` können Lehrkräfte und Admins genehmigte Anträge und Termine im Kalender einsehen.
+- **iCal Feed**: Über `/calendar_feed.php` steht eine Schnittstelle für externe Kalenderanwendungen (z.B. Outlook, Apple Kalender, Thunderbird) bereit.
 
-**Erwartetes Format** (Semikolon-getrennt, erste Zeile wird als Überschrift ignoriert):
+---
 
+## CSV-Import & Export
+
+### Lehrer-Import
+
+Unter `/admin_lehrer.php` können Lehrkräfte per CSV-Datei importiert werden.
+
+**Format** (Semikolon-getrennt, 1. Zeile = Header):
 ```csv
 Kürzel;Name;Email
 mb;Max Mustermann;max@schule.de
 mm;Maria Musterfrau;maria@schule.de
-jd;John Doe;
 ```
 
-Eine Beispieldatei liegt unter `src/test_lehrer.csv`.
+- Bereits existierende Kürzel werden übersprungen.
+- Neue Konten erhalten das Passwort `lehrer` und werden zur Passwortänderung beim ersten Login aufgefordert.
 
-**Hinweise:**
-- Bereits vorhandene Kürzel werden übersprungen (kein Duplikat)
-- Neu importierte Lehrkräfte erhalten das Standard-Passwort: `lehrer`
-- Die E-Mail-Spalte ist optional
+### Krankmeldungen-Export
+
+Über `/export_sick_leaves.php` können gefilterte Krankmeldungsdaten als CSV-Datei für die Weiterverarbeitung heruntergeladen werden.
 
 ---
 
-## E-Mail-Benachrichtigungen
+## E-Mail-Benachrichtigungen & Cronjob
 
-Wenn ein Admin einen Antrag **genehmigt oder ablehnt**, wird automatisch an die hinterlegte E-Mail-Adresse der Lehrkraft eine Benachrichtigung versendet. Die E-Mail enthält:
+- **Statusänderungen**: Bei Genehmigung oder Ablehnung eines Antrags erhält die betroffene Lehrkraft automatisch eine E-Mail-Benachrichtigung.
+- **Tagesreports**: Skript `/cron_report.php` kann per System-Cronjob (z.B. täglich um 07:00 Uhr) aufgerufen werden, um zusammenfassende E-Mail-Berichte an die Schulleitung zu versenden:
+  ```bash
+  0 7 * * 1-5 curl -s http://localhost:8080/cron_report.php > /dev/null
+  ```
 
-- Den Status der Entscheidung (genehmigt / abgelehnt)
-- Die Art des Antrags
-- Relevante Details (Zeitraum, Klasse, o.ä.)
+---
 
-**Voraussetzung:** Die Lehrkraft muss eine E-Mail-Adresse in der Datenbank haben (entweder via CSV-Import oder manuell in der DB gepflegt).
+## Datenbank-Migrationen
+
+Das Skript `src/includes/migrations.php` führt beim Start automatisch ausstehende Datenbankschema-Anpassungen aus. Zudem können Schema-Updates im Admin-Bereich unter `/admin_system.php` manuell eingesehen und getriggert werden.
 
 ---
 
 ## Standard-Zugangsdaten
 
-> ⚠️ **Diese Zugangsdaten sind nur für die Entwicklungsumgebung!** Bitte vor dem Produktiveinsatz ändern.
+> ⚠️ **Wichtig:** Diese Zugangsdaten dienen ausschließlich der Entwicklungs- und Testumgebung und müssen vor dem Produktiveinsatz geändert werden!
 
 | Rolle | Kürzel | Passwort |
 |---|---|---|
 | Administrator | `admin` | `admin` |
-| Lehrer (Test) | `test` | `lehrer` |
-
-Passwörter können in der Datenbank durch neues Hashing mit `password_hash('neues_passwort', PASSWORD_DEFAULT)` in der Spalte `passwort_hash` der Tabelle `teachers` geändert werden.
+| Test-Lehrer | `test` | `lehrer` |
 
 ---
 
 ## Sicherheit
 
-Das System implementiert folgende Sicherheitsmechanismen:
+- **Password Hashing**: Verwendung von `password_hash()` / `password_verify()` (bcrypt).
+- **IServ OIDC Security**: OAuth State Verification & Token Validation.
+- **CSRF-Schutz**: CSRF-Token-Prüfung bei allen formularbasierten Aktionen.
+- **Prepared Statements**: PDO Prepared Statements gegen SQL-Injections across all queries.
+- **Session Security**: Sichere Session-Handling-Mechanismen (`httponly`, `SameSite=Strict`).
 
-- **Passwort-Hashing** mit `password_hash()` / `password_verify()` (bcrypt)
-- **CSRF-Schutz** für alle POST-Formulare via Token
-- **Rollenbasierte Zugriffskontrolle** – Admin-Seiten prüfen `is_admin` in der Session
-- **Prepared Statements** mit PDO für alle Datenbankabfragen (kein SQL-Injection-Risiko)
-- **Session-Management** sicher über PHP-Sessions

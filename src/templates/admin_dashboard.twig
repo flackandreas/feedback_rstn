@@ -80,9 +80,9 @@
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                         <input type="hidden" name="id" value="{{ r.id }}">
                                         <input type="hidden" name="type" value="freistellung">
-                                        <button type="button" class="button-primary btn-approve" style="background-color: var(--success-color); padding: 5px 10px; font-size: 0.85em; margin-right: 5px;" title="Genehmigen">✓</button>
-                                        <button type="button" class="button-warning btn-query" style="background-color: var(--warning-color); padding: 5px 10px; font-size: 0.85em; margin-right: 5px; color: white; border: none;" title="Rückfrage">❓</button>
-                                        <button type="button" class="button-danger btn-reject" style="padding: 5px 10px; font-size: 0.85em;" title="Ablehnen">✗</button>
+                                        <button type="button" class="button-primary btn-approve" style="background-color: var(--success-color); padding: 5px 10px; font-size: 0.85em; margin-right: 5px;" title="Genehmigen"></button>
+                                        <button type="button" class="button-warning btn-query" style="background-color: var(--warning-color); padding: 5px 10px; font-size: 0.85em; margin-right: 5px; color: white; border: none;" title="Rückfrage"></button>
+                                        <button type="button" class="button-danger btn-reject" style="padding: 5px 10px; font-size: 0.85em;" title="Ablehnen"></button>
                                         <input type="hidden" name="action" value="" class="action-input">
                                     </form>
                                 {% elseif r.status == 'query' %}
@@ -90,8 +90,8 @@
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                         <input type="hidden" name="id" value="{{ r.id }}">
                                         <input type="hidden" name="type" value="freistellung">
-                                        <button type="button" class="button-primary btn-approve" style="background-color: var(--success-color); padding: 5px 10px; font-size: 0.85em; margin-right: 5px;" title="Genehmigen">✓</button>
-                                        <button type="button" class="button-danger btn-reject" style="padding: 5px 10px; font-size: 0.85em;" title="Ablehnen">✗</button>
+                                        <button type="button" class="button-primary btn-approve" style="background-color: var(--success-color); padding: 5px 10px; font-size: 0.85em; margin-right: 5px;" title="Genehmigen"></button>
+                                        <button type="button" class="button-danger btn-reject" style="padding: 5px 10px; font-size: 0.85em;" title="Ablehnen"></button>
                                         <input type="hidden" name="action" value="" class="action-input">
                                     </form>
                                     <div style="margin-top: 5px;"><span class="badge" style="background-color: var(--warning-color); color: white; font-size: 0.75em;">RÜCKFRAGE</span></div>

@@ -55,11 +55,11 @@
                             </td>
                             <td>
                                 {% if r.type == 'Ausflug' %}
-                                    🚌 {{ r.type }}
+                                    {{ r.type }}
                                 {% elseif r.type == 'Freistellung' %}
-                                    🏖️ {{ r.type }}
+                                    {{ r.type }}
                                 {% else %}
-                                    🤒 {{ r.type }}
+                                    {{ r.type }}
                                 {% endif %}
                             </td>
                             <td style="color: var(--text-muted);">
@@ -75,9 +75,9 @@
                             </td>
                             <td>
                                 {% if r.type == 'Ausflug' %}
-                                    <a href="/antrag_ausserunterrichtlich.php?edit_id={{ r.id }}" class="button-secondary" style="padding: 4px 8px; font-size: 0.8em; text-decoration: none;">✏️ Bearbeiten</a>
+                                    <a href="/antrag_ausserunterrichtlich.php?edit_id={{ r.id }}" class="button-secondary" style="padding: 4px 8px; font-size: 0.8em; text-decoration: none;">Bearbeiten</a>
                                 {% elseif r.type == 'Krankmeldung' %}
-                                    <a href="/krankmeldung.php?id={{ r.id }}" class="button-secondary" style="padding: 4px 8px; font-size: 0.8em; text-decoration: none;">✏️ Bearbeiten</a>
+                                    <a href="/krankmeldung.php?id={{ r.id }}" class="button-secondary" style="padding: 4px 8px; font-size: 0.8em; text-decoration: none;">Bearbeiten</a>
                                 {% endif %}
                             </td>
                         </tr>

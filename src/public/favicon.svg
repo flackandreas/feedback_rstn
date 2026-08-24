@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Bildmarke SchulOS, identisch zur Verkaufsseite. Als SVG statt PNG:
+       scharf in jeder Groesse und knapp 400 Byte statt 497 KB. -->
+  <rect width="32" height="32" rx="7" fill="#f0fdf4"/>
+  <path d="M16 6L5.5 11.2L16 16.4L26.5 11.2L16 6Z" fill="#4f46e5"/>
+  <path d="M5.5 15V20.6L16 25.8L26.5 20.6V15L16 20.2L5.5 15Z" fill="#4f46e5" opacity="0.55"/>
+</svg>

@@ -1,16 +1,17 @@
+{% import "_symbole.twig" as symbol %}
 <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Übersicht{% endblock %} · Antragssystem</title>
-    <link rel="stylesheet" href="/css/app_styles.css">
+    <link rel="stylesheet" href="{{ asset('/css/app_styles.css') }}">
     {# Schriften lokal, nicht von fonts.googleapis.com: sonst ginge die
        IP-Adresse jeder Lehrkraft und jedes Elternteils an Google in die USA. #}
-    <link href="/css/fonts.css" rel="stylesheet">
+    <link href="{{ asset('/css/fonts.css') }}" rel="stylesheet">
     {# SweetAlert2 mitgeliefert statt vom CDN - aus demselben Grund. #}
     <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
-    <script src="/js/app.js" defer></script>
+    <script src="{{ asset('/js/app.js') }}" defer></script>
     <style>
         /* Fallback quick fixes if app_styles.css isn't perfectly carrying over all resets */
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
@@ -79,7 +80,7 @@
             font-weight: 600;
         }
     </style>
-    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="{{ asset('/favicon.svg') }}">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#2c3e50">
     {% block extra_head %}{% endblock %}
@@ -100,30 +101,42 @@
         <div class="sidebar-header">
             <div>
                 <div class="sidebar-title" style="display: flex; align-items: center; gap: 3px; font-weight: 600;">
-                    <img src="/favicon.png" alt="S" style="width: 1.05em; height: 1.05em; border-radius: 4px; vertical-align: middle;">choolHub
+                    <svg width="30" height="30" viewBox="0 0 32 32" fill="none" aria-hidden="true" style="flex-shrink: 0;">
+                        <path d="M16 4L4 10L16 16L28 10L16 4Z" fill="currentColor"/>
+                        <path d="M4 14.5V21.5L16 27.5L28 21.5V14.5L16 20.5L4 14.5Z" fill="currentColor" opacity="0.55"/>
+                    </svg>
+                    <span class="marke__text">
+                        <span class="marke__name">SchulOS</span>
+                        <span class="marke__modul">Antragssystem</span>
+                    </span>
                 </div>
                 <span class="sidebar-schule">Verwaltung</span>
             </div>
-            <button id="nav-toggle" aria-label="Toggle menu">☰</button>
+            <button id="nav-toggle" aria-label="Menü ein- oder ausklappen">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                    <line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/>
+                </svg>
+            </button>
         </div>
         
         <ul class="nav-menu">
-            <li class="nav-label">Main</li>
+            <li class="nav-label">Start</li>
             <li class="nav-item">
                 <a href="/dashboard" class="{{ is_current_page('dashboard_antraege.php') ? 'active' : '' }}">
-                    <span class="nav-icon">🏠</span>
+                    <span class="nav-icon">{{ symbol.zeichne('home') }}</span>
                     <span class="nav-text">Dashboard</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="/index.php">
-                    <span class="nav-icon">🔄</span>
+                    <span class="nav-icon">{{ symbol.zeichne('wechsel') }}</span>
                     <span class="nav-text">Portal-Auswahl</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="/calendar.php" class="{{ is_current_page('calendar.php') ? 'active' : '' }}">
-                    <span class="nav-icon">📅</span>
+                    <span class="nav-icon">{{ symbol.zeichne('kalender') }}</span>
                     <span class="nav-text">Schulkalender</span>
                 </a>
             </li>
@@ -132,31 +145,31 @@
             <li class="nav-label">Eigene Anträge</li>
             <li class="nav-item">
                 <a href="/meine_antraege.php" class="{{ is_current_page('meine_antraege.php') ? 'active' : '' }}">
-                    <span class="nav-icon">📂</span>
+                    <span class="nav-icon">{{ symbol.zeichne('ordner') }}</span>
                     <span class="nav-text">Meine Anträge</span>
                 </a>
             </li>
             <li class="nav-item">
                 <details class="nav-details" {% if is_current_page('antrag_ausserunterrichtlich.php') or is_current_page('antrag_freistellung.php') or is_current_page('krankmeldung.php') %}open{% endif %}>
                     <summary class="nav-summary">
-                        <span class="nav-icon">📝</span>
+                        <span class="nav-icon">{{ symbol.zeichne('formular') }}</span>
                         <span class="nav-text">Neuer Antrag</span>
                         <span class="nav-summary-arrow">&rsaquo;</span>
                     </summary>
                     <ul class="nav-submenu">
                         <li>
                             <a href="/antrag_ausserunterrichtlich.php" class="{{ is_current_page('antrag_ausserunterrichtlich.php') ? 'active' : '' }}">
-                                <span>🚌 Außerunterrichtlich</span>
+                                <span>Außerunterrichtlich</span>
                             </a>
                         </li>
                         <li>
                             <a href="/antrag_freistellung.php" class="{{ is_current_page('antrag_freistellung.php') ? 'active' : '' }}">
-                                <span>🏖️ Freistellung</span>
+                                <span>Freistellung</span>
                             </a>
                         </li>
                         <li>
                             <a href="/krankmeldung.php" class="{{ is_current_page('krankmeldung.php') ? 'active' : '' }}">
-                                <span>🤒 Krankmeldung</span>
+                                <span>Krankmeldung</span>
                             </a>
                         </li>
                     </ul>
@@ -171,7 +184,7 @@
             <li class="nav-item">
                 <a href="/admin_dashboard.php" class="{{ is_current_page('admin_dashboard.php') ? 'active' : '' }}" style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; align-items: center;">
-                        <span class="nav-icon">🏖️</span>
+                        <span class="nav-icon">{{ symbol.zeichne('sonne') }}</span>
                         <span class="nav-text">Freistellungen</span>
                     </div>
                     {% if pending_counts.exemption > 0 %}
@@ -182,7 +195,7 @@
             <li class="nav-item">
                 <a href="/admin_aud.php" class="{{ is_current_page('admin_aud.php') ? 'active' : '' }}" style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; align-items: center;">
-                        <span class="nav-icon">🚌</span>
+                        <span class="nav-icon">{{ symbol.zeichne('bus') }}</span>
                         <span class="nav-text">AUD-Termine</span>
                     </div>
                     {% if pending_counts.aud > 0 %}
@@ -193,7 +206,7 @@
             <li class="nav-item">
                 <a href="/admin_sick_leaves.php" class="{{ is_current_page('admin_sick_leaves.php') ? 'active' : '' }}" style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; align-items: center;">
-                        <span class="nav-icon">🤒</span>
+                        <span class="nav-icon">{{ symbol.zeichne('krank') }}</span>
                         <span class="nav-text">Krankmeldungen</span>
                     </div>
                     {% if pending_counts.sick_leaves > 0 %}
@@ -203,13 +216,13 @@
             </li>
             <li class="nav-item">
                 <a href="/admin_lehrer.php" class="{{ is_current_page('admin_lehrer.php') ? 'active' : '' }}">
-                    <span class="nav-icon">👥</span>
+                    <span class="nav-icon">{{ symbol.zeichne('personen') }}</span>
                     <span class="nav-text">Lehrerverwaltung</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="/admin_system.php" class="{{ is_current_page('admin_system.php') ? 'active' : '' }}">
-                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-icon">{{ symbol.zeichne('einstellung') }}</span>
                     <span class="nav-text">Systemverwaltung</span>
                 </a>
             </li>
@@ -220,19 +233,19 @@
             <li class="nav-label">Benutzer</li>
             <li class="nav-item">
                 <div style="padding: 10px 12px; color: var(--text-muted); font-size: 0.9em; display:flex; align-items:center;">
-                    <span class="nav-icon">👤</span>
+                    <span class="nav-icon">{{ symbol.zeichne('person') }}</span>
                     <span class="nav-text">{{ current_user_name }}</span>
                 </div>
             </li>
             <li class="nav-item">
                 <a href="#" id="dark-mode-toggle" onclick="event.preventDefault();">
-                    <span class="nav-icon">🌓</span>
+                    <span class="nav-icon">{{ symbol.zeichne('mond') }}</span>
                     <span class="nav-text">Design wechseln</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="/logout.php">
-                    <span class="nav-icon">🚪</span>
+                    <span class="nav-icon">{{ symbol.zeichne('abmelden') }}</span>
                     <span class="nav-text">Abmelden</span>
                 </a>
             </li>

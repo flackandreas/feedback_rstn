@@ -89,7 +89,7 @@
             <form method="POST" action="/admin_sick_leaves.php" class="confirm-all-form" style="margin: 0;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="action" value="mark_all_seen">
-                <button type="button" class="action-btn btn-all-seen" onclick="confirmAllSeen(event)">✓ Alle als gelesen markieren</button>
+                <button type="button" class="action-btn btn-all-seen" onclick="confirmAllSeen(event)">Alle als gelesen markieren</button>
             </form>
         {% endif %}
     </div>
@@ -128,7 +128,7 @@
                             <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.details }}">{{ r.details|default('-') }}</td>
                             <td>
                                 {% if r.material_link %}
-                                    <a href="{{ r.material_link }}" target="_blank" class="button-secondary" style="padding: 2px 8px; font-size: 0.8em; color: var(--primary-color);">🚀 Material</a>
+                                    <a href="{{ r.material_link }}" target="_blank" class="button-secondary" style="padding: 2px 8px; font-size: 0.8em; color: var(--primary-color);">Material</a>
                                 {% else %}
                                     -
                                 {% endif %}
@@ -145,7 +145,7 @@
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="action" value="mark_seen">
                                     <input type="hidden" name="id" value="{{ r.id }}">
-                                    <button type="submit" class="action-btn btn-seen" title="Als gelesen markieren">✓ Gelesen</button>
+                                    <button type="submit" class="action-btn btn-seen" title="Als gelesen markieren">Gelesen</button>
                                 </form>
                             </td>
                         </tr>
@@ -162,7 +162,7 @@
 <div class="content-box" style="border-top: 4px solid #f39c12; margin-top: 25px;">
     <div class="section-header">
         <h3 style="margin: 0; display: flex; align-items: center;">
-            <span style="font-size: 1.2em; margin-right: 8px;">🤒</span>
+            <span style="font-size: 1.2em; margin-right: 8px;"></span>
             Laufende & Zukünftige Krankmeldungen
         </h3>
     </div>
@@ -199,7 +199,7 @@
                             <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.details }}">{{ r.details|default('-') }}</td>
                             <td>
                                 {% if r.material_link %}
-                                    <a href="{{ r.material_link }}" target="_blank" class="button-secondary" style="padding: 2px 8px; font-size: 0.8em; color: var(--primary-color);">🚀 Material</a>
+                                    <a href="{{ r.material_link }}" target="_blank" class="button-secondary" style="padding: 2px 8px; font-size: 0.8em; color: var(--primary-color);">Material</a>
                                 {% else %}
                                     -
                                 {% endif %}
@@ -248,7 +248,7 @@
             </h4>
             <div style="text-align: right;">
                 <span style="font-weight: 600; color: var(--danger-color); display: block; font-size: 1.1em;">Bisherige Krankheitstage: {{ teacher.total_days }}</span>
-                <a href="/export_sick_leaves.php?teacher_id={{ teacher.id }}" target="_blank" class="button-secondary" style="font-size: 0.8em; margin-top: 5px; display: inline-block;">📄 Als PDF Exportieren</a>
+                <a href="/export_sick_leaves.php?teacher_id={{ teacher.id }}" target="_blank" class="button-secondary" style="font-size: 0.8em; margin-top: 5px; display: inline-block;">Als PDF Exportieren</a>
             </div>
         </div>
         

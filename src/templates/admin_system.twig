@@ -22,7 +22,7 @@
             <input type="file" name="teacher_csv" id="teacher_csv" accept=".csv" required class="form-control" style="padding: 10px; border: 1px dashed var(--border-color); width: 100%;">
         </div>
         <div style="margin-top: 15px;">
-            <button type="submit" class="button-primary" style="background-color: #8e44ad; width: auto;">📤 Import starten</button>
+            <button type="submit" class="button-primary" style="background-color: #8e44ad; width: auto;">Import starten</button>
         </div>
     </form>
 </div>
@@ -49,14 +49,14 @@
         
         <div style="flex: 2; display: flex; gap: 10px;">
             <button type="button" class="button-primary" onclick="window.location.href='/admin_archive.php?action=export&year=' + document.getElementById('archive_year_select').value" style="background-color: #3498db; width: auto;">
-                📥 Daten exportieren (.zip)
+                Daten exportieren (.zip)
             </button>
             
             <form method="POST" action="/admin_archive.php?action=cleanup" id="cleanup-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="confirm_year" id="cleanup_year_input">
                 <button type="button" class="button-danger" onclick="handleCleanupClick()" style="width: auto;">
-                    🗑️ Jahr löschen (Bereinigen)
+                    Jahr löschen (Bereinigen)
                 </button>
             </form>
         </div>

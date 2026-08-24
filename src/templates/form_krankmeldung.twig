@@ -80,7 +80,7 @@
                         <td style="color: var(--text-muted);">{{ r.created_at|date('d.m.Y') }}</td>
                         <td>{{ r.date_from|date('d.m.Y') }}</td>
                         <td>{{ r.date_to|date('d.m.Y') }}</td>
-                        <td>{% if r.attachment_path %}✅ Ja{% else %}❌ Nein{% endif %}</td>
+                        <td>{% if r.attachment_path %}Ja{% else %}Nein{% endif %}</td>
                         <td><a href="/krankmeldung.php?id={{ r.id }}" class="button-secondary" style="padding: 3px 8px; font-size: 0.8em; text-decoration: none;">Bearbeiten</a></td>
                     </tr>
                 {% endfor %}

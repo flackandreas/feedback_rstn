@@ -208,7 +208,7 @@
 <!-- Quick Access Panel with Counter Badges -->
 <div class="quick-access-grid">
     <a href="/admin_sick_leaves.php" class="quick-card">
-        <span class="quick-card-icon">🤒</span>
+        <span class="quick-card-icon"></span>
         <div class="quick-card-info">
             <h4 class="quick-card-title">Krankmeldungen</h4>
             <p class="quick-card-desc">Krankheitsberichte einsehen</p>
@@ -219,7 +219,7 @@
     </a>
     
     <a href="/admin_aud.php" class="quick-card">
-        <span class="quick-card-icon">🚌</span>
+        <span class="quick-card-icon"></span>
         <div class="quick-card-info">
             <h4 class="quick-card-title">Außerunterrichtlich (AUD)</h4>
             <p class="quick-card-desc">Ausflüge & Klassenfahrten freigeben</p>
@@ -230,7 +230,7 @@
     </a>
     
     <a href="/admin_dashboard.php" class="quick-card">
-        <span class="quick-card-icon">🏖️</span>
+        <span class="quick-card-icon"></span>
         <div class="quick-card-info">
             <h4 class="quick-card-title">Freistellungsanträge</h4>
             <p class="quick-card-desc">Beurlaubungsanträge bearbeiten</p>
@@ -255,7 +255,7 @@
         
         {% if total_absent == 0 %}
             <div style="text-align: center; padding: 40px 20px;">
-                <span style="font-size: 3rem; display: block; margin-bottom: 10px;">🟢</span>
+                <span style="font-size: 3rem; display: block; margin-bottom: 10px;"></span>
                 <strong style="font-size: 1.1em; color: var(--success-color);">Alle Lehrkräfte im Dienst</strong>
                 <p style="color: var(--text-muted); margin-top: 5px; font-size: 0.9em;">Für den heutigen Tag liegen keine Krankmeldungen oder genehmigten Anträge vor.</p>
             </div>
@@ -264,7 +264,7 @@
             <!-- Category: Sick Leaves -->
             <div class="absent-category">
                 <div class="absent-category-header" style="border-left: 4px solid var(--danger-color);">
-                    <span>🤒 Krankmeldungen</span>
+                    <span>Krankmeldungen</span>
                     <span class="badge" style="background-color: var(--danger-color); color: white; border-radius: 10px; padding: 1px 8px; font-size: 0.8em;">{{ sick_today|length }}</span>
                 </div>
                 {% if sick_today is empty %}
@@ -291,7 +291,7 @@
             <!-- Category: Exemptions -->
             <div class="absent-category">
                 <div class="absent-category-header" style="border-left: 4px solid var(--warning-color);">
-                    <span>🏖️ Genehmigte Freistellungen</span>
+                    <span>Genehmigte Freistellungen</span>
                     <span class="badge" style="background-color: var(--warning-color); color: white; border-radius: 10px; padding: 1px 8px; font-size: 0.8em;">{{ exempt_today|length }}</span>
                 </div>
                 {% if exempt_today is empty %}
@@ -305,7 +305,7 @@
                                     <div class="absent-details">
                                         <strong>Grund:</strong> {{ e.reason_type }}{% if e.reason %} ({{ e.reason }}){% endif %}
                                         {% if e.hourly_exemption %}
-                                            <span style="color: var(--danger-color); font-weight: bold; margin-left: 8px;">🕒 Stunde {{ e.hour_from }} bis {{ e.hour_to }}</span>
+                                            <span style="color: var(--danger-color); font-weight: bold; margin-left: 8px;">Stunde {{ e.hour_from }} bis {{ e.hour_to }}</span>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -321,7 +321,7 @@
             <!-- Category: Extracurricular Trips -->
             <div class="absent-category">
                 <div class="absent-category-header" style="border-left: 4px solid var(--primary-color);">
-                    <span>🚌 Außerunterrichtliche Veranstaltungen (Ausflüge)</span>
+                    <span>Außerunterrichtliche Veranstaltungen (Ausflüge)</span>
                     <span class="badge" style="background-color: var(--primary-color); color: white; border-radius: 10px; padding: 1px 8px; font-size: 0.8em;">{{ extra_today|length }}</span>
                 </div>
                 {% if extra_today is empty %}
@@ -354,11 +354,11 @@
     
     <!-- RIGHT: Today's Calendar events -->
     <div class="content-box">
-        <h3 style="margin-top: 0; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 8px;">📅 Schulkalender heute</h3>
+        <h3 style="margin-top: 0; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 8px;">Schulkalender heute</h3>
         
         {% if today_events is empty %}
             <div style="text-align: center; padding: 40px 10px; color: var(--text-muted);">
-                <span style="font-size: 2.5rem; display: block; margin-bottom: 10px;">📅</span>
+                <span style="font-size: 2.5rem; display: block; margin-bottom: 10px;"></span>
                 <p style="margin: 0; font-size: 0.95em;">Keine Kalendertermine für heute eingetragen.</p>
             </div>
         {% else %}

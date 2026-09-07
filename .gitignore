@@ -1,3 +1,10 @@
+# Hochgeladene Dateien gehoeren nicht ins Repository. Sie entstehen im
+# Betrieb - Atteste zu Krankmeldungen, Hausaufgabenbilder, Jahresarchive -
+# und koennen personenbezogen sein; das Repository ist oeffentlich.
+# Die .htaccess darin bleibt getrackt, sie schaltet dort die PHP-Ausfuehrung ab.
+src/public/uploads/*
+!src/public/uploads/.htaccess
+
 # Development Database
 db-data/
 

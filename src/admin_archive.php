@@ -16,11 +16,23 @@ if ($action === 'export') {
     $archive_name = "Jahresabschluss_" . $year . "_" . date('Ymd_His');
     $tmp_dir = __DIR__ . "/public/uploads/" . $archive_name;
     
-    if (!is_dir($tmp_dir)) mkdir($tmp_dir, 0777, true);
-    if (!is_dir($tmp_dir . "/Krankmeldungen")) mkdir($tmp_dir . "/Krankmeldungen");
-    if (!is_dir($tmp_dir . "/Veranstaltungen")) mkdir($tmp_dir . "/Veranstaltungen");
-    if (!is_dir($tmp_dir . "/Freistellungen")) mkdir($tmp_dir . "/Freistellungen");
-    if (!is_dir($tmp_dir . "/Anhaenge")) mkdir($tmp_dir . "/Anhaenge");
+    // Laesst sich das Arbeitsverzeichnis nicht anlegen, hat der Export keinen
+    // Zweck - frueher lief er blind weiter und erzeugte ein leeres Archiv.
+    $verzeichnisse = [$tmp_dir, "$tmp_dir/Krankmeldungen", "$tmp_dir/Veranstaltungen",
+                      "$tmp_dir/Freistellungen", "$tmp_dir/Anhaenge"];
+    foreach ($verzeichnisse as $verzeichnis) {
+        if (!is_dir($verzeichnis) && !@mkdir($verzeichnis, 0775, true) && !is_dir($verzeichnis)) {
+            error_log("admin_archive: $verzeichnis nicht anlegbar "
+                      . "(Schreibrecht fuer www-data in public/uploads pruefen)");
+            $_SESSION['flash_error'] = "Das Archiv konnte nicht erstellt werden: Das "
+                . "Ablageverzeichnis ist nicht beschreibbar. Bitte die Administration "
+                . "informieren.";
+            // admin_archive.php hat keine eigene Oberflaeche - die Meldung
+            // erscheint auf dem Dashboard, so wie beim Cleanup weiter unten.
+            header("Location: /admin_dashboard.php");
+            exit;
+        }
+    }
 
     // --- 1. Export Sick Leave Reports ---
     $stmt = $conn->prepare("SELECT * FROM sick_leave_reports WHERE YEAR(date_from) = ?");

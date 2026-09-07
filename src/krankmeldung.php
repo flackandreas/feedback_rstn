@@ -40,6 +40,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         // Handle file upload
         $attachment_path = null;
+        $attachment_fehler = false;
         if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ERR_OK) {
             $allowed_types = ['application/pdf', 'image/jpeg', 'image/png'];
             $finfo = finfo_open(FILEINFO_MIME_TYPE);
@@ -50,6 +51,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $upload_dir = __DIR__ . '/public/uploads/';
                 if (move_uploaded_file($_FILES['attachment']['tmp_name'], $upload_dir . $filename)) {
                     $attachment_path = 'uploads/' . $filename;
+                } else {
+                    // Frueher blieb dieser Fall stumm: Die Krankmeldung ging
+                    // durch, das Attest verschwand, und die Lehrkraft bekam
+                    // eine Bestaetigung fuer etwas, das nicht passiert ist.
+                    // Die Meldung selbst soll trotzdem raus - sie ist das
+                    // Dringende, das Attest laesst sich nachreichen.
+                    error_log('krankmeldung: Anhang nicht speicherbar in ' . $upload_dir
+                              . ' (Schreibrecht fuer www-data pruefen)');
+                    $attachment_fehler = true;
                 }
             } else {
                 $_SESSION['flash_error'] = "Ungültiges Dateiformat. Bitte laden Sie ein PDF, JPG oder PNG hoch.";
@@ -69,12 +79,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         $stmt = $conn->prepare("UPDATE sick_leave_reports SET date_from = ?, date_to = ?, notes = ?, material_link = ?, modified_at = NOW(), is_seen = 0 WHERE id = ? AND teacher_id = ?");
                         $stmt->execute([$date_from, $date_to, $notes, $material_link, $post_edit_id, $user_id]);
                     }
-                    $_SESSION['flash_success'] = "Ihre Krankmeldung wurde erfolgreich aktualisiert.";
+                    $_SESSION['flash_success'] = "Ihre Krankmeldung wurde erfolgreich aktualisiert."
+                        . ($attachment_fehler ? " Der Anhang konnte allerdings nicht gespeichert "
+                            . "werden - bitte reichen Sie ihn nach oder wenden Sie sich an die "
+                            . "Administration." : "");
                 } else {
                     // Insert
                     $stmt = $conn->prepare("INSERT INTO sick_leave_reports (teacher_id, date_from, date_to, notes, material_link, attachment_path) VALUES (?, ?, ?, ?, ?, ?)");
                     $stmt->execute([$user_id, $date_from, $date_to, $notes, $material_link, $attachment_path]);
-                    $_SESSION['flash_success'] = "Ihre Krankmeldung wurde erfolgreich übermittelt.";
+                    $_SESSION['flash_success'] = "Ihre Krankmeldung wurde erfolgreich übermittelt."
+                        . ($attachment_fehler ? " Der Anhang konnte allerdings nicht gespeichert "
+                            . "werden - bitte reichen Sie ihn nach oder wenden Sie sich an die "
+                            . "Administration." : "");
                 }
             } catch (PDOException $e) {
                 $_SESSION['flash_error'] = "Fehler beim Speichern. Bitte versuchen Sie es später erneut.";

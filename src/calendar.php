@@ -77,10 +77,32 @@ foreach ($extracurriculars as $ex) {
     ];
 }
 
-// 4. Fetch and parse external IServ calendar events
-$iserv_url = 'https://rstn.de/iserv/public/calendar?key=f5c7249d68e573f308af152f75f832e8';
-$iserv_events = get_iserv_events($iserv_url);
-$events = array_merge($events, $iserv_events);
+// 4. Externe Kalender aus der Verwaltung einlesen
+//
+// Vorher stand hier genau eine Adresse fest im Quelltext. Gepflegt werden die
+// Feeds jetzt unter Systemverwaltung; jeder hat seinen eigenen
+// Zwischenspeicher, ein langsamer Feed haelt die uebrigen also nicht auf.
+$stmt_feeds = $conn->query("SELECT id, name, url FROM calendar_feeds WHERE is_active = 1 ORDER BY id ASC");
+$merken = $conn->prepare("
+    UPDATE calendar_feeds
+    SET last_fetch_at = NOW(), last_status = ?, last_event_count = ?
+    WHERE id = ?
+");
+
+foreach ($stmt_feeds->fetchAll() as $feed) {
+    $ergebnis = fetch_calendar_feed($feed['url']);
+    $events = array_merge($events, $ergebnis['events']);
+
+    // Nur bei einem echten Abruf vermerken - sonst ueberschriebe jeder
+    // Seitenaufruf den Zeitstempel mit einem Treffer aus dem Zwischenspeicher.
+    if (!$ergebnis['aus_cache']) {
+        $merken->execute([
+            mb_substr($ergebnis['status'], 0, 200),
+            count($ergebnis['events']),
+            (int)$feed['id'],
+        ]);
+    }
+}
 require_once __DIR__ . '/includes/twig_setup.php';
 
 echo $twig->render('calendar.twig', [

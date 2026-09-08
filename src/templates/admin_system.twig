@@ -28,6 +28,110 @@
 </div>
 
 {# =====================================================================
+   ABSCHNITT: Kalender-Feeds
+   ===================================================================== #}
+<div class="content-box">
+    <h3 style="border-left: 4px solid #3498db; padding-left: 10px;">Kalender im Schulkalender</h3>
+    <p style="color: var(--text-muted); margin-bottom: 15px;">
+        Externe Kalender werden im Schulkalender neben Krankmeldungen und genehmigten Abwesenheiten angezeigt.
+        Nötig ist die Adresse eines iCal-Feeds (endet meist auf <code>.ics</code> oder trägt einen Schlüssel als Parameter).
+        Bei IServ findet man sie unter <em>Kalender → Verwaltung → Veröffentlichen</em>.
+    </p>
+
+    {% if calendar_feeds is empty %}
+        <p style="color: var(--text-muted); padding: 20px; text-align: center; background: var(--bg-main); border-radius: 6px; margin-bottom: 20px;">
+            Noch kein Kalender eingetragen.
+        </p>
+    {% else %}
+        <div style="overflow-x: auto; margin-bottom: 20px;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="text-align: left; border-bottom: 2px solid var(--border-color);">
+                        <th style="padding: 10px;">Name</th>
+                        <th style="padding: 10px;">Adresse</th>
+                        <th style="padding: 10px;">Letzter Abruf</th>
+                        <th style="padding: 10px; text-align: right;">Aktion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for feed in calendar_feeds %}
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 10px;">
+                                <strong>{{ feed.name }}</strong>
+                                {% if not feed.is_active %}
+                                    <span style="margin-left: 6px; font-size: 0.75em; font-weight: 700; background: var(--bg-main); color: var(--text-muted); padding: 2px 8px; border-radius: 10px;">ausgeblendet</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 10px; font-size: 0.82em; color: var(--text-muted); max-width: 320px;">
+                                {# Nur Rechnername und Pfad - der Schluessel in der Adresse ist ein Zugangsdatum. #}
+                                <span title="Der vollständige Schlüssel wird aus Sicherheitsgründen nicht angezeigt.">
+                                    {{ feed.url|split('?')|first }}{% if '?' in feed.url %}?…{% endif %}
+                                </span>
+                            </td>
+                            <td style="padding: 10px; font-size: 0.85em;">
+                                {% if feed.last_fetch_at %}
+                                    {{ feed.last_fetch_at|date('d.m.Y, H:i') }}<br>
+                                    <span style="color: {{ feed.last_status == 'OK' ? 'var(--primary-color)' : 'var(--danger-color)' }};">
+                                        {{ feed.last_status == 'OK' ? feed.last_event_count ~ ' Termine' : feed.last_status }}
+                                    </span>
+                                {% else %}
+                                    <span style="color: var(--text-muted);">noch nie</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 10px; text-align: right; white-space: nowrap;">
+                                <form method="POST" action="/admin_system.php" style="display: inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="action" value="test_calendar_feed">
+                                    <input type="hidden" name="feed_id" value="{{ feed.id }}">
+                                    <button type="submit" class="btn" style="background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-dark); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.85em;">Prüfen</button>
+                                </form>
+                                <form method="POST" action="/admin_system.php" style="display: inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="action" value="toggle_calendar_feed">
+                                    <input type="hidden" name="feed_id" value="{{ feed.id }}">
+                                    <button type="submit" class="btn" style="background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-dark); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.85em;">{{ feed.is_active ? 'Ausblenden' : 'Einblenden' }}</button>
+                                </form>
+                                <form method="POST" action="/admin_system.php" style="display: inline;" onsubmit="return confirm('Kalender „{{ feed.name|e('js') }}“ wirklich entfernen?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="action" value="delete_calendar_feed">
+                                    <input type="hidden" name="feed_id" value="{{ feed.id }}">
+                                    <button type="submit" class="button-danger" style="padding: 5px 10px; border-radius: 4px; font-size: 0.85em;">Entfernen</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
+    <form method="POST" action="/admin_system.php" class="modern-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="action" value="add_calendar_feed">
+
+        <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+            <div class="form-group" style="flex: 0 1 220px; margin-bottom: 0;">
+                <label for="feed_name" class="form-label">Name</label>
+                <input type="text" name="feed_name" id="feed_name" required maxlength="120"
+                       placeholder="z.B. IServ-Schulkalender"
+                       class="form-control" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+            </div>
+            <div class="form-group" style="flex: 1 1 320px; margin-bottom: 0;">
+                <label for="feed_url" class="form-label">Adresse des Kalenders (iCal/ICS)</label>
+                <input type="url" name="feed_url" id="feed_url" required maxlength="1000"
+                       placeholder="https://…/calendar?key=…"
+                       class="form-control" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+            </div>
+            <button type="submit" class="button-primary" style="background-color: #3498db; width: auto; padding: 10px 20px;">Hinzufügen</button>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.85em; margin: 10px 0 0 0;">
+            Die Adresse wird beim Speichern einmal abgerufen. Adressen ins interne Netz werden abgelehnt,
+            weil der Server sie selbst aufruft.
+        </p>
+    </form>
+</div>
+
+{# =====================================================================
    SECTION: Jahresabschluss & Archivierung
    ===================================================================== #}
 <div class="content-box">

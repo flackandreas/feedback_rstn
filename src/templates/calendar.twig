@@ -82,7 +82,8 @@
     
     .grid-weekdays {
         display: grid;
-        grid-template-columns: repeat(7, 1fr);
+        /* Fuenf Spalten - Samstag und Sonntag zeigt der Schulkalender nicht. */
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         background: var(--cal-header-bg);
         border-bottom: 1px solid var(--cal-border);
         text-align: center;
@@ -97,7 +98,14 @@
     
     .grid-days {
         display: grid;
-        grid-template-columns: repeat(7, 1fr);
+        /*
+         * minmax(0, ...) statt 1fr: Das Minimum von 1fr ist auto, weshalb ein
+         * langer Termintitel seine Spalte aufblaeht. Die Tageszellen waren
+         * dadurch 33 bis 277 Pixel breit und liefen aus dem Container heraus,
+         * waehrend die Kopfzeile gleichmaessig blieb - Tag und Wochentag
+         * standen nicht mehr uebereinander.
+         */
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         background: #e2e8f0; /* Border spacing color */
         gap: 1px;
     }
@@ -137,14 +145,6 @@
         align-items: center;
         justify-content: center;
         font-weight: bold;
-    }
-    
-    .day-cell.weekend {
-        background: var(--cal-weekend-bg);
-    }
-    
-    .day-cell.weekend.other-month {
-        background: #fdfdfd;
     }
     
     .day-number {
@@ -336,8 +336,6 @@
         <div class="weekday-name">Mittwoch</div>
         <div class="weekday-name">Donnerstag</div>
         <div class="weekday-name">Freitag</div>
-        <div class="weekday-name">Samstag</div>
-        <div class="weekday-name">Sonntag</div>
     </div>
     
     <!-- Days Grid -->
@@ -407,6 +405,16 @@
         return `${yStr}-${mStr}-${dStr}`;
     }
     
+    /** Montag = 0 ... Sonntag = 6. */
+    function wochentagIndex(datum) {
+        const tag = datum.getDay();
+        return tag === 0 ? 6 : tag - 1;
+    }
+    
+    function istWochenende(datum) {
+        return wochentagIndex(datum) > 4;
+    }
+    
     function renderCalendar() {
         const grid = document.getElementById('calendar-days-grid');
         const label = document.getElementById('calendar-month-year-label');
@@ -415,38 +423,44 @@
         grid.innerHTML = '';
         label.textContent = `${monthNames[currentMonth]} ${currentYear}`;
         
-        // Find weekday of 1st day of month (0 = Sun, 1 = Mon ... 6 = Sat)
-        const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
-        let firstDayIndex = firstDayOfMonth.getDay();
-        // Convert Sun-based (0) to Mon-based (0 = Mon, 6 = Sun)
-        firstDayIndex = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+        const ersterTag = new Date(currentYear, currentMonth, 1);
+        const letzterTag = new Date(currentYear, currentMonth + 1, 0);
         
-        // Find total days in current month
-        const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+        // Faellt der Monatsanfang auf ein Wochenende, beginnt die Anzeige erst
+        // am folgenden Montag - dann ist nichts aufzufuellen.
+        const spalte = wochentagIndex(ersterTag);
+        const vorlauf = spalte <= 4 ? spalte : 0;
         
-        // Find total days in previous month
-        const totalDaysPrev = new Date(currentYear, currentMonth, 0).getDate();
+        // Vorlauf rueckwaerts einsammeln und dabei Wochenenden ueberspringen,
+        // damit der Monatserste unter seinem eigenen Wochentag steht.
+        const davor = [];
+        const zeiger = new Date(currentYear, currentMonth, 1);
+        while (davor.length < vorlauf) {
+            zeiger.setDate(zeiger.getDate() - 1);
+            if (!istWochenende(zeiger)) {
+                davor.unshift(new Date(zeiger));
+            }
+        }
+        davor.forEach(function (d) {
+            createDayCell(d.getFullYear(), d.getMonth(), d.getDate(), true);
+        });
         
-        // Render previous month's trailing days
-        for (let i = firstDayIndex - 1; i >= 0; i--) {
-            const prevDay = totalDaysPrev - i;
-            const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-            const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-            createDayCell(prevYear, prevMonth, prevDay, true);
+        // Der Monat selbst, ohne Samstag und Sonntag
+        let gezeichnet = davor.length;
+        for (let tag = 1; tag <= letzterTag.getDate(); tag++) {
+            if (istWochenende(new Date(currentYear, currentMonth, tag))) continue;
+            createDayCell(currentYear, currentMonth, tag, false);
+            gezeichnet++;
         }
         
-        // Render current month's days
-        for (let day = 1; day <= totalDays; day++) {
-            createDayCell(currentYear, currentMonth, day, false);
-        }
-        
-        // Render next month's leading days to complete grid (multiples of 7)
-        const renderedCount = firstDayIndex + totalDays;
-        const remainingCells = (7 - (renderedCount % 7)) % 7;
-        for (let day = 1; day <= remainingCells; day++) {
-            const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
-            const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
-            createDayCell(nextYear, nextMonth, day, true);
+        // Nachlauf, damit die letzte Zeile vollstaendig bleibt (Vielfaches von 5)
+        const fehlend = (5 - (gezeichnet % 5)) % 5;
+        const nach = new Date(currentYear, currentMonth, letzterTag.getDate());
+        for (let i = 0; i < fehlend; ) {
+            nach.setDate(nach.getDate() + 1);
+            if (istWochenende(nach)) continue;
+            createDayCell(nach.getFullYear(), nach.getMonth(), nach.getDate(), true);
+            i++;
         }
     }
     
@@ -464,11 +478,6 @@
         const todayDateObj = new Date();
         const isToday = cellDateObj.toDateString() === todayDateObj.toDateString();
         if (isToday) cell.classList.add('today');
-        
-        // Check weekend (Sat = 6, Sun = 0)
-        const weekdayIndex = cellDateObj.getDay();
-        const isWeekend = (weekdayIndex === 0 || weekdayIndex === 6);
-        if (isWeekend) cell.classList.add('weekend');
         
         // Add Day number
         const numDiv = document.createElement('div');

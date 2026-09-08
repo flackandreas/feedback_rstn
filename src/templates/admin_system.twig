@@ -12,9 +12,23 @@
 <div class="content-box">
     <h3 style="border-left: 4px solid #8e44ad; padding-left: 10px;">Lehrkräfte CSV-Import</h3>
     <p style="color: var(--text-muted); margin-bottom: 15px;">
-        Importiere Lehrkräfte aus einer CSV-Datei. Erwartetes Format: <strong>Kürzel;Name;Email</strong> (erste Zeile wird als Überschrift ignoriert). 
-        Existierende Kürzel werden übersprungen. Das Standard-Passwort für neue Accounts ist <code>lehrer</code>.
+        Importiert Lehrkräfte aus einer CSV-Datei mit den Spalten
+        <strong>Kürzel, Nachname, Vorname, E-Mail</strong>. Die Reihenfolge ist egal, solange die erste Zeile
+        die Spalten benennt – danach richtet sich der Import. Angezeigt wird später „Vorname Nachname“.
     </p>
+    <details style="margin-bottom: 15px; font-size: 0.9em; color: var(--text-muted);">
+        <summary style="cursor: pointer; font-weight: 600; color: var(--primary-color);">Beispiel und Hinweise</summary>
+        <pre style="background: var(--bg-main); padding: 12px; border-radius: 6px; margin: 10px 0; overflow-x: auto; font-size: 0.9em;">Kürzel;Nachname;Vorname;E-Mail
+SOM;Sommer;Anna;anna.sommer@schule.de
+WIN;Winter;Bernd;bernd.winter@schule.de</pre>
+        <ul style="margin: 0; padding-left: 20px; line-height: 1.7;">
+            <li>Semikolon und Komma werden beide als Trennzeichen erkannt.</li>
+            <li>Dateien aus Excel funktionieren auch mit Umlauten – die Kodierung wird umgewandelt.</li>
+            <li>Das ältere Format <code>Kürzel;Name;E-Mail</code> wird weiterhin gelesen.</li>
+            <li>Bereits vorhandene Kürzel werden übersprungen, nichts wird überschrieben.</li>
+            <li>Das Passwort neuer Zugänge ist <code>lehrer</code> und muss bei der ersten Anmeldung geändert werden.</li>
+        </ul>
+    </details>
     <form method="POST" action="/admin_system.php" enctype="multipart/form-data" class="modern-form" style="max-width: 500px;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <div class="form-group">

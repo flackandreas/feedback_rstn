@@ -120,56 +120,184 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['teacher_csv'])) {
     }
     
     $file = $_FILES['teacher_csv'];
-    if ($file['error'] === UPLOAD_ERR_OK) {
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        if ($ext === 'csv') {
-            $handle = fopen($file['tmp_name'], 'r');
-            if ($handle !== false) {
-                // Determine delimiter by reading first line
-                $first_line = fgets($handle);
-                $delimiter = (strpos($first_line, ';') !== false) ? ';' : ',';
-                rewind($handle);
-                
-                // Skip header row
-                fgetcsv($handle, 1000, $delimiter);
-                
-                $success_count = 0;
-                $skip_count = 0;
-                
-                $stmt = $conn->prepare("INSERT IGNORE INTO teachers (kuerzel, name, email, passwort_hash) VALUES (?, ?, ?, ?)");
-                $default_pw_hash = password_hash('lehrer', PASSWORD_DEFAULT);
-                
-                while (($data = fgetcsv($handle, 1000, $delimiter)) !== false) {
-                    if (count($data) >= 2) {
-                        $kuerzel = trim($data[0]);
-                        $name = trim($data[1]);
-                        $email = isset($data[2]) ? trim($data[2]) : null;
-                        
-                        if (!empty($kuerzel) && !empty($name)) {
-                            if ($email === '') $email = null;
-                            
-                            $stmt->execute([$kuerzel, $name, $email, $default_pw_hash]);
-                            if ($stmt->rowCount() > 0) {
-                                $success_count++;
-                            } else {
-                                $skip_count++;
-                            }
-                        }
-                    }
-                }
-                fclose($handle);
-                $_SESSION['flash_success'] = "Import abgeschlossen: $success_count hinzugefügt, $skip_count übersprungen.";
-            } else {
-                $_SESSION['flash_error'] = "Fehler beim Lesen der Datei.";
-            }
-        } else {
-            $_SESSION['flash_error'] = "Nur .csv Dateien erlaubt.";
-        }
-    } else {
-        $_SESSION['flash_error'] = "Upload-Fehler.";
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        zurueck_zur_verwaltung(null, 'Die Datei konnte nicht hochgeladen werden.');
     }
-    header("Location: /admin_system.php");
-    exit;
+
+    if (strtolower(pathinfo($file['name'], PATHINFO_EXTENSION)) !== 'csv') {
+        zurueck_zur_verwaltung(null, 'Nur .csv-Dateien sind zulässig.');
+    }
+
+    $handle = fopen($file['tmp_name'], 'r');
+    if ($handle === false) {
+        zurueck_zur_verwaltung(null, 'Die Datei konnte nicht gelesen werden.');
+    }
+
+    $erste_zeile = (string)fgets($handle);
+    $trennzeichen = substr_count($erste_zeile, ';') >= substr_count($erste_zeile, ',') ? ';' : ',';
+    rewind($handle);
+
+    $kopf = fgetcsv($handle, 4000, $trennzeichen);
+    $spalten = csv_spalten_zuordnen(is_array($kopf) ? $kopf : []);
+
+    // Wird die Kopfzeile nicht erkannt, ist sie vermutlich schon die erste
+    // Datenzeile - dann von vorn lesen und nach Position zuordnen.
+    if ($spalten === null) {
+        rewind($handle);
+    }
+
+    $hinzugefuegt = 0;
+    $uebersprungen = 0;
+    $unbrauchbar = 0;
+
+    $stmt = $conn->prepare('INSERT IGNORE INTO teachers (kuerzel, name, email, passwort_hash) VALUES (?, ?, ?, ?)');
+    $standard_passwort = password_hash('lehrer', PASSWORD_DEFAULT);
+
+    while (($zeile = fgetcsv($handle, 4000, $trennzeichen)) !== false) {
+        if ($zeile === [null] || $zeile === []) {
+            continue;   // Leerzeile
+        }
+
+        $felder = csv_zeile_lesen($zeile, $spalten);
+
+        if ($felder['kuerzel'] === '' || $felder['name'] === '') {
+            $unbrauchbar++;
+            continue;
+        }
+
+        $stmt->execute([
+            mb_substr($felder['kuerzel'], 0, 50),
+            mb_substr($felder['name'], 0, 100),
+            $felder['email'] !== '' ? mb_substr($felder['email'], 0, 255) : null,
+            $standard_passwort,
+        ]);
+
+        if ($stmt->rowCount() > 0) {
+            $hinzugefuegt++;
+        } else {
+            $uebersprungen++;
+        }
+    }
+    fclose($handle);
+
+    $meldung = sprintf('Import abgeschlossen: %d hinzugefügt, %d übersprungen (Kürzel schon vorhanden)',
+        $hinzugefuegt, $uebersprungen);
+    if ($unbrauchbar > 0) {
+        $meldung .= sprintf(', %d Zeile(n) ohne Kürzel oder Name', $unbrauchbar);
+    }
+
+    zurueck_zur_verwaltung($meldung . '.');
+}
+
+/**
+ * Ordnet die Spalten der Kopfzeile den Feldern zu.
+ *
+ * Damit ist die Reihenfolge in der Datei egal - Schulverwaltungen exportieren
+ * sie unterschiedlich. Wird keine brauchbare Kopfzeile erkannt, liefert die
+ * Funktion null und der Aufrufer geht nach Position vor.
+ *
+ * @param list<string> $kopf
+ * @return array<string,int>|null
+ */
+function csv_spalten_zuordnen(array $kopf) {
+    $bekannt = [
+        'kuerzel'  => ['kuerzel', 'kurzel', 'kurzel', 'kz', 'kuerzel/kz', 'lehrerkuerzel', 'krzl'],
+        'nachname' => ['nachname', 'familienname', 'name2', 'surname', 'lastname'],
+        'vorname'  => ['vorname', 'rufname', 'firstname'],
+        'name'     => ['name', 'vollname', 'anzeigename', 'fullname'],
+        'email'    => ['email', 'e-mail', 'mail', 'emailadresse', 'e-mailadresse'],
+    ];
+
+    $zuordnung = [];
+    foreach ($kopf as $i => $bezeichnung) {
+        $schluessel = csv_bezeichnung_normalisieren((string)$bezeichnung);
+        if ($schluessel === '') {
+            continue;
+        }
+
+        foreach ($bekannt as $feld => $varianten) {
+            if (in_array($schluessel, $varianten, true) && !isset($zuordnung[$feld])) {
+                $zuordnung[$feld] = $i;
+                break;
+            }
+        }
+    }
+
+    // Ohne Kürzel und ohne irgendeine Namensspalte war das keine Kopfzeile.
+    if (!isset($zuordnung['kuerzel'])) {
+        return null;
+    }
+    if (!isset($zuordnung['name']) && !isset($zuordnung['nachname']) && !isset($zuordnung['vorname'])) {
+        return null;
+    }
+
+    return $zuordnung;
+}
+
+/**
+ * Vereinheitlicht eine Spaltenbezeichnung: Kleinschreibung, ohne BOM,
+ * Umlaute aufgeloest, ohne Leer- und Sonderzeichen ausser Bindestrich.
+ */
+function csv_bezeichnung_normalisieren($text) {
+    $text = str_replace("\xEF\xBB\xBF", '', (string)$text);   // BOM aus Excel
+    $text = csv_nach_utf8($text);
+    $text = mb_strtolower(trim($text));
+    $text = strtr($text, ['ä' => 'a', 'ö' => 'o', 'ü' => 'u', 'ß' => 'ss']);
+
+    return (string)preg_replace('/[^a-z0-9\-]/', '', $text);
+}
+
+/**
+ * Liest eine Datenzeile anhand der Zuordnung - oder nach Position.
+ *
+ * Nach Position gilt: vier Spalten sind Kürzel, Nachname, Vorname, E-Mail;
+ * drei Spalten das aeltere Kürzel, Name, E-Mail.
+ *
+ * @param list<string|null>       $zeile
+ * @param array<string,int>|null  $spalten
+ * @return array{kuerzel:string,name:string,email:string}
+ */
+function csv_zeile_lesen(array $zeile, $spalten) {
+    $hole = static function ($index) use ($zeile) {
+        return $index === null || !isset($zeile[$index]) ? '' : trim(csv_nach_utf8((string)$zeile[$index]));
+    };
+
+    if ($spalten !== null) {
+        $kuerzel = $hole($spalten['kuerzel'] ?? null);
+        $nachname = $hole($spalten['nachname'] ?? null);
+        $vorname = $hole($spalten['vorname'] ?? null);
+        $name = $hole($spalten['name'] ?? null);
+        $email = $hole($spalten['email'] ?? null);
+    } elseif (count($zeile) >= 4) {
+        [$kuerzel, $nachname, $vorname, $email] = [$hole(0), $hole(1), $hole(2), $hole(3)];
+        $name = '';
+    } else {
+        [$kuerzel, $name, $email] = [$hole(0), $hole(1), $hole(2)];
+        $nachname = $vorname = '';
+    }
+
+    // Angezeigt wird "Vorname Nachname" - so steht der Name überall sonst.
+    if ($name === '') {
+        $name = trim($vorname . ' ' . $nachname);
+    }
+
+    $kuerzel = str_replace("\xEF\xBB\xBF", '', $kuerzel);
+
+    return ['kuerzel' => $kuerzel, 'name' => $name, 'email' => $email];
+}
+
+/**
+ * Wandelt eine Zeichenkette nach UTF-8, falls sie es noch nicht ist.
+ *
+ * Excel unter Windows speichert CSV-Dateien haeufig als CP1252; ohne diese
+ * Umwandlung wuerde aus "Müller" ein "M?ller".
+ */
+function csv_nach_utf8($text) {
+    if ($text === '' || mb_check_encoding($text, 'UTF-8')) {
+        return $text;
+    }
+
+    return (string)mb_convert_encoding($text, 'UTF-8', 'Windows-1252');
 }
 
 $csrf_token = get_csrf_token();

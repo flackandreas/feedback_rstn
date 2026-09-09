@@ -5,6 +5,10 @@
 src/public/uploads/*
 !src/public/uploads/.htaccess
 
+# Ablage: Zwischenspeicher der Portal-Anbindung (Entdeckungsdokument, JWKS).
+# Entsteht im Betrieb und ist je Installation verschieden.
+src/storage/
+
 # Development Database
 db-data/
 

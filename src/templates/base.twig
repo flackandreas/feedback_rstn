@@ -129,9 +129,9 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="/index.php">
+                <a href="{{ portal_adresse ? portal_adresse ~ '/' : '/index.php' }}">
                     <span class="nav-icon">{{ symbol.zeichne('wechsel') }}</span>
-                    <span class="nav-text">Portal-Auswahl</span>
+                    <span class="nav-text">{{ portal_adresse ? 'Zum Portal' : 'Portal-Auswahl' }}</span>
                 </a>
             </li>
             <li class="nav-item">

@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/sso.php';
 
 // Prepare Twig Environment
 $loader = new \Twig\Loader\FilesystemLoader(__DIR__ . '/../templates');
@@ -31,6 +32,10 @@ $twig->addFunction(new \Twig\TwigFunction('asset', function (string $pfad): stri
 $twig->addFunction(new \Twig\TwigFunction('is_current_page', function ($page) {
     return basename($_SERVER['PHP_SELF']) === $page;
 }));
+
+// Adresse des SchulOS-Portals, oder leer im Alleinbetrieb. Als globale
+// Variable, damit nicht jeder Controller sie einzeln durchreichen muss.
+$twig->addGlobal('portal_adresse', sso_aktiv() ? sso_portal_adresse() : '');
 
 // Add json_decode filter
 $twig->addFilter(new \Twig\TwigFilter('json_decode', function ($string) {

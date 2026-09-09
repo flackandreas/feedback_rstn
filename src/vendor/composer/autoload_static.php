@@ -112,6 +112,7 @@ class ComposerStaticInit19b0974c8ed31292a8cd7bea470e26f5
             'Symfony\\Polyfill\\Mbstring\\' => 26,
             'Symfony\\Polyfill\\Ctype\\' => 23,
             'Svg\\' => 4,
+            'SchulOS\\Sso\\' => 12,
             'Sabberworm\\CSS\\' => 15,
         ),
         'P' =>
@@ -163,6 +164,10 @@ class ComposerStaticInit19b0974c8ed31292a8cd7bea470e26f5
         'Svg\\' =>
         array (
             0 => __DIR__ . '/..' . '/dompdf/php-svg-lib/src/Svg',
+        ),
+        'SchulOS\\Sso\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/schulos/sso/src',
         ),
         'Sabberworm\\CSS\\' =>
         array (

@@ -191,6 +191,46 @@ return [
 
 ---
 
+## Betrieb am SchulOS-Portal
+
+Das Modul läuft in zwei Betriebsarten. Welche gilt, entscheidet allein die
+Konfiguration — im Code gibt es keinen Schalter.
+
+**Allein.** Ohne `PORTAL_*` in der `.env` verhält sich alles wie bisher: eigene
+Anmeldemaske, eigene Konten, wahlweise IServ.
+
+**Am Portal.** Sind `PORTAL_ISSUER`, `PORTAL_CLIENT_ID`, `PORTAL_CLIENT_SECRET`
+und `PORTAL_REDIRECT_URI` gesetzt, führt `/login.php` zum Portal. Von dort
+kommt die Lehrkraft angemeldet zurück; ein Konto wird beim ersten Mal angelegt,
+ein vorhandenes über das Kürzel übernommen. Verknüpft wird danach über die
+dauerhafte Kennung des Portals (Tabelle `portal_konten`), nicht über das
+Kürzel — Kürzel werden an Schulen nach Jahren neu vergeben.
+
+Wer im Portal in einer der Gruppen aus `PORTAL_ADMIN_GRUPPEN` steht, hat hier
+Verwaltungsrechte. Die örtliche Maske bleibt unter `/login.php?lokal=1`
+erreichbar, falls das Portal einmal steht.
+
+| Route | |
+|---|---|
+| `/sso/start` | Anmeldung am Portal beginnen |
+| `/sso/rueckweg` | Rückweg vom Portal |
+| `/sso/abmelden` | Abmeldung über den Vorderkanal |
+| `/healthz` | Lebenszeichen für das Portal |
+
+### Der Wechsel ohne Portal
+
+Ohne Portal können sich zwei Module weiterhin gegenseitig verlinken. Das
+Geheimnis dafür steht in `SSO_SECRET` und **muss gesetzt sein** — vorher stand
+es fest im Quelltext, und das Repository ist öffentlich: wer ein Kürzel kannte,
+konnte damit ein gültiges Token bauen und sich ohne Passwort anmelden. Ohne
+`SSO_SECRET` gibt es die Verknüpfung jetzt schlicht nicht.
+
+```bash
+openssl rand -hex 32
+```
+
+---
+
 ## Benutzer, Rollen & Login
 
 Das System unterscheidet zwei Benutzerrollen:

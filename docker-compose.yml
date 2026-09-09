@@ -5,6 +5,10 @@ services:
       - "8888:80"
     volumes:
       - ./src:/var/www/html
+    environment:
+      # Ohne diese Angabe laeuft der Container in UTC, und jeder Zeitstempel
+      # liegt im Sommer zwei Stunden in der Vergangenheit.
+      TZ: ${TZ:-Europe/Berlin}
     networks:
       - app-network
 
@@ -12,6 +16,10 @@ services:
     image: mariadb:10.11
     restart: always
     environment:
+      # MariaDBs NOW() folgt der Uhr des Containers. Ohne TZ ist das UTC, und
+      # damit steht in created_at, modified_at und seen_at die falsche Zeit -
+      # auch CURDATE() springt dann zwei Stunden zu spaet auf den neuen Tag.
+      TZ: ${TZ:-Europe/Berlin}
       MARIADB_ROOT_PASSWORD: db_user
       MARIADB_DATABASE: db_feedback
     volumes:

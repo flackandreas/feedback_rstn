@@ -6,6 +6,7 @@
 
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/klassen.php';
 require_once __DIR__ . '/includes/twig_setup.php';
 
 require_login();
@@ -55,14 +56,11 @@ $stmt = $conn->prepare("SELECT date_from, date_to, status FROM exemption_request
 $stmt->execute([$user_id]);
 $requests = $stmt->fetchAll();
 
-$stmt_classes = $conn->prepare("SELECT id, name FROM classes ORDER BY name ASC");
-$stmt_classes->execute();
-$all_classes = $stmt_classes->fetchAll();
-
-// Fetch selected classes for this teacher
-$stmt_selected = $conn->prepare("SELECT class_id FROM teacher_classes WHERE teacher_id = ?");
-$stmt_selected->execute([$user_id]);
-$selected_class_ids = $stmt_selected->fetchAll(PDO::FETCH_COLUMN);
+// Die Klassen gehoeren dem Unterrichtsmodul. Fehlen sie, bleibt das
+// Auswahlfeld leer - das Formular bleibt benutzbar.
+$klassen = klassen_fuer_formular($conn, (int) $user_id);
+$all_classes = $klassen['alle'];
+$selected_class_ids = $klassen['eigene'];
 
 $csrf_token = get_csrf_token();
 $flash_success = $_SESSION['flash_success'] ?? null;

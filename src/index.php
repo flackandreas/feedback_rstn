@@ -16,9 +16,15 @@ run_all_migrations();
 
 require_login();
 
+// Am Portal ist die alte Modulauswahl gegenstandslos - der Weg fuehrt auf das
+// eigene Dashboard.
+//
+// NICHT zurueck zum Portal: die Kacheln dort zeigen auf die Wurzel des Moduls,
+// und die landet hier. Eine Weiterleitung ans Portal schickt damit jeden, der
+// eine Kachel antippt, sofort wieder dorthin zurueck. Der Weg zum Portal
+// steht in der Navigation.
 if (sso_aktiv()) {
-    $portal = sso_portal_adresse();
-    header('Location: ' . ($portal !== '' ? $portal . '/' : '/dashboard'));
+    header('Location: /dashboard');
     exit;
 }
 

@@ -20,7 +20,7 @@ if (is_logged_in()) {
 }
 
 try {
-    header('Location: ' . sso_anmeldung()->startAdresse($_GET['weiter'] ?? '/index.php'));
+    header('Location: ' . sso_anmeldung()->startAdresse($_GET['weiter'] ?? '/dashboard'));
     exit;
 } catch (SsoFehler $e) {
     error_log('Antragssystem: Anmeldung am Portal nicht startbar: ' . $e->getMessage());

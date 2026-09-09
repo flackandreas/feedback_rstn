@@ -15,8 +15,14 @@ CREATE TABLE IF NOT EXISTS calendar_feeds (
     INDEX idx_feed_aktiv (is_active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Den bisher fest verdrahteten IServ-Kalender uebernehmen, damit beim
--- Einspielen kein Termin verschwindet. Nur, wenn noch nichts eingetragen ist.
-INSERT INTO calendar_feeds (name, url, is_active)
-SELECT 'IServ-Schulkalender', 'https://rstn.de/iserv/public/calendar?key=f5c7249d68e573f308af152f75f832e8', 1
-WHERE NOT EXISTS (SELECT 1 FROM calendar_feeds);
+-- Hier stand die bisher fest verdrahtete IServ-Adresse, damit sie beim
+-- Einspielen automatisch uebernommen wird. Sie enthielt den Zugangsschluessel
+-- des Schulkalenders - in einem oeffentlichen Repository.
+--
+-- Die Uebernahme hat auf den bestehenden Installationen stattgefunden, die
+-- Zeile hat ihren Zweck also erfuellt. Eine neue Installation traegt ihren
+-- Kalender unter Systemverwaltung ein; dort gehoert er hin.
+--
+-- Der Schluessel steht weiterhin in der Versionsgeschichte. Ihn zu entfernen
+-- reicht deshalb nicht: er gehoert in IServ gewechselt und danach ueber die
+-- Oberflaeche neu eingetragen.

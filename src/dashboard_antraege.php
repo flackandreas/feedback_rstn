@@ -91,17 +91,23 @@ if (is_current_user_admin()) {
         ];
     }
 
-    // Fetch IServ events and filter for today
-    $iserv_url = 'https://rstn.de/iserv/public/calendar?key=f5c7249d68e573f308af152f75f832e8';
-    $iserv_events = get_iserv_events($iserv_url);
+    // Termine des Tages aus den eingetragenen Kalendern.
+    //
+    // Vorher stand hier eine Adresse samt Zugangsschluessel fest im Quelltext.
+    // Das hatte zwei Folgen: der Schluessel lag im oeffentlichen Repository,
+    // und ein Wechsel in der Systemverwaltung wirkte hier nicht - das
+    // Dashboard fragte weiter die alte Adresse.
     $today = date('Y-m-d');
-    foreach ($iserv_events as $ev) {
-        if ($today >= $ev['start'] && $today <= $ev['end']) {
-            $events[] = [
-                'type' => 'iserv',
-                'title' => $ev['title'],
-                'details' => $ev['details']
-            ];
+
+    foreach ($conn->query('SELECT url FROM calendar_feeds WHERE is_active = 1 ORDER BY id ASC') as $feed) {
+        foreach (get_iserv_events($feed['url']) as $ev) {
+            if ($today >= $ev['start'] && $today <= $ev['end']) {
+                $events[] = [
+                    'type' => 'iserv',
+                    'title' => $ev['title'],
+                    'details' => $ev['details'],
+                ];
+            }
         }
     }
 

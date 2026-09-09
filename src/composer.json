@@ -1,10 +1,9 @@
 {
     "repositories": [
         {
-            "comment": "Gemeinsamer OpenID-Connect-Client der SchulOS-Module. Solange das Paket noch nicht auf GitHub liegt, wird es aus dem Nachbarverzeichnis kopiert (symlink: false) - so landet es in vendor/ und wird wie die uebrigen Abhaengigkeiten mit ausgeliefert.",
-            "type": "path",
-            "url": "../../schulos-sso",
-            "options": { "symlink": false }
+            "comment": "Gemeinsamer OpenID-Connect-Client der SchulOS-Module. HTTPS statt SSH, damit die CI ohne hinterlegten Schluessel an das oeffentliche Paket kommt.",
+            "type": "vcs",
+            "url": "https://github.com/flackandreas/schulos-sso.git"
         }
     ],
     "require": {
@@ -13,6 +12,6 @@
         "phpmailer/phpmailer": "^7.0",
         "vlucas/phpdotenv": "^5.6",
         "guzzlehttp/guzzle": "^7.10",
-        "schulos/sso": "@dev"
+        "schulos/sso": "^1.0"
     }
 }

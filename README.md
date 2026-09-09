@@ -217,6 +217,11 @@ erreichbar, falls das Portal einmal steht.
 | `/sso/abmelden` | Abmeldung über den Vorderkanal |
 | `/healthz` | Lebenszeichen für das Portal |
 
+Der Ablauf steckt im Paket [`schulos/sso`](https://github.com/flackandreas/schulos-sso).
+Das Modul zeigt auf eine Version, nicht auf einen Zweig; eine neue Fassung wird
+mit `composer update schulos/sso` bewusst gezogen und mit committet, weil
+`vendor/` hier versioniert ist.
+
 ### Der Wechsel ohne Portal
 
 Ohne Portal können sich zwei Module weiterhin gegenseitig verlinken. Das

@@ -41,7 +41,8 @@ function run_all_migrations() {
         'alter_calendar_feeds.sql',
         'alter_rate_limits.sql',
         'alter_portal_konten.sql',
-        'alter_konten_haerten.sql'
+        'alter_konten_haerten.sql',
+        'alter_sick_leave_seen_at.sql'
     ];
 
     foreach ($sql_files as $file) {

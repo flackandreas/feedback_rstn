@@ -20,11 +20,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $action = $_POST['action'];
         if ($action === 'mark_seen') {
             $id = (int)($_POST['id'] ?? 0);
-            $stmt = $conn->prepare("UPDATE sick_leave_reports SET is_seen = 1 WHERE id = ?");
+            // COALESCE: ein bereits vermerkter Zeitpunkt bleibt stehen. Sonst
+            // wuerde ein zweiter Klick das erste Lesen ueberschreiben.
+            $stmt = $conn->prepare("UPDATE sick_leave_reports SET is_seen = 1, seen_at = COALESCE(seen_at, NOW()) WHERE id = ?");
             $stmt->execute([$id]);
             $_SESSION['flash_success'] = "Krankmeldung wurde als gelesen markiert.";
         } elseif ($action === 'mark_all_seen') {
-            $conn->query("UPDATE sick_leave_reports SET is_seen = 1 WHERE is_seen = 0");
+            $conn->query("UPDATE sick_leave_reports SET is_seen = 1, seen_at = COALESCE(seen_at, NOW()) WHERE is_seen = 0");
             $_SESSION['flash_success'] = "Alle Krankmeldungen wurden als gelesen markiert.";
         }
     }

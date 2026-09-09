@@ -8,10 +8,12 @@
     <form method="GET" action="/meine_antraege.php" style="display: flex; gap: 10px; align-items: center;">
         <label for="statusFilter" style="font-weight: 500; font-size: 0.9em;">Status:</label>
         <select name="status" id="statusFilter" onchange="this.form.submit()" style="padding: 5px 10px; width: auto;">
+            {# Offen und erledigt fassen beide Welten zusammen: die Entscheidung
+               ueber einen Antrag und die Kenntnisnahme einer Meldung. #}
             <option value="all" {{ filter_status == 'all' ? 'selected' : '' }}>Alle</option>
-            <option value="pending" {{ filter_status == 'pending' ? 'selected' : '' }}>Ausstehend</option>
-            <option value="approved" {{ filter_status == 'approved' ? 'selected' : '' }}>Genehmigt / Bestätigt</option>
-            <option value="rejected" {{ filter_status == 'rejected' ? 'selected' : '' }}>Abgelehnt</option>
+            <option value="offen" {{ filter_status == 'offen' ? 'selected' : '' }}>Offen</option>
+            <option value="erledigt" {{ filter_status == 'erledigt' ? 'selected' : '' }}>Erledigt</option>
+            <option value="abgelehnt" {{ filter_status == 'abgelehnt' ? 'selected' : '' }}>Abgelehnt</option>
         </select>
     </form>
 </div>
@@ -36,10 +38,25 @@
                 </thead>
                 <tbody>
                     {% for r in requests %}
-                        {% set statusColor = (r.status == 'pending') ? 'var(--warning-color-dark)' : ((r.status == 'approved') ? 'var(--success-color)' : ((r.status == 'query') ? 'var(--warning-color)' : 'var(--danger-color)')) %}
-                        
+                        {# Eine Krankmeldung wird nicht genehmigt, sondern gelesen.
+                           "Ausstehend" wuerde dort eine Entscheidung versprechen,
+                           die im Verfahren gar nicht vorgesehen ist. #}
+                        {% set statusColor =
+                               (r.status == 'pending')     ? 'var(--warning-color-dark)'
+                             : (r.status == 'eingegangen') ? 'var(--warning-color-dark)'
+                             : (r.status == 'approved')    ? 'var(--success-color)'
+                             : (r.status == 'gelesen')     ? 'var(--primary-color)'
+                             : (r.status == 'query')       ? 'var(--warning-color)'
+                             : 'var(--danger-color)' %}
+
                         {% set statusText %}
-                            {% if r.status == 'pending' %}AUSSTEHEND{% elseif r.status == 'approved' %}GENEHMIGT{% elseif r.status == 'query' %}RÜCKFRAGE{% elseif r.status == 'rejected' %}ABGELEHNT{% else %}{{ r.status|upper }}{% endif %}
+                            {% if r.status == 'pending' %}AUSSTEHEND
+                            {%- elseif r.status == 'approved' %}GENEHMIGT
+                            {%- elseif r.status == 'rejected' %}ABGELEHNT
+                            {%- elseif r.status == 'eingegangen' %}EINGEGANGEN
+                            {%- elseif r.status == 'gelesen' %}GELESEN
+                            {%- elseif r.status == 'query' %}RÜCKFRAGE
+                            {%- else %}{{ r.status|upper }}{% endif %}
                         {% endset %}
                         
                         <tr>
@@ -72,6 +89,16 @@
                                 <span style="display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.8em; font-weight: 600; color: white; background-color: {{ statusColor }};">
                                     {{ statusText|trim }}
                                 </span>
+                                {% if r.status == 'gelesen' %}
+                                    {# Ohne Zeitpunkt: die Meldung wurde vor der Einfuehrung
+                                       dieser Spalte gelesen. Lieber nichts zeigen als ein
+                                       erfundenes Datum. #}
+                                    {% if r.seen_at %}
+                                        <br><span style="color: var(--text-muted); font-size: 0.75em;">am {{ r.seen_at|date('d.m.Y, H:i') }} Uhr</span>
+                                    {% endif %}
+                                {% elseif r.status == 'eingegangen' %}
+                                    <br><span style="color: var(--text-muted); font-size: 0.75em;">noch nicht gelesen</span>
+                                {% endif %}
                             </td>
                             <td>
                                 {% if r.type == 'Ausflug' %}

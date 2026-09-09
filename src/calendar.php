@@ -11,32 +11,55 @@ require_once __DIR__ . '/includes/calendar_helper.php';
 require_login();
 
 $conn = db_connect();
+$user_id = get_current_user_id();
 
-// Fetch local events:
-// 1. Sick leaves (all)
-$stmt_sick = $conn->query("
-    SELECT r.id, r.date_from, r.date_to, r.notes, t.name as teacher_name 
-    FROM sick_leave_reports r 
+/**
+ * Wer sieht wessen Eintraege?
+ *
+ * Eine Krankmeldung ist eine Gesundheitsangabe. Dass jede Lehrkraft im
+ * Schulkalender lesen konnte, wer wann krank war, war weder noetig noch
+ * zulaessig - der Kalender zeigt deshalb nur noch die eigenen Vorgaenge.
+ *
+ * Die Schulleitung behaelt den Gesamtblick: sie plant die Vertretung, und die
+ * Angaben liegen ihr ohnehin vor. Sie sieht dieselben Daten schon unter
+ * Krankmeldungen, Freistellungen und AUD-Terminen.
+ *
+ * Von der Einschraenkung ausgenommen sind die eingetragenen Kalender weiter
+ * unten. Die kommen von aussen, gehoeren der ganzen Schule und werden jedem
+ * angezeigt.
+ */
+$istVerwaltung = is_current_user_admin();
+$nurEigene = $istVerwaltung ? '' : ' AND r.teacher_id = :teacher_id';
+$werte = $istVerwaltung ? [] : [':teacher_id' => $user_id];
+
+// 1. Krankmeldungen
+$stmt_sick = $conn->prepare("
+    SELECT r.id, r.date_from, r.date_to, r.notes, t.name as teacher_name
+    FROM sick_leave_reports r
     JOIN teachers t ON r.teacher_id = t.id
+    WHERE 1 = 1 {$nurEigene}
 ");
+$stmt_sick->execute($werte);
 $sick_leaves = $stmt_sick->fetchAll();
 
-// 2. Approved exemptions
-$stmt_exempt = $conn->query("
-    SELECT r.id, r.date_from, r.date_to, r.reason, r.reason_type, t.name as teacher_name 
-    FROM exemption_requests r 
-    JOIN teachers t ON r.teacher_id = t.id 
-    WHERE r.status = 'approved'
+// 2. Genehmigte Freistellungen
+$stmt_exempt = $conn->prepare("
+    SELECT r.id, r.date_from, r.date_to, r.reason, r.reason_type, t.name as teacher_name
+    FROM exemption_requests r
+    JOIN teachers t ON r.teacher_id = t.id
+    WHERE r.status = 'approved' {$nurEigene}
 ");
+$stmt_exempt->execute($werte);
 $exemptions = $stmt_exempt->fetchAll();
 
-// 3. Approved extracurricular events
-$stmt_extra = $conn->query("
+// 3. Genehmigte ausserunterrichtliche Veranstaltungen
+$stmt_extra = $conn->prepare("
     SELECT r.id, r.event_date, r.event_date_to, r.event_name, r.class_name, t.name as teacher_name, r.destination
-    FROM extracurricular_requests r 
-    JOIN teachers t ON r.teacher_id = t.id 
-    WHERE r.status = 'approved'
+    FROM extracurricular_requests r
+    JOIN teachers t ON r.teacher_id = t.id
+    WHERE r.status = 'approved' {$nurEigene}
 ");
+$stmt_extra->execute($werte);
 $extracurriculars = $stmt_extra->fetchAll();
 
 $events = [];

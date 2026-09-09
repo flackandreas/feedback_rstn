@@ -6,6 +6,14 @@
 
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/sso.php';
+
+// Laeuft dieses Modul ausschliesslich ueber das SchulOS-Portal, soll es genau
+// einen Weg hinein geben. IServ wird dann dort eingerichtet, nicht hier.
+if (sso_aktiv() && sso_umgebung('PORTAL_NUR_SSO') === '1') {
+    header('Location: /sso_start.php');
+    exit;
+}
 
 // Konfiguration aus .env auslesen
 $iserv_host = $_ENV['ISERV_HOST'] ?? getenv('ISERV_HOST') ?: '';

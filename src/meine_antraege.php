@@ -41,8 +41,13 @@ if (!in_array($filter, ['all', 'offen', 'erledigt', 'abgelehnt'], true)) {
 
 // Bedingung je Welt. Krankmeldungen werden nie abgelehnt, deshalb liefert
 // dieser Filter dort bewusst nichts.
+//
+// Eine Rueckfrage der Schulleitung gehoert unter "offen": entschieden ist
+// nichts, und es liegt jetzt an der Lehrkraft. Waere sie es nicht, fiele sie
+// aus jedem Filter heraus und stuende nur noch unter "Alle" - ausgerechnet
+// der Vorgang, der eine Reaktion verlangt.
 $beiEntscheidung = [
-    'offen' => "AND status = 'pending'",
+    'offen' => "AND status IN ('pending', 'query')",
     'erledigt' => "AND status = 'approved'",
     'abgelehnt' => "AND status = 'rejected'",
 ][$filter] ?? '';

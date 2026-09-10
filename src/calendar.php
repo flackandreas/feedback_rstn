@@ -7,6 +7,7 @@
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/calendar_helper.php';
+require_once __DIR__ . '/includes/klassen.php';
 
 require_login();
 
@@ -95,7 +96,7 @@ foreach ($extracurriculars as $ex) {
         'type' => 'extra',
         'start' => $ex['event_date'],
         'end' => $ex['event_date_to'] ?: $ex['event_date'],
-        'title' => '🚌 Ausflug (' . $ex['class_name'] . '): ' . $ex['event_name'],
+        'title' => '🚌 Ausflug (' . klassen_kurz($ex['class_name']) . '): ' . $ex['event_name'],
         'details' => 'Veranstaltung: ' . $ex['event_name'] . "\nKlasse(n): " . $ex['class_name'] . "\nZiel: " . $ex['destination'] . "\nLeitung: " . $ex['teacher_name']
     ];
 }

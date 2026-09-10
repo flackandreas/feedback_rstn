@@ -23,7 +23,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (!verify_csrf_token($csrf_token)) {
         $_SESSION['flash_error'] = "Sicherheitsfehler: Ungültiger Token. Bitte laden Sie die Seite neu.";
     } else {
-        $class_name = trim($_POST['class_name'] ?? '');
+        // Mehrere Klassen sind moeglich. Gespeichert wird eine kommagetrennte
+        // Liste in derselben Textspalte wie bisher - genau wie bei den
+        // Begleitpersonen ein paar Zeilen weiter unten.
+        $class_names = array_values(array_filter(
+            array_map('trim', array_map('strval', (array) ($_POST['class_name'] ?? []))),
+            static fn (string $k): bool => $k !== ''
+        ));
+        $class_name = '';
         $event_date = $_POST['event_date'] ?? '';
         $event_date_to = $_POST['event_date_to'] ?? '';
         $destination = trim($_POST['destination'] ?? '');
@@ -45,11 +52,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $consent_form      = in_array($_POST['consent_form'] ?? '', ['ja', 'nein']) ? $_POST['consent_form'] : null;
         $schedule_notified = isset($_POST['schedule_notified']) ? 1 : 0;
         
-        if (empty($class_name) || empty($event_date) || empty($event_date_to) || empty($destination)) {
+        if ($class_names === [] || empty($event_date) || empty($event_date_to) || empty($destination)) {
             $_SESSION['flash_error'] = "Bitte füllen Sie alle Pflichtfelder aus (Klasse, Startdatum, Enddatum, Ziel).";
         } else {
             try {
                 $conn = db_connect();
+
+                // Nur Klassen, die es wirklich gibt, und in der Reihenfolge
+                // der Liste statt in der des Anklickens. Fehlt die Liste -
+                // sie gehoert dem Unterrichtsmodul -, wird nicht geprueft,
+                // sonst waere das Formular gar nicht mehr abzuschicken.
+                $bekannte = array_column(klassen_fuer_formular($conn, (int) $user_id)['alle'], 'name');
+                if ($bekannte !== []) {
+                    $class_names = array_values(array_intersect($bekannte, $class_names));
+                }
+
+                if ($class_names === []) {
+                    $_SESSION['flash_error'] = "Bitte mindestens eine Klasse auswählen.";
+                    header("Location: /antrag_ausserunterrichtlich.php");
+                    exit;
+                }
+
+                // Die Spalte fasst 100 Zeichen; alle zwoelf Klassen zusammen
+                // sind 48. Der Schnitt ist nur der Gurt.
+                $class_name = mb_substr(implode(', ', $class_names), 0, 100);
                 
                 if ($edit_id) {
                     // Check ownership and current status
@@ -131,6 +157,10 @@ if ($edit_id) {
         exit;
     }
     
+    // Die gespeicherten Klassen wieder in einzelne Namen, damit die
+    // Vorlage die richtigen Kaestchen ankreuzen kann.
+    $edit_request['class_names'] = klassen_aus_text($edit_request['class_name'] ?? '');
+
     // Parse companions to match form field names
     $comps = array_map('trim', explode(',', $edit_request['companion'] ?? ''));
     $edit_request['companion_select_1'] = $comps[0] ?? '';

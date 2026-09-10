@@ -6,6 +6,7 @@
  */
 
 require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/includes/klassen.php';
 
 // Einfacher Schutz: Ein statischer Token für die Schulleitung (Abonnement)
 $secret_token = 'A1b2C3d4E5f6G7h8';
@@ -88,7 +89,7 @@ while ($r = $stmt_extra->fetch()) {
         'extra_'.$r['id'],
         $r['event_date'],
         $r['event_date_to'] ?: $r['event_date'],
-        'Ausflug (' . $r['class_name'] . '): ' . $r['event_name'],
+        'Ausflug (' . klassen_kurz($r['class_name']) . '): ' . $r['event_name'],
         'Leitung: ' . $r['teacher_name']
     );
 }

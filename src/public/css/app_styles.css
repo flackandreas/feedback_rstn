@@ -1389,3 +1389,63 @@ textarea {
     opacity: 0.85;
 }
 
+
+/* Klassenwahl im Antrag auf eine ausserunterrichtliche Veranstaltung.
+   Ankreuzfelder statt Mehrfachauswahl im Klappfeld: die verlangt Strg-Klick,
+   das findet niemand von allein, und auf dem Handy ist sie unbrauchbar. */
+.klassenwahl {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 10px 12px;
+    background: var(--bg-content);
+}
+
+.klassenwahl__titel {
+    margin: 0 0 6px;
+    font-size: 0.78em;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.klassenwahl__reihe {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    margin-bottom: 10px;
+}
+
+.klassenwahl__reihe:last-child { margin-bottom: 0; }
+
+.klassenwahl__klasse {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px 5px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    line-height: 1.2;
+}
+
+.klassenwahl__klasse input { margin: 0; cursor: pointer; }
+
+/* Angekreuzt muss man auf einen Blick sehen, sonst zaehlt man Haekchen. */
+.klassenwahl__klasse:has(input:checked) {
+    border-color: var(--primary-color);
+    background: var(--primary-bg-light);
+}
+
+.klassenwahl__klasse:has(input:focus-visible) {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.klassenwahl__hinweis {
+    display: block;
+    margin-top: 5px;
+    color: var(--text-muted);
+}

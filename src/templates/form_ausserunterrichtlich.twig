@@ -20,28 +20,56 @@
         {# Zeile 2: Lehrperson + Begleitpersonen #}
         <div class="form-grid-3" style="margin-top: 15px;">
             <div class="form-group">
-                <label for="class_name">Klasse</label>
-                <select id="class_name" name="class_name" required>
-                    <option value="">Bitte wählen</option>
-                    {% if selected_class_ids|length > 0 %}
-                        <optgroup label="Meine Klassen">
-                            {% for c in all_classes %}
-                                {% if c.id in selected_class_ids %}
-                                    <option value="{{ c.name }}" {% if edit_request.class_name == c.name %}selected{% endif %}>{{ c.name }}</option>
-                                {% endif %}
-                            {% endfor %}
-                        </optgroup>
-                        <optgroup label="Alle Klassen">
-                            {% for c in all_classes %}
-                                <option value="{{ c.name }}" {% if edit_request.class_name == c.name %}selected{% endif %}>{{ c.name }}</option>
-                            {% endfor %}
-                        </optgroup>
-                    {% else %}
-                        {% for c in all_classes %}
-                            <option value="{{ c.name }}" {% if edit_request.class_name == c.name %}selected{% endif %}>{{ c.name }}</option>
-                        {% endfor %}
-                    {% endif %}
-                </select>
+                {% set gewaehlt = edit_request.class_names|default([]) %}
+                <label id="klassen_label">Klasse(n)</label>
+                {% if all_classes|length > 0 %}
+                    <div class="klassenwahl" role="group" aria-labelledby="klassen_label">
+                        {% if selected_class_ids|length > 0 %}
+                            <p class="klassenwahl__titel">Meine Klassen</p>
+                            <div class="klassenwahl__reihe">
+                                {% for c in all_classes %}
+                                    {% if c.id in selected_class_ids %}
+                                        <label class="klassenwahl__klasse">
+                                            <input type="checkbox" name="class_name[]" value="{{ c.name }}"
+                                                   {% if c.name in gewaehlt %}checked{% endif %}>
+                                            <span>{{ c.name }}</span>
+                                        </label>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <p class="klassenwahl__titel">Weitere Klassen</p>
+                            <div class="klassenwahl__reihe">
+                                {% for c in all_classes %}
+                                    {% if c.id not in selected_class_ids %}
+                                        <label class="klassenwahl__klasse">
+                                            <input type="checkbox" name="class_name[]" value="{{ c.name }}"
+                                                   {% if c.name in gewaehlt %}checked{% endif %}>
+                                            <span>{{ c.name }}</span>
+                                        </label>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="klassenwahl__reihe">
+                                {% for c in all_classes %}
+                                    <label class="klassenwahl__klasse">
+                                        <input type="checkbox" name="class_name[]" value="{{ c.name }}"
+                                               {% if c.name in gewaehlt %}checked{% endif %}>
+                                        <span>{{ c.name }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <small class="klassenwahl__hinweis">Mehrere möglich. Mindestens eine.</small>
+                {% else %}
+                    {# Die Klassen kommen aus dem Unterrichtsmodul. Fehlen sie,
+                       bleibt das Formular benutzbar. #}
+                    <input type="text" id="class_name" name="class_name[]"
+                           value="{{ gewaehlt|join(', ') }}" required
+                           placeholder="z. B. 8a, 8b">
+                    <small class="klassenwahl__hinweis">Mehrere durch Komma trennen.</small>
+                {% endif %}
             </div>
             
             <div class="form-group">

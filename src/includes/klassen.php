@@ -49,3 +49,41 @@ function klassen_fuer_formular(PDO $conn, int $teacherId): array
 
     return ['alle' => is_array($alle) ? $alle : [], 'eigene' => $eigene];
 }
+
+/**
+ * Zerlegt das Feld class_name in einzelne Klassen.
+ *
+ * Gespeichert wird eine kommagetrennte Liste in einer Textspalte, keine
+ * Verknuepfungstabelle. Das ist Absicht: der Wert wird ausschliesslich
+ * angezeigt, nie gejoint oder gefiltert, und alle zwoelf Klassen der Schule
+ * zusammen ergeben 48 Zeichen bei 100 verfuegbaren.
+ *
+ * @return list<string>
+ */
+function klassen_aus_text(?string $liste): array
+{
+    if ($liste === null || trim($liste) === '') {
+        return [];
+    }
+
+    return array_values(array_filter(array_map('trim', explode(',', $liste)), static fn (string $k): bool => $k !== ''));
+}
+
+/**
+ * Kuerzt eine Klassenliste fuer eine Ueberschrift.
+ *
+ * "5a, 5b, 6a, 6b, 7a, 7b" wird zu "5a, 5b +4". Gedacht fuer den Titel eines
+ * Kalendereintrags: in der Monatsansicht steht dafuer eine Zeile zur
+ * Verfuegung, und ein Titel, der die Zeile sprengt, verdeckt das Wesentliche.
+ * Die vollstaendige Liste bleibt in den Details.
+ */
+function klassen_kurz(?string $liste, int $zeigen = 2): string
+{
+    $klassen = klassen_aus_text($liste);
+
+    if (count($klassen) <= $zeigen + 1) {
+        return implode(', ', $klassen);
+    }
+
+    return implode(', ', array_slice($klassen, 0, $zeigen)) . ' +' . (count($klassen) - $zeigen);
+}

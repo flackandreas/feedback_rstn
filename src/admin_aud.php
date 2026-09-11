@@ -7,6 +7,7 @@
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/twig_setup.php';
+require_once __DIR__ . '/includes/admin_helpers.php';
 
 require_admin();
 
@@ -32,14 +33,22 @@ $stmt_extra = $conn->query("
 ");
 $extra_requests = $stmt_extra->fetchAll(PDO::FETCH_ASSOC);
 
-// Summary for AUD requests - finding FREE teachers
+// Uebersicht der AUD-Tage. Abschaltbar, weil AUD 1 bis AUD 7 eine
+// Besonderheit der Realschule Titisee-Neustadt sind - anderswo stuenden dort
+// acht leere Kaesten. Ist sie aus, werden die neun Abfragen darunter gar
+// nicht erst gestellt.
+$aud_tage_sichtbar = app_schalter($conn, 'aud_tage_uebersicht', false);
+
 $aud_list_for_ui = ['AUD 1', 'AUD 2', 'AUD 3', 'AUD 4', 'AUD 5', 'AUD 6', 'AUD 7', 'Sonstige'];
 $aud_free = [];
 
-$stmt_all = $conn->query("SELECT id, name, kuerzel FROM teachers WHERE is_admin = 0 ORDER BY name ASC");
-$all_teachers = $stmt_all->fetchAll(PDO::FETCH_ASSOC);
+$all_teachers = [];
+if ($aud_tage_sichtbar) {
+    $stmt_all = $conn->query("SELECT id, name, kuerzel FROM teachers WHERE is_admin = 0 ORDER BY name ASC");
+    $all_teachers = $stmt_all->fetchAll(PDO::FETCH_ASSOC);
+}
 
-foreach ($aud_list_for_ui as $aud) {
+foreach ($aud_tage_sichtbar ? $aud_list_for_ui : [] as $aud) {
     // Collect all assigned teachers for this AUD
     $stmt = $conn->prepare("
         SELECT r.teacher_id, r.participating_teacher_id, r.companion
@@ -90,6 +99,7 @@ $flash_error = $_SESSION['flash_error'] ?? null;
 unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 
 echo $twig->render('admin_aud.twig', [
+    'aud_tage_sichtbar' => $aud_tage_sichtbar,
     'csrf_token' => $csrf_token,
     'flash_success' => $flash_success,
     'flash_error' => $flash_error,

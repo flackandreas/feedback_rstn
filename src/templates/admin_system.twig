@@ -149,6 +149,34 @@ WIN;Winter;Bernd;bernd.winter@schule.de</pre>
    SECTION: Jahresabschluss & Archivierung
    ===================================================================== #}
 <div class="content-box">
+    <h3 style="border-left: 4px solid #16a085; padding-left: 10px;">Ansicht der Schulleitung</h3>
+
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap;">
+        <div style="flex: 1 1 340px;">
+            <strong>Übersicht der AUD-Tage</strong>
+            <p style="color: var(--text-muted); margin: 4px 0 0;">
+                Zeigt auf der Seite „AU-Veranstaltungen“ für jeden AUD-Tag, wer bereits eingeteilt ist
+                und wer noch frei wäre. AUD&nbsp;1 bis AUD&nbsp;7 sind feste Tage der Realschule
+                Titisee-Neustadt &ndash; an einer Schule ohne diese Einteilung stehen dort acht leere
+                Kästen. Ausgeblendet werden die Abfragen dafür gar nicht erst gestellt.
+            </p>
+        </div>
+
+        <form method="POST" style="margin: 0; flex: 0 0 auto;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="action" value="aud_tage_schalten">
+            <input type="hidden" name="ein" value="{{ aud_tage_sichtbar ? '0' : '1' }}">
+            <span class="badge" style="background-color: {{ aud_tage_sichtbar ? 'var(--success-color)' : 'var(--text-muted)' }}; color: white; padding: 3px 9px; border-radius: 10px; font-size: 0.8em; margin-right: 10px;">
+                {{ aud_tage_sichtbar ? 'wird angezeigt' : 'ausgeblendet' }}
+            </span>
+            <button type="submit" class="button-secondary" style="padding: 6px 14px; font-size: 0.9em;">
+                {{ aud_tage_sichtbar ? 'Ausblenden' : 'Einblenden' }}
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="content-box">
     <h3 style="border-left: 4px solid #e67e22; padding-left: 10px;">Jahresabschluss & Archivierung</h3>
     <p style="color: var(--text-muted); font-size: 0.9em;">
         Am Ende eines Schuljahres können Sie hier alle Daten (Anträge, Krankmeldungen) exportieren und anschließend das Jahr bereinigen.

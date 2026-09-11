@@ -19,6 +19,10 @@
     <div id="panel-actions" style="margin-top:24px; border-top:1px solid var(--border-color); padding-top:16px;"></div>
 </div>
 
+{# AUD 1 bis AUD 7 sind eine Besonderheit der Realschule
+   Titisee-Neustadt. Der Block ist deshalb abschaltbar und in der
+   Vorgabe aus; einschalten laesst er sich unter Systemverwaltung. #}
+{% if aud_tage_sichtbar %}
 <div class="content-box">
     <h3 style="border-left: 4px solid var(--primary-color); padding-left: 10px;">AUD-Tage Übersicht</h3>
     <p style="color: var(--text-muted); margin-bottom: 15px;">Übersicht der angemeldeten außerunterrichtlichen Veranstaltungen und freien Lehrkräfte für jeden AUD-Tag.</p>
@@ -131,6 +135,7 @@
         {% endfor %}
     </div>
 </div>
+{% endif %}
 
 <div class="content-box">
     <h3 style="border-left: 4px solid var(--primary-color); padding-left: 10px;">Anträge auf außerunterrichtliche Veranstaltungen</h3>

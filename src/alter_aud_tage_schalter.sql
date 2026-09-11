@@ -1,0 +1,12 @@
+-- Die AUD-Tage-Uebersicht ist abschaltbar und zunaechst aus.
+--
+-- AUD 1 bis AUD 7 sind eine Besonderheit der Realschule Titisee-Neustadt:
+-- feste Tage im Schuljahr, an denen ausserunterrichtliche Veranstaltungen
+-- stattfinden. Der Block zeigt je Tag, wer schon eingeteilt ist und wer noch
+-- frei waere. An jeder anderen Schule steht dort eine Liste von acht leeren
+-- Kaesten.
+--
+-- Geloescht wird der Block deshalb nicht, nur ausgeblendet: gebraucht wird
+-- er vielleicht spaeter wieder, und die Schulleitung kann ihn unter
+-- Systemverwaltung selbst einschalten.
+INSERT IGNORE INTO app_settings (setting_key, setting_value) VALUES ('aud_tage_uebersicht', '0');

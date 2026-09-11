@@ -33,3 +33,45 @@ function get_pending_counts($conn) {
         'sick_leaves' => $sick_leaves_count
     ];
 }
+
+/**
+ * Eine Einstellung aus app_settings, mit Vorgabe.
+ *
+ * Bisher las jede Seite die Tabelle selbst aus. Das ging, solange es drei
+ * Werte fuer den Bericht waren; mit Schaltern, die einzelne Bloecke der
+ * Oberflaeche ein- und ausblenden, lohnt sich die eine Stelle.
+ */
+function app_einstellung(PDO $conn, string $schluessel, string $vorgabe = ''): string
+{
+    static $zwischenspeicher = null;
+
+    if ($zwischenspeicher === null) {
+        $zwischenspeicher = [];
+        try {
+            foreach ($conn->query('SELECT setting_key, setting_value FROM app_settings') as $zeile) {
+                $zwischenspeicher[$zeile['setting_key']] = (string) ($zeile['setting_value'] ?? '');
+            }
+        } catch (PDOException $e) {
+            error_log('Antragssystem: app_settings nicht lesbar: ' . $e->getMessage());
+        }
+    }
+
+    $wert = $zwischenspeicher[$schluessel] ?? null;
+
+    return ($wert === null || $wert === '') ? $vorgabe : $wert;
+}
+
+/** Wie app_einstellung(), liefert aber true/false fuer 1/0. */
+function app_schalter(PDO $conn, string $schluessel, bool $vorgabe = false): bool
+{
+    return app_einstellung($conn, $schluessel, $vorgabe ? '1' : '0') === '1';
+}
+
+/** Schreibt eine Einstellung; legt sie an, falls es sie noch nicht gibt. */
+function app_einstellung_setzen(PDO $conn, string $schluessel, string $wert): void
+{
+    $conn->prepare(
+        'INSERT INTO app_settings (setting_key, setting_value) VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)'
+    )->execute([$schluessel, $wert]);
+}

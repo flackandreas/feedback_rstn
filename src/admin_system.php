@@ -8,6 +8,7 @@ require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/calendar_helper.php';
 require_once __DIR__ . '/includes/twig_setup.php';
+require_once __DIR__ . '/includes/admin_helpers.php';
 
 require_admin();
 
@@ -105,6 +106,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
 
         zurueck_zur_verwaltung(null, sprintf('„%s": %s', $feed['name'], $probe['status']));
+    }
+
+    if ($_POST['action'] === 'aud_tage_schalten') {
+        $ein = isset($_POST['ein']) && $_POST['ein'] === '1';
+        app_einstellung_setzen($conn, 'aud_tage_uebersicht', $ein ? '1' : '0');
+
+        zurueck_zur_verwaltung($ein
+            ? 'Die Übersicht der AUD-Tage wird wieder angezeigt.'
+            : 'Die Übersicht der AUD-Tage ist ausgeblendet.');
     }
 
     zurueck_zur_verwaltung(null, 'Unbekannte Aktion.');
@@ -307,6 +317,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 
 echo $twig->render('admin_system.twig', [
     'calendar_feeds' => $conn->query('SELECT * FROM calendar_feeds ORDER BY name ASC')->fetchAll(),
+    'aud_tage_sichtbar' => app_schalter($conn, 'aud_tage_uebersicht', false),
     'csrf_token' => $csrf_token,
     'flash_success' => $flash_success,
     'flash_error' => $flash_error,

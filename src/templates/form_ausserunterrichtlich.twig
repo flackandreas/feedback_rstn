@@ -21,47 +21,41 @@
         <div class="form-grid-3" style="margin-top: 15px;">
             <div class="form-group">
                 {% set gewaehlt = edit_request.class_names|default([]) %}
-                <label id="klassen_label">Klasse(n)</label>
+                <label for="class_name">Klasse(n)</label>
                 {% if all_classes|length > 0 %}
-                    <div class="klassenwahl" role="group" aria-labelledby="klassen_label">
+                    {# Mehrfachauswahl im Listenfeld statt Ankreuzfelder: die
+                       Zahl der Klassen waechst, und eine Wand aus Kaestchen
+                       wuerde das Formular sprengen. Auf dem Handy tippt man
+                       die Eintraege einfach an, dort braucht es kein Strg. #}
+                    <select id="class_name" name="class_name[]" multiple required
+                            size="{{ min(all_classes|length + (selected_class_ids|length > 0 ? 2 : 0), 8) }}"
+                            class="klassenwahl-liste" aria-describedby="klassen_hinweis">
                         {% if selected_class_ids|length > 0 %}
-                            <p class="klassenwahl__titel">Meine Klassen</p>
-                            <div class="klassenwahl__reihe">
+                            <optgroup label="Meine Klassen">
                                 {% for c in all_classes %}
                                     {% if c.id in selected_class_ids %}
-                                        <label class="klassenwahl__klasse">
-                                            <input type="checkbox" name="class_name[]" value="{{ c.name }}"
-                                                   {% if c.name in gewaehlt %}checked{% endif %}>
-                                            <span>{{ c.name }}</span>
-                                        </label>
+                                        <option value="{{ c.name }}" {% if c.name in gewaehlt %}selected{% endif %}>{{ c.name }}</option>
                                     {% endif %}
                                 {% endfor %}
-                            </div>
-                            <p class="klassenwahl__titel">Weitere Klassen</p>
-                            <div class="klassenwahl__reihe">
+                            </optgroup>
+                            <optgroup label="Weitere Klassen">
                                 {% for c in all_classes %}
                                     {% if c.id not in selected_class_ids %}
-                                        <label class="klassenwahl__klasse">
-                                            <input type="checkbox" name="class_name[]" value="{{ c.name }}"
-                                                   {% if c.name in gewaehlt %}checked{% endif %}>
-                                            <span>{{ c.name }}</span>
-                                        </label>
+                                        <option value="{{ c.name }}" {% if c.name in gewaehlt %}selected{% endif %}>{{ c.name }}</option>
                                     {% endif %}
                                 {% endfor %}
-                            </div>
+                            </optgroup>
                         {% else %}
-                            <div class="klassenwahl__reihe">
-                                {% for c in all_classes %}
-                                    <label class="klassenwahl__klasse">
-                                        <input type="checkbox" name="class_name[]" value="{{ c.name }}"
-                                               {% if c.name in gewaehlt %}checked{% endif %}>
-                                        <span>{{ c.name }}</span>
-                                    </label>
-                                {% endfor %}
-                            </div>
+                            {% for c in all_classes %}
+                                <option value="{{ c.name }}" {% if c.name in gewaehlt %}selected{% endif %}>{{ c.name }}</option>
+                            {% endfor %}
                         {% endif %}
-                    </div>
-                    <small class="klassenwahl__hinweis">Mehrere möglich. Mindestens eine.</small>
+                    </select>
+                    <small class="klassenwahl__hinweis" id="klassen_hinweis">
+                        Mehrere mit <kbd>Strg</kbd> anklicken, auf dem Mac mit <kbd>cmd</kbd>.
+                        Am Handy genügt Antippen.
+                        <span class="klassenwahl__gewaehlt" data-fuer="class_name"></span>
+                    </small>
                 {% else %}
                     {# Die Klassen kommen aus dem Unterrichtsmodul. Fehlen sie,
                        bleibt das Formular benutzbar. #}
@@ -348,6 +342,28 @@ document.addEventListener("DOMContentLoaded", function() {
             eventDateToInput.min = eventDateInput.value;
         }
     }
+
+    // Gewaehlte Klassen mitschreiben. In einem Listenfeld mit vielen
+    // Eintraegen sieht man sonst nur den sichtbaren Ausschnitt und weiss
+    // nicht, was weiter oben noch angeklickt ist.
+    document.querySelectorAll('.klassenwahl__gewaehlt').forEach(function (anzeige) {
+        var liste = document.getElementById(anzeige.dataset.fuer);
+        if (!liste) { return; }
+
+        function schreibe() {
+            var namen = Array.from(liste.selectedOptions).map(function (o) { return o.value; });
+            if (namen.length === 0) {
+                anzeige.textContent = '';
+                return;
+            }
+            anzeige.textContent = namen.length === 1
+                ? 'Gewählt: ' + namen[0]
+                : 'Gewählt (' + namen.length + '): ' + namen.join(', ');
+        }
+
+        liste.addEventListener('change', schreibe);
+        schreibe();
+    });
 });
 </script>
 {% endblock %}

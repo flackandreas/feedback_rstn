@@ -1,0 +1,46 @@
+{# Erstpasswoerter nach einem CSV-Import - genau einmal sichtbar.
+   Sie stehen nirgends gespeichert: der Controller haelt sie in der Sitzung
+   bis zu dieser Anzeige und verwirft sie danach. Wer sie jetzt nicht
+   notiert, setzt das Passwort spaeter neu. #}
+{% if neue_zugaenge is defined and neue_zugaenge is not empty %}
+<div class="content-box" style="margin-bottom: 25px; border-left: 4px solid #e67e22;">
+    <h3 style="margin-top: 0;">{{ neue_zugaenge|length }} neue{{ neue_zugaenge|length == 1 ? 's Konto' : ' Konten' }} – Erstpasswörter</h3>
+    <p style="color: var(--text-muted); font-size: 0.9em;">
+        Diese Liste erscheint <strong>nur dieses eine Mal</strong>. Die Passwörter werden nicht gespeichert.
+        Jedes muss beim ersten Anmelden gewechselt werden. Jetzt ausdrucken oder notieren – danach hilft nur
+        noch ein neues Passwort über „Bearbeiten“.
+    </p>
+
+    <table style="width: 100%; border-collapse: collapse; font-size: 0.95em;">
+        <thead>
+            <tr style="background: #f8fafc; text-align: left; border-bottom: 2px solid var(--border-color);">
+                <th style="padding: 8px 12px;">Kürzel</th>
+                <th style="padding: 8px 12px;">Name</th>
+                <th style="padding: 8px 12px;">Erstpasswort</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for z in neue_zugaenge %}
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 8px 12px; font-weight: 600;">{{ z.kuerzel }}</td>
+                    <td style="padding: 8px 12px;">{{ z.name }}</td>
+                    <td style="padding: 8px 12px; font-family: monospace; font-size: 1.05em; letter-spacing: 0.04em;">{{ z.passwort }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="margin-top: 15px;">
+        <button type="button" id="zugaenge-drucken" class="btn" style="border: 1px solid var(--border-color); color: var(--text-dark); padding: 8px 16px; border-radius: 6px; cursor: pointer; background: #fff;">Drucken</button>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var knopf = document.getElementById('zugaenge-drucken');
+        if (knopf) {
+            knopf.addEventListener('click', function () { window.print(); });
+        }
+    })();
+</script>
+{% endif %}

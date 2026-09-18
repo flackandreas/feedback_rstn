@@ -1,6 +1,8 @@
 {% extends "base.twig" %}
 
 {% block content %}
+
+{% include 'partials/_neue_zugaenge.twig' %}
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <h2>Systemverwaltung & Datenpflege</h2>
     <a href="/admin_dashboard.php" class="btn" style="border: 1px solid var(--border-color); color: var(--text-dark); padding: 8px 16px; border-radius: 6px; text-decoration: none;">&larr; Zurück</a>
@@ -11,6 +13,13 @@
    ===================================================================== #}
 <div class="content-box">
     <h3 style="border-left: 4px solid #8e44ad; padding-left: 10px;">Lehrkräfte CSV-Import</h3>
+{% if portal_aktiv %}
+    <p style="color: var(--text-muted); margin-bottom: 0;">
+        Konten werden am <a href="{{ portal_adresse }}/verwaltung/benutzer">SchulOS-Portal</a> verwaltet – dort
+        gilt eine Liste für alle Module. Hier ist nichts einzulesen: der Eintrag entsteht, sobald sich die
+        Person zum ersten Mal in diesem Modul anmeldet.
+    </p>
+{% else %}
     <p style="color: var(--text-muted); margin-bottom: 15px;">
         Importiert Lehrkräfte aus einer CSV-Datei mit den Spalten
         <strong>Kürzel, Nachname, Vorname, E-Mail</strong>. Die Reihenfolge ist egal, solange die erste Zeile
@@ -26,7 +35,7 @@ WIN;Winter;Bernd;bernd.winter@schule.de</pre>
             <li>Dateien aus Excel funktionieren auch mit Umlauten – die Kodierung wird umgewandelt.</li>
             <li>Das ältere Format <code>Kürzel;Name;E-Mail</code> wird weiterhin gelesen.</li>
             <li>Bereits vorhandene Kürzel werden übersprungen, nichts wird überschrieben.</li>
-            <li>Das Passwort neuer Zugänge ist <code>lehrer</code> und muss bei der ersten Anmeldung geändert werden.</li>
+            <li>Jedes neue Konto bekommt ein eigenes Zufallspasswort. Es wird nach dem Import <strong>einmalig angezeigt</strong> und muss bei der ersten Anmeldung geändert werden.</li>
         </ul>
     </details>
     <form method="POST" action="/admin_system.php" enctype="multipart/form-data" class="modern-form" style="max-width: 500px;">
@@ -39,6 +48,7 @@ WIN;Winter;Bernd;bernd.winter@schule.de</pre>
             <button type="submit" class="button-primary" style="background-color: #8e44ad; width: auto;">Import starten</button>
         </div>
     </form>
+{% endif %}
 </div>
 
 {# =====================================================================

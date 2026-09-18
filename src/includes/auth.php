@@ -76,6 +76,32 @@ function authenticate_user($conn, $kuerzel, $password) {
 }
 
 /**
+ * Erzeugt ein Erstpasswort fuer ein neu angelegtes Konto.
+ *
+ * Vorher vergaben beide Importe ein festes, im Quelltext lesbares Passwort
+ * ("lehrer" bzw. "Start123!") - fuer jede importierte Lehrkraft dasselbe. Der
+ * Wechselzwang aus der Spaltenvorgabe half wenig: wer das Passwort kannte,
+ * konnte den Wechsel selbst vollziehen und das Konto uebernehmen, bevor die
+ * Lehrkraft sich zum ersten Mal anmeldete.
+ *
+ * Das Alphabet laesst 0, 1 und l weg: das Passwort wird auf Papier
+ * weitergegeben und abgetippt, und eine Verwechslung kostet einen Anruf.
+ */
+function erstes_passwort($laenge = 12) {
+    $alphabet = 'abcdefghijkmnopqrstuvwxyz23456789';
+    $grenze = strlen($alphabet) - 1;
+    $laenge = (int)(ceil(max(8, (int)$laenge) / 4) * 4);
+
+    $zeichen = '';
+    for ($i = 0; $i < $laenge; $i++) {
+        $zeichen .= $alphabet[random_int(0, $grenze)];
+    }
+
+    // In Vierergruppen: "k7fp-r3mq-x9tz" liest sich vom Zettel besser.
+    return implode('-', str_split($zeichen, 4));
+}
+
+/**
  * Simple CSRF token generation
  */
 function get_csrf_token() {

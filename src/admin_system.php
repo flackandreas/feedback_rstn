@@ -129,6 +129,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['teacher_csv'])) {
         exit;
     }
     
+    // Am Portal gehoeren die Konten dorthin: eine Liste fuer alle Module. Hier
+    // schriebe der Import in denselben Bestand, und das Portal ueberschriebe
+    // Name, E-Mail und Rechte bei der naechsten Anmeldung ohnehin wieder.
+    // Eine ausgeblendete Maske ist keine Sperre, deshalb auch hier.
+    if (sso_aktiv()) {
+        zurueck_zur_verwaltung(null, 'Konten werden am Portal verwaltet. Dort einlesen – hier entsteht der Eintrag bei der ersten Anmeldung von selbst.');
+    }
+
     $file = $_FILES['teacher_csv'];
     if ($file['error'] !== UPLOAD_ERR_OK) {
         zurueck_zur_verwaltung(null, 'Die Datei konnte nicht hochgeladen werden.');
@@ -159,9 +167,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['teacher_csv'])) {
     $hinzugefuegt = 0;
     $uebersprungen = 0;
     $unbrauchbar = 0;
+    $zugaenge = [];
 
-    $stmt = $conn->prepare('INSERT IGNORE INTO teachers (kuerzel, name, email, passwort_hash) VALUES (?, ?, ?, ?)');
-    $standard_passwort = password_hash('lehrer', PASSWORD_DEFAULT);
+    // Je Konto ein eigenes Zufallspasswort. Vorher bekam jede importierte
+    // Lehrkraft dasselbe, im Quelltext stehende "lehrer" - wer es kannte,
+    // uebernahm jedes Konto, das noch niemand benutzt hatte.
+    $stmt = $conn->prepare('INSERT IGNORE INTO teachers (kuerzel, name, email, passwort_hash, force_password_change) VALUES (?, ?, ?, ?, 1)');
 
     while (($zeile = fgetcsv($handle, 4000, $trennzeichen)) !== false) {
         if ($zeile === [null] || $zeile === []) {
@@ -175,15 +186,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['teacher_csv'])) {
             continue;
         }
 
+        $passwort = erstes_passwort();
+        $kuerzel = mb_substr($felder['kuerzel'], 0, 50);
+        $name = mb_substr($felder['name'], 0, 100);
+
         $stmt->execute([
-            mb_substr($felder['kuerzel'], 0, 50),
-            mb_substr($felder['name'], 0, 100),
+            $kuerzel,
+            $name,
             $felder['email'] !== '' ? mb_substr($felder['email'], 0, 255) : null,
-            $standard_passwort,
+            password_hash($passwort, PASSWORD_DEFAULT),
         ]);
 
         if ($stmt->rowCount() > 0) {
             $hinzugefuegt++;
+            $zugaenge[] = ['kuerzel' => $kuerzel, 'name' => $name, 'passwort' => $passwort];
         } else {
             $uebersprungen++;
         }
@@ -195,6 +211,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['teacher_csv'])) {
     if ($unbrauchbar > 0) {
         $meldung .= sprintf(', %d Zeile(n) ohne Kürzel oder Name', $unbrauchbar);
     }
+
+    // Genau einmal anzeigen: ohne diese Liste kommt niemand in sein neues
+    // Konto. Sie steht in der Sitzung, nicht in der Datenbank.
+    $_SESSION['neue_zugaenge'] = $zugaenge;
 
     zurueck_zur_verwaltung($meldung . '.');
 }
@@ -313,9 +333,12 @@ function csv_nach_utf8($text) {
 $csrf_token = get_csrf_token();
 $flash_success = $_SESSION['flash_success'] ?? null;
 $flash_error = $_SESSION['flash_error'] ?? null;
-unset($_SESSION['flash_success'], $_SESSION['flash_error']);
+$neue_zugaenge = $_SESSION['neue_zugaenge'] ?? [];
+unset($_SESSION['flash_success'], $_SESSION['flash_error'], $_SESSION['neue_zugaenge']);
 
 echo $twig->render('admin_system.twig', [
+    'neue_zugaenge' => $neue_zugaenge,
+    'portal_aktiv' => sso_aktiv(),
     'calendar_feeds' => $conn->query('SELECT * FROM calendar_feeds ORDER BY name ASC')->fetchAll(),
     'aud_tage_sichtbar' => app_schalter($conn, 'aud_tage_uebersicht', false),
     'csrf_token' => $csrf_token,

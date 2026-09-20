@@ -135,7 +135,7 @@
                             </td>
                             <td>
                                 {% if r.attachment_path %}
-                                    <a href="/{{ r.attachment_path }}" target="_blank" class="button-secondary" style="padding: 2px 8px; font-size: 0.8em;">Ansehen</a>
+                                    <a href="/attest.php?id={{ r.id }}" target="_blank" class="button-secondary" style="padding: 2px 8px; font-size: 0.8em;">Ansehen</a>
                                 {% else %}
                                     -
                                 {% endif %}
@@ -206,7 +206,7 @@
                             </td>
                             <td>
                                 {% if r.attachment_path %}
-                                    <a href="/{{ r.attachment_path }}" target="_blank" class="button-secondary" style="padding: 2px 8px; font-size: 0.8em;">Ansehen</a>
+                                    <a href="/attest.php?id={{ r.id }}" target="_blank" class="button-secondary" style="padding: 2px 8px; font-size: 0.8em;">Ansehen</a>
                                 {% else %}
                                     -
                                 {% endif %}
@@ -274,7 +274,7 @@
                         <td>{{ r.details|default('-') }}</td>
                         <td>
                             {% if r.attachment_path %}
-                                <a href="/{{ r.attachment_path }}" target="_blank">Ansehen</a>
+                                <a href="/attest.php?id={{ r.id }}" target="_blank">Ansehen</a>
                             {% else %}-{% endif %}
                         </td>
                     </tr>

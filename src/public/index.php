@@ -35,6 +35,7 @@ $routes = [
     'admin/krankmeldungen' => 'admin_sick_leaves.php',
     'admin/sick-leaves' => 'admin_sick_leaves.php',
     'krankmeldung' => 'krankmeldung.php',
+    'attest' => 'attest.php',
     'antrag/freistellung' => 'antrag_freistellung.php',
     'antrag/ausserunterrichtlich' => 'antrag_ausserunterrichtlich.php',
     'meine-antraege' => 'meine_antraege.php',

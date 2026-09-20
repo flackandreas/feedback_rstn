@@ -114,6 +114,7 @@ feedback_rstn/
 │   ├── logout.php              # Session-Beendigung
 │   ├── change_password.php     # Passwortänderung
 │   ├── krankmeldung.php        # Krankmeldung einreichen
+│   ├── attest.php              # Attest-Auslieferung mit Berechtigungsprüfung
 │   ├── antrag_freistellung.php # Freistellungsantrag
 │   ├── antrag_ausserunterrichtlich.php # AUD-Antrag
 │   ├── meine_antraege.php      # Eigene Anträge der Lehrkraft
@@ -132,13 +133,17 @@ feedback_rstn/
 │   │   ├── database.php        # DB-Verbindung & Dotenv-Initialisierung
 │   │   ├── mail.php            # SMTP-Konfiguration
 │   │   └── config_untis.php    # Untis-Schnittstellen-Konfiguration
+│   ├── bin/
+│   │   └── migrate_atteste.php # Einmalig: Altbestand der Atteste verschieben
 │   ├── includes/
+│   │   ├── ablage.php          # Dateiablage außerhalb des DocumentRoot
 │   │   ├── auth.php            # Session, Auth-Prüfung, CSRF-Schutz
 │   │   ├── admin_helpers.php   # Hilfsfunktionen für Admin-Auswertungen
 │   │   ├── calendar_helper.php# Kalender-Hilfsfunktionen
 │   │   ├── mailer.php          # PHPMailer Wrapper
 │   │   ├── migrations.php      # Automatische DB-Schema-Migrationen
 │   │   └── twig_setup.php      # Twig-Initialisierung
+│   ├── storage/                # Atteste & SSO-Zwischenspeicher (gitignored)
 │   ├── templates/              # Twig-Templates
 │   └── vendor/                 # Composer-Abhängigkeiten
 └── db-data/                    # Persistente MariaDB-Daten (gitignored)
@@ -349,4 +354,25 @@ Das Skript `src/includes/migrations.php` führt beim Start automatisch ausstehen
 - **CSRF-Schutz**: CSRF-Token-Prüfung bei allen formularbasierten Aktionen.
 - **Prepared Statements**: PDO Prepared Statements gegen SQL-Injections across all queries.
 - **Session Security**: Sichere Session-Handling-Mechanismen (`httponly`, `SameSite=Strict`).
+- **Atteste**: Hochgeladene Arbeitsunfähigkeitsbescheinigungen liegen unter
+  `src/storage/atteste/` außerhalb des DocumentRoot, tragen einen Zufallsnamen
+  aus `random_bytes()` und werden ausschließlich über `attest.php` ausgeliefert
+  – sichtbar nur für die einreichende Lehrkraft und die Schulleitung. Beim
+  Jahresabschluss werden die Dateien zusammen mit den Datensätzen gelöscht.
+
+### Umstieg bestehender Installationen
+
+Bis zur Umstellung lagen die Atteste unter `src/public/uploads/` und waren über
+ihre Adresse ohne Anmeldung abrufbar. Nach dem Update einmalig ausführen:
+
+```bash
+# Probelauf – verändert nichts
+docker compose exec web php /var/www/html/bin/migrate_atteste.php
+
+# Dateien tatsächlich verschieben und Pfade in der Datenbank umschreiben
+docker compose exec web php /var/www/html/bin/migrate_atteste.php --anwenden
+```
+
+Bis der Lauf erfolgt ist, bleiben die Altdateien über `attest.php` erreichbar;
+`src/public/uploads/.htaccess` sperrt ihren direkten Abruf bereits ab.
 

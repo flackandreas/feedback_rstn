@@ -1,7 +1,39 @@
-# Disable PHP execution inside the uploads folder for security
-<FilesMatch "\.(php|phtml|php3|php4|php5|php7|php8|phps)$">
-    Order Deny,Allow
+# src/public/uploads/.htaccess
+#
+# Dieses Verzeichnis liefert nichts mehr aus.
+#
+# Frueher lagen hier die Atteste zu Krankmeldungen, direkt verlinkt aus der
+# Uebersicht der Schulleitung. Die Regeln weiter unten schalten nur die
+# Ausfuehrung von PHP ab - den Abruf einer PDF-Datei verhindern sie nicht.
+# Wer die Adresse hatte, bekam die Datei, angemeldet oder nicht; und die
+# Adresse bestand aus uniqid(), also aus einem Zeitstempel in
+# Hexadezimalschreibweise, plus dem Originalnamen der Datei.
+#
+# Neue Atteste liegen unter src/storage/atteste/ ausserhalb des DocumentRoot
+# und werden ausschliesslich ueber attest.php ausgeliefert, das prueft, wer
+# sie sehen darf. Der Altbestand hier bleibt fuer attest.php erreichbar -
+# es liest die Dateien vom Dateisystem, nicht ueber den Webserver -, bis
+# bin/migrate_atteste.php ihn verschoben hat.
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
     Deny from all
+</IfModule>
+
+# Zweite Ebene fuer den Fall, dass die Sperre oben durch eine
+# <Directory>-Anweisung der Serverkonfiguration ueberschrieben wird:
+# Ausfuehrung von PHP bleibt hier in jedem Fall abgeschaltet.
+<FilesMatch "\.(php|phtml|php3|php4|php5|php7|php8|phps)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
 </FilesMatch>
 
 RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8

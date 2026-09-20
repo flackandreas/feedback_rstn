@@ -19,6 +19,7 @@
  */
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/ablage.php';
 
 require_admin();
 $conn = db_connect();
@@ -88,8 +89,16 @@ if ($action === 'export') {
     $csv = "ID;Lehrer_ID;Von;Bis;Notizen;Material;Anhang;Erstellt_am\n";
     foreach ($data as $r) {
         $csv .= implode(';', array_values($r)) . "\n";
-        if (!empty($r['attachment_path']) && file_exists(__DIR__ . '/public/' . $r['attachment_path'])) {
-            copy(__DIR__ . '/public/' . $r['attachment_path'], $tmp_dir . "/Anhaenge/" . basename($r['attachment_path']));
+        // Der Anhang liegt seit der Umstellung in der Ablage ausserhalb des
+        // DocumentRoot; ablage_aufloesen() kennt auch noch den Altbestand
+        // unter public/uploads/.
+        $anhang = !empty($r['attachment_path']) ? ablage_aufloesen($r['attachment_path']) : null;
+        if ($anhang !== null) {
+            // Im Archiv traegt das Attest die ID seiner Krankmeldung, nicht
+            // seinen Zufallsnamen - so laesst es sich der Zeile in der CSV
+            // zuordnen.
+            $endung = strtolower(pathinfo($anhang, PATHINFO_EXTENSION));
+            copy($anhang, $tmp_dir . "/Anhaenge/Attest_" . $r['id'] . '.' . $endung);
         }
     }
     file_put_contents($tmp_dir . "/Krankmeldungen/krankmeldungen_$year.csv", "\xEF\xBB\xBF" . $csv);
@@ -149,10 +158,23 @@ if ($action === 'cleanup' && isset($_POST['confirm_year'])) {
     [$von, $bis] = schuljahr_zeitraum($beginn);
     $schuljahr = sprintf('%d/%02d', $beginn, ($beginn + 1) % 100);
 
+    // Die Atteste liegen im Dateisystem, nicht in der Datenbank. Bisher
+    // loeschte der Abschluss nur die Zeilen - die PDF-Dateien blieben
+    // liegen, Jahr fuer Jahr, ohne dass noch irgendetwas auf sie zeigte.
+    // Ein Loeschkonzept, das die Gesundheitsdaten stehen laesst, ist keines.
+    $stmt = $conn->prepare("SELECT attachment_path FROM sick_leave_reports
+                             WHERE date_from BETWEEN ? AND ? AND attachment_path IS NOT NULL");
+    $stmt->execute([$von, $bis]);
+    $atteste = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
     // Delete and log
     $stmt = $conn->prepare("DELETE FROM sick_leave_reports WHERE date_from BETWEEN ? AND ?");
     $stmt->execute([$von, $bis]);
     $count_sick = $stmt->rowCount();
+
+    foreach ($atteste as $attest) {
+        ablage_loeschen($attest);
+    }
 
     $stmt = $conn->prepare("DELETE FROM extracurricular_requests WHERE event_date BETWEEN ? AND ?");
     $stmt->execute([$von, $bis]);

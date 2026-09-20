@@ -24,6 +24,33 @@ set -e
 # vom "gesendet am" bis zum Zeitpunkt, an dem eine Krankmeldung gelesen wurde.
 printf 'date.timezone = %s\n' "${TZ:-Europe/Berlin}" > /usr/local/etc/php/conf.d/zeitzone.ini
 
+# Ablage fuer Atteste, ausserhalb des DocumentRoot.
+#
+# Enger als public/uploads/: Gesundheitsdaten nach Art. 9 DSGVO. Kein
+# Leserecht fuer andere, und ausgeliefert werden die Dateien nur ueber
+# attest.php, das prueft, wer sie sehen darf.
+ABLAGE=/var/www/html/storage
+
+mkdir -p "$ABLAGE/atteste" 2>/dev/null || true
+
+if [ -d "$ABLAGE" ]; then
+    chgrp www-data "$ABLAGE" "$ABLAGE/atteste" 2>/dev/null || true
+    # Die Wurzel braucht Gruppenschreibrecht: includes/sso.php legt darunter
+    # storage/sso fuer den Zwischenspeicher der Portal-Anbindung an, und das
+    # tut es als www-data.
+    chmod 2770 "$ABLAGE"         2>/dev/null || true
+    chmod 2770 "$ABLAGE/atteste" 2>/dev/null || true
+    find "$ABLAGE/atteste" -type f -exec chmod 640 {} + 2>/dev/null || true
+
+    if ! su -s /bin/sh www-data -c "test -w $ABLAGE/atteste"; then
+        echo "feedback_rstn: WARNUNG - $ABLAGE/atteste ist fuer www-data nicht beschreibbar." >&2
+        echo "feedback_rstn: Atteste zu Krankmeldungen lassen sich nicht speichern." >&2
+        echo "feedback_rstn: Auf dem Host abhelfen mit:" >&2
+        echo "feedback_rstn:   sudo chown -R \$USER:www-data src/storage" >&2
+        echo "feedback_rstn:   sudo chmod -R g+w src/storage" >&2
+    fi
+fi
+
 UPLOADS=/var/www/html/public/uploads
 
 if [ -d "$UPLOADS" ]; then

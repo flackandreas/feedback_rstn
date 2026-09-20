@@ -1,0 +1,19 @@
+includes:
+    # TODO: re-enable these rules once they are compatible with modern phpstan
+	# https://github.com/thecodingmachine/phpstan-strict-rules/issues/66
+    # - vendor/thecodingmachine/phpstan-strict-rules/phpstan-strict-rules.neon
+    - phar://phpstan.phar/conf/bleedingEdge.neon
+
+parameters:
+    paths:
+        - ./lib
+        - ./tests
+    # The level 9 is the highest level (with check for mixed type)
+    level: 8
+    ignoreErrors:
+        # This must be ignored because there is no way of fixing it.
+        -
+            message: '#^Function Safe\\passthru\(\) never assigns null to &\$result_code so it can be removed from the by\-ref type\.$#'
+            identifier: parameterByRef.unusedType
+            count: 1
+            path: lib/special_cases.php

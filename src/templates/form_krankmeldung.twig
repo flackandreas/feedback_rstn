@@ -42,7 +42,7 @@
         <div class="form-group" style="margin-top: 15px;">
             <label for="attachment">Arbeitsunfähigkeitsbescheinigung (AU) - PDF, JPG, PNG (Optional)</label>
             {% if editing_request and editing_request.attachment_path %}
-                <p style="font-size: 0.9em; margin-bottom: 5px;">Eine Datei wurde bereits hochgeladen: <a href="{{ editing_request.attachment_path }}" target="_blank">Datei ansehen</a>. Laden Sie hier eine neue Datei hoch, um sie zu ersetzen.</p>
+                <p style="font-size: 0.9em; margin-bottom: 5px;">Eine Datei wurde bereits hochgeladen: <a href="/attest.php?id={{ editing_request.id }}" target="_blank">Datei ansehen</a>. Laden Sie hier eine neue Datei hoch, um sie zu ersetzen.</p>
             {% endif %}
             <input type="file" id="attachment" name="attachment" accept=".pdf,image/jpeg,image/png" style="padding: 10px; border: 1px dashed var(--border-color); width: 100%;">
         </div>

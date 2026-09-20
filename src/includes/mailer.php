@@ -33,6 +33,15 @@ function send_notification_email($to, $subject, $body) {
     }
     
     $config = require $configPath;
+
+    if (($config['host'] ?? '') === '') {
+        // Kein SMTP eingerichtet. Frueher stand hier der Platzhalter
+        // "smtp.example.com" und PHPMailer lief in einen Zeitablauf.
+        error_log('Mailer: SMTP_HOST ist nicht gesetzt, es wird nichts versendet.');
+
+        return false;
+    }
+
     $mail = new PHPMailer(true);
 
     try {

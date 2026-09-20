@@ -1,0 +1,16 @@
+--TEST--
+"script_names" function
+--TEMPLATE--
+{{ script_names('UNKNOWN')|length }}
+{{ script_names()|length > 200 ? 'more than 200' : 'less than 200' }}
+{{ script_names('fr')|length > 200 ? 'more than 200' : 'less than 200' }}
+{{ script_names()['Marc'] }}
+{{ script_names('fr')['Marc'] }}
+--DATA--
+return [];
+--EXPECT--
+0
+more than 200
+more than 200
+Marchen
+Marchen

@@ -1,0 +1,12 @@
+--TEST--
+"country_timezones" function
+--TEMPLATE--
+{{ country_timezones('UNKNOWN')|length }}
+{{ country_timezones('FR')|join(', ') }}
+{{ country_timezones('US')[0:2]|join(', ') }}
+--DATA--
+return [];
+--EXPECT--
+0
+Europe/Paris
+America/Adak, America/Anchorage

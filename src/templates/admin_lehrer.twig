@@ -131,7 +131,13 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{# SweetAlert2 kommt aus base.twig, von /vendor/sweetalert2/ auf dem
+   eigenen Server. Hier stand bis zuletzt eine zweite Einbindung ueber
+   cdn.jsdelivr.net - die Bibliothek wurde also zweimal geladen, die
+   zweite davon von einem Dritten, der dadurch bei jedem Aufruf dieser
+   Seite die Adresse der Schulleitung sah. Sie war ausserdem der
+   einzige Grund, warum die Content-Security-Policy einen fremden
+   Server fuer Skripte erlauben musste. #}
 <script>
     const modal = document.getElementById('lehrerModal');
     

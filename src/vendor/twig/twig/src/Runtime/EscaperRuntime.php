@@ -36,10 +36,8 @@ final class EscaperRuntime implements RuntimeExtensionInterface
      *
      * @param string                                            $strategy The strategy name that should be used as a strategy in the escape call
      * @param callable(string $string, string $charset): string $callable A valid PHP callable
-     *
-     * @return void
      */
-    public function setEscaper($strategy, callable $callable)
+    public function setEscaper($strategy, callable $callable): void
     {
         $this->escapers[$strategy] = $callable;
     }
@@ -56,10 +54,8 @@ final class EscaperRuntime implements RuntimeExtensionInterface
 
     /**
      * @param array<class-string<\Stringable>, string[]> $safeClasses
-     *
-     * @return void
      */
-    public function setSafeClasses(array $safeClasses = [])
+    public function setSafeClasses(array $safeClasses = []): void
     {
         $this->safeClasses = [];
         $this->safeLookup = [];
@@ -71,10 +67,8 @@ final class EscaperRuntime implements RuntimeExtensionInterface
     /**
      * @param class-string<\Stringable> $class
      * @param string[]                  $strategies
-     *
-     * @return void
      */
-    public function addSafeClass(string $class, array $strategies)
+    public function addSafeClass(string $class, array $strategies): void
     {
         $class = ltrim($class, '\\');
         if (!isset($this->safeClasses[$class])) {
@@ -124,7 +118,7 @@ final class EscaperRuntime implements RuntimeExtensionInterface
                 }
 
                 $string = (string) $string;
-            } elseif (\in_array($strategy, ['html', 'js', 'css', 'html_attr', 'url'], true)) {
+            } elseif (\in_array($strategy, ['html', 'js', 'css', 'html_attr', 'html_attr_relaxed', 'url'], true)) {
                 // we return the input as is (which can be of any type)
                 return $string;
             }
@@ -191,7 +185,7 @@ final class EscaperRuntime implements RuntimeExtensionInterface
                     throw new RuntimeError('The string to escape is not a valid UTF-8 string.');
                 }
 
-                $string = preg_replace_callback('#[^a-zA-Z0-9,\._]#Su', function ($matches) {
+                $string = preg_replace_callback('#[^a-zA-Z0-9,\._]#Su', static function ($matches) {
                     $char = $matches[0];
 
                     /*
@@ -243,7 +237,7 @@ final class EscaperRuntime implements RuntimeExtensionInterface
                     throw new RuntimeError('The string to escape is not a valid UTF-8 string.');
                 }
 
-                $string = preg_replace_callback('#[^a-zA-Z0-9]#Su', function ($matches) {
+                $string = preg_replace_callback('#[^a-zA-Z0-9]#Su', static function ($matches) {
                     $char = $matches[0];
 
                     return \sprintf('\\%X ', 1 === \strlen($char) ? \ord($char) : mb_ord($char, 'UTF-8'));
@@ -256,6 +250,7 @@ final class EscaperRuntime implements RuntimeExtensionInterface
                 return $string;
 
             case 'html_attr':
+            case 'html_attr_relaxed':
                 if ('UTF-8' !== $charset) {
                     $string = $this->convertEncoding($string, 'UTF-8', $charset);
                 }
@@ -264,7 +259,12 @@ final class EscaperRuntime implements RuntimeExtensionInterface
                     throw new RuntimeError('The string to escape is not a valid UTF-8 string.');
                 }
 
-                $string = preg_replace_callback('#[^a-zA-Z0-9,\.\-_]#Su', function ($matches) {
+                $regex = match ($strategy) {
+                    'html_attr' => '#[^a-zA-Z0-9,\.\-_]#Su',
+                    'html_attr_relaxed' => '#[^a-zA-Z0-9,\.\-_:@\[\]]#Su',
+                };
+
+                $string = preg_replace_callback($regex, static function ($matches) {
                     /**
                      * This function is adapted from code coming from Zend Framework.
                      *
@@ -323,7 +323,7 @@ final class EscaperRuntime implements RuntimeExtensionInterface
                     return $this->escapers[$strategy]($string, $charset);
                 }
 
-                $validStrategies = implode('", "', array_merge(['html', 'js', 'url', 'css', 'html_attr'], array_keys($this->escapers)));
+                $validStrategies = implode('", "', array_merge(['html', 'js', 'url', 'css', 'html_attr', 'html_attr_relaxed'], array_keys($this->escapers)));
 
                 throw new RuntimeError(\sprintf('Invalid escaping strategy "%s" (valid ones: "%s").', $strategy, $validStrategies));
         }

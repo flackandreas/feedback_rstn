@@ -16,7 +16,10 @@ db-data/
 .env
 .env.*
 *.secret
-Oauth/*.json
+# Das ganze Verzeichnis, nicht nur die JSON-Dateien: hier lag eine
+# Word-Datei mit der Client-ID und dem Clientschluessel eines
+# Google-OAuth-Clients, und die Regel "Oauth/*.json" hat sie durchgelassen.
+Oauth/
 
 
 # Logs

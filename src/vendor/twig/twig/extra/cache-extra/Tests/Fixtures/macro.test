@@ -1,0 +1,21 @@
+--TEST--
+macro call inside "cache" tag
+--TEMPLATE--
+{% macro out(bar) %}{{ bar }}{% endmacro %}
+1
+{% cache "testmacro1" ttl(3) %}
+    2
+    {{ _self.out(3) }}
+    {{ _self.out(4) }}
+{% endcache %}
+5
+{{ _self.out(6) }}
+--DATA--
+return []
+--EXPECT--
+1
+    2
+    3
+    4
+5
+6

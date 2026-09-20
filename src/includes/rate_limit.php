@@ -58,18 +58,22 @@ function rate_limit_reset(PDO $conn, string $action, string $subject): void
     }
 }
 
-/** Adresse des Anfragenden, hinter dem Reverse-Proxy aus X-Forwarded-For. */
+/**
+ * Adresse des Anfragenden.
+ *
+ * Hier stand bis zuletzt: nimm den ersten Eintrag aus X-Forwarded-For, wenn
+ * es eine gueltige IP ist. Diesen Kopf setzt aber der Aufrufer selbst - wer
+ * ihn bei jedem Versuch aendert, bekommt jedes Mal einen frischen Zaehler.
+ * Damit war jede Grenze wirkungslos, die auf der Adresse beruht: die 15
+ * Anmeldeversuche je Viertelstunde ebenso wie das Autologin.
+ *
+ * Die Pruefung steckt jetzt in request_client_ip(), zusammen mit
+ * TRUSTED_PROXIES. Diese Funktion bleibt als Name bestehen, weil sie an
+ * mehreren Stellen aufgerufen wird.
+ */
 function rate_limit_client_ip(): string
 {
-    $forwarded = (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? '');
-    if ($forwarded !== '') {
-        $erste = trim(explode(',', $forwarded)[0]);
-        if (filter_var($erste, FILTER_VALIDATE_IP)) {
-            return $erste;
-        }
-    }
+    require_once __DIR__ . '/request.php';
 
-    $entfernt = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
-
-    return $entfernt !== '' ? $entfernt : 'unbekannt';
+    return request_client_ip();
 }

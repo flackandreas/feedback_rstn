@@ -114,6 +114,7 @@ feedback_rstn/
 │   ├── logout.php              # Session-Beendigung
 │   ├── change_password.php     # Passwortänderung
 │   ├── krankmeldung.php        # Krankmeldung einreichen
+│   ├── attest.php              # Attest-Auslieferung mit Berechtigungsprüfung
 │   ├── antrag_freistellung.php # Freistellungsantrag
 │   ├── antrag_ausserunterrichtlich.php # AUD-Antrag
 │   ├── meine_antraege.php      # Eigene Anträge der Lehrkraft
@@ -131,14 +132,17 @@ feedback_rstn/
 │   ├── config/
 │   │   ├── database.php        # DB-Verbindung & Dotenv-Initialisierung
 │   │   ├── mail.php            # SMTP-Konfiguration
-│   │   └── config_untis.php    # Untis-Schnittstellen-Konfiguration
+│   ├── bin/
+│   │   └── migrate_atteste.php # Einmalig: Altbestand der Atteste verschieben
 │   ├── includes/
+│   │   ├── ablage.php          # Dateiablage außerhalb des DocumentRoot
 │   │   ├── auth.php            # Session, Auth-Prüfung, CSRF-Schutz
 │   │   ├── admin_helpers.php   # Hilfsfunktionen für Admin-Auswertungen
 │   │   ├── calendar_helper.php# Kalender-Hilfsfunktionen
 │   │   ├── mailer.php          # PHPMailer Wrapper
 │   │   ├── migrations.php      # Automatische DB-Schema-Migrationen
 │   │   └── twig_setup.php      # Twig-Initialisierung
+│   ├── storage/                # Atteste & SSO-Zwischenspeicher (gitignored)
 │   ├── templates/              # Twig-Templates
 │   └── vendor/                 # Composer-Abhängigkeiten
 └── db-data/                    # Persistente MariaDB-Daten (gitignored)
@@ -161,7 +165,34 @@ DB_NAME=db_feedback
 ISERV_HOST=https://iserv.meine-schule.de
 ISERV_CLIENT_ID=deine-client-id
 ISERV_CLIENT_SECRET=dein-client-secret
+
+# Vermittler, deren X-Forwarded-For ausgewertet werden darf.
+# Einzeladressen oder CIDR-Bereiche, kommagetrennt; "private" steht für die
+# privaten Netze und die Rückschleife. Bleibt der Wert leer, zählt allein die
+# Adresse der Verbindung.
+TRUSTED_PROXIES=172.16.0.0/12
+
+# E-Mail-Versand. Bleibt SMTP_HOST leer, wird nichts versendet.
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+SMTP_VERSCHLUESSELUNG=tls
+SMTP_ABSENDER=noreply@schule.de
+SMTP_ABSENDERNAME=
 ```
+
+### Vertrauenswürdige Vermittler (`TRUSTED_PROXIES`)
+
+Hinter einem Reverse Proxy kommt jede Anfrage von dessen Adresse. Welche
+Adresse der Anfragende wirklich hat, steht in `X-Forwarded-For` — einem Kopf,
+den aber auch jeder Aufrufer selbst setzen kann. Ausgewertet wird er deshalb
+nur, wenn die Verbindung von einem hier eingetragenen Vermittler kommt.
+
+Ohne diesen Wert teilen sich alle Zugriffe die Adresse des Proxys, und die
+Begrenzung der Anmeldeversuche trifft dann das ganze Kollegium gemeinsam. Ein
+Hinweis im Fehlerprotokoll weist darauf hin, sobald der Kopf auftaucht und
+`TRUSTED_PROXIES` leer ist.
 
 ### Datenbank
 
@@ -174,20 +205,13 @@ Für die Anbindung an den schuleigenen IServ-Server müssen `ISERV_HOST`, `ISERV
 
 ### E-Mail / SMTP
 
-Die SMTP-Konfiguration befindet sich in **`src/config/mail.php`**. Tragen Sie dort Ihre SMTP-Zugangsdaten für den Benachrichtigungsversand ein:
+Die Zugangsdaten stehen in der `.env` (siehe oben), nicht mehr in
+`src/config/mail.php`. Diese Datei liest sie nur noch aus der Umgebung.
 
-```php
-return [
-    'host'       => 'smtp.example.com',
-    'port'       => 587,
-    'username'   => 'user@example.com',
-    'password'   => 'secret',
-    'from_email' => 'noreply@schule.de',
-    'from_name'  => 'SchoolHub Feedback',
-    'encryption' => 'tls',
-    'auth'       => true
-];
-```
+Vorher stand dort ein Block mit Platzhaltern und der Aufforderung, die
+echten Zugangsdaten einzutragen — in einer Datei, die im Repository liegt.
+Bleibt `SMTP_HOST` leer, wird nichts versendet und ein Hinweis ins
+Fehlerprotokoll geschrieben.
 
 ---
 
@@ -349,4 +373,25 @@ Das Skript `src/includes/migrations.php` führt beim Start automatisch ausstehen
 - **CSRF-Schutz**: CSRF-Token-Prüfung bei allen formularbasierten Aktionen.
 - **Prepared Statements**: PDO Prepared Statements gegen SQL-Injections across all queries.
 - **Session Security**: Sichere Session-Handling-Mechanismen (`httponly`, `SameSite=Strict`).
+- **Atteste**: Hochgeladene Arbeitsunfähigkeitsbescheinigungen liegen unter
+  `src/storage/atteste/` außerhalb des DocumentRoot, tragen einen Zufallsnamen
+  aus `random_bytes()` und werden ausschließlich über `attest.php` ausgeliefert
+  – sichtbar nur für die einreichende Lehrkraft und die Schulleitung. Beim
+  Jahresabschluss werden die Dateien zusammen mit den Datensätzen gelöscht.
+
+### Umstieg bestehender Installationen
+
+Bis zur Umstellung lagen die Atteste unter `src/public/uploads/` und waren über
+ihre Adresse ohne Anmeldung abrufbar. Nach dem Update einmalig ausführen:
+
+```bash
+# Probelauf – verändert nichts
+docker compose exec web php /var/www/html/bin/migrate_atteste.php
+
+# Dateien tatsächlich verschieben und Pfade in der Datenbank umschreiben
+docker compose exec web php /var/www/html/bin/migrate_atteste.php --anwenden
+```
+
+Bis der Lauf erfolgt ist, bleiben die Altdateien über `attest.php` erreichbar;
+`src/public/uploads/.htaccess` sperrt ihren direkten Abruf bereits ab.
 

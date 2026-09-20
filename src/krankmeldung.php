@@ -6,6 +6,7 @@
 
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/ablage.php';
 require_once __DIR__ . '/includes/twig_setup.php';
 require_once __DIR__ . '/includes/migrations.php';
 run_all_migrations();
@@ -29,7 +30,18 @@ if ($edit_id) {
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $csrf_token = $_POST['csrf_token'] ?? '';
     $post_edit_id = $_POST['edit_id'] ?? null;
-    
+
+    // Uebersteigt die ganze Sendung post_max_size, verwirft PHP sie, bevor
+    // der Code sie sieht: $_POST und $_FILES sind dann leer. Ohne diesen
+    // Zweig scheitert als naechstes die Tokenpruefung, und die Lehrkraft
+    // liest "Sicherheitsfehler: Ungueltiger Token" - eine Meldung, die von
+    // einem zu grossen Attest so weit weg fuehrt wie moeglich.
+    if ($_POST === [] && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+        $_SESSION['flash_error'] = 'Die Datei ist zu groß. Bitte ein kleineres Bild oder PDF hochladen.';
+        header("Location: /krankmeldung.php");
+        exit;
+    }
+
     if (!verify_csrf_token($csrf_token)) {
         $_SESSION['flash_error'] = "Sicherheitsfehler: Ungültiger Token. Bitte laden Sie die Seite neu.";
     } else {
@@ -41,23 +53,48 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // Handle file upload
         $attachment_path = null;
         $attachment_fehler = false;
+        // Ein zu grosses Attest weist PHP ab, bevor der Code es sieht. Bisher
+        // fiel der ganze Block dann stillschweigend aus: die Krankmeldung ging
+        // durch, der Anhang fehlte, und die Bestaetigung sagte nichts davon.
+        $upload_fehler = (int) ($_FILES['attachment']['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($upload_fehler !== UPLOAD_ERR_OK && $upload_fehler !== UPLOAD_ERR_NO_FILE) {
+            $_SESSION['flash_error'] = match ($upload_fehler) {
+                UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE =>
+                    'Die Datei ist zu groß. Bitte ein kleineres Bild oder PDF hochladen.',
+                UPLOAD_ERR_PARTIAL =>
+                    'Die Datei wurde nur teilweise übertragen. Bitte erneut versuchen.',
+                default =>
+                    'Die Datei konnte nicht entgegengenommen werden. Bitte erneut versuchen.',
+            };
+            error_log('krankmeldung: Upload-Fehler ' . $upload_fehler);
+        }
+
         if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ERR_OK) {
-            $allowed_types = ['application/pdf', 'image/jpeg', 'image/png'];
+            // Die Endung kommt aus dem geprueften MIME-Typ, nicht aus dem
+            // Namen der hochgeladenen Datei.
+            $erlaubt = ['application/pdf' => 'pdf', 'image/jpeg' => 'jpg', 'image/png' => 'png'];
             $finfo = finfo_open(FILEINFO_MIME_TYPE);
             $mimeType = finfo_file($finfo, $_FILES['attachment']['tmp_name']);
             finfo_close($finfo);
-            if (in_array($mimeType, $allowed_types)) {
-                $filename = uniqid('au_') . '_' . basename($_FILES['attachment']['name']);
-                $upload_dir = __DIR__ . '/public/uploads/';
-                if (move_uploaded_file($_FILES['attachment']['tmp_name'], $upload_dir . $filename)) {
-                    $attachment_path = 'uploads/' . $filename;
-                } else {
+            if (isset($erlaubt[$mimeType])) {
+                // Ausserhalb des DocumentRoot, mit Zufallsnamen. Vorher lag
+                // das Attest unter public/uploads/ und war ueber seine
+                // Adresse fuer jeden abrufbar - geschuetzt allein durch einen
+                // Namen aus uniqid(), also aus einem Zeitstempel.
+                $attachment_path = ablage_speichern(
+                    $_FILES['attachment']['tmp_name'],
+                    'atteste',
+                    $erlaubt[$mimeType]
+                );
+
+                if ($attachment_path === null) {
                     // Frueher blieb dieser Fall stumm: Die Krankmeldung ging
                     // durch, das Attest verschwand, und die Lehrkraft bekam
                     // eine Bestaetigung fuer etwas, das nicht passiert ist.
                     // Die Meldung selbst soll trotzdem raus - sie ist das
                     // Dringende, das Attest laesst sich nachreichen.
-                    error_log('krankmeldung: Anhang nicht speicherbar in ' . $upload_dir
+                    error_log('krankmeldung: Anhang nicht speicherbar in '
+                              . ablage_wurzel() . '/atteste'
                               . ' (Schreibrecht fuer www-data pruefen)');
                     $attachment_fehler = true;
                 }
@@ -73,8 +110,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 if ($post_edit_id) {
                     // Update
                     if ($attachment_path) {
+                        // Das ersetzte Attest blieb bisher liegen. Erst den
+                        // alten Pfad merken, dann ueberschreiben, dann die
+                        // Datei loeschen - in dieser Reihenfolge, damit kein
+                        // Attest verschwindet, dessen Zeile noch darauf zeigt.
+                        $vorher = $conn->prepare('SELECT attachment_path FROM sick_leave_reports WHERE id = ? AND teacher_id = ?');
+                        $vorher->execute([$post_edit_id, $user_id]);
+                        $altesAttest = $vorher->fetchColumn();
+
                         $stmt = $conn->prepare("UPDATE sick_leave_reports SET date_from = ?, date_to = ?, notes = ?, material_link = ?, attachment_path = ?, modified_at = NOW(), is_seen = 0, seen_at = NULL WHERE id = ? AND teacher_id = ?");
                         $stmt->execute([$date_from, $date_to, $notes, $material_link, $attachment_path, $post_edit_id, $user_id]);
+
+                        if (is_string($altesAttest) && $altesAttest !== '' && $altesAttest !== $attachment_path) {
+                            ablage_loeschen($altesAttest);
+                        }
                     } else {
                         $stmt = $conn->prepare("UPDATE sick_leave_reports SET date_from = ?, date_to = ?, notes = ?, material_link = ?, modified_at = NOW(), is_seen = 0, seen_at = NULL WHERE id = ? AND teacher_id = ?");
                         $stmt->execute([$date_from, $date_to, $notes, $material_link, $post_edit_id, $user_id]);

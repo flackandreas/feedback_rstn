@@ -1,0 +1,33 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+  phpVersion: 70200
+
+  level: 6
+
+  paths:
+    - %currentWorkingDirectory%/bin/
+    - %currentWorkingDirectory%/src/
+    - %currentWorkingDirectory%/tests/
+
+  excludePaths:
+    - %currentWorkingDirectory%/tests/fixtures/phpstan/
+
+  type_perfect:
+    no_mixed_property: true
+    no_mixed_caller: true
+    null_over_false: true
+    narrow_param: false
+    narrow_return: false
+
+  ignoreErrors:
+    -
+      message: '#^Call to static method PHPUnit\\Framework\\Assert\:\:assertInstanceOf\(\) .* will always evaluate to#'
+      path: '%currentWorkingDirectory%/tests/'
+
+services:
+  -
+    class: \Sabberworm\CSS\PhpStan\IgnoreBooleanAlways
+    tags:
+      - phpstan.ignoreErrorExtension

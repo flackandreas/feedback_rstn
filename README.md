@@ -132,7 +132,6 @@ feedback_rstn/
 │   ├── config/
 │   │   ├── database.php        # DB-Verbindung & Dotenv-Initialisierung
 │   │   ├── mail.php            # SMTP-Konfiguration
-│   │   └── config_untis.php    # Untis-Schnittstellen-Konfiguration
 │   ├── bin/
 │   │   └── migrate_atteste.php # Einmalig: Altbestand der Atteste verschieben
 │   ├── includes/
@@ -166,7 +165,34 @@ DB_NAME=db_feedback
 ISERV_HOST=https://iserv.meine-schule.de
 ISERV_CLIENT_ID=deine-client-id
 ISERV_CLIENT_SECRET=dein-client-secret
+
+# Vermittler, deren X-Forwarded-For ausgewertet werden darf.
+# Einzeladressen oder CIDR-Bereiche, kommagetrennt; "private" steht für die
+# privaten Netze und die Rückschleife. Bleibt der Wert leer, zählt allein die
+# Adresse der Verbindung.
+TRUSTED_PROXIES=172.16.0.0/12
+
+# E-Mail-Versand. Bleibt SMTP_HOST leer, wird nichts versendet.
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+SMTP_VERSCHLUESSELUNG=tls
+SMTP_ABSENDER=noreply@schule.de
+SMTP_ABSENDERNAME=
 ```
+
+### Vertrauenswürdige Vermittler (`TRUSTED_PROXIES`)
+
+Hinter einem Reverse Proxy kommt jede Anfrage von dessen Adresse. Welche
+Adresse der Anfragende wirklich hat, steht in `X-Forwarded-For` — einem Kopf,
+den aber auch jeder Aufrufer selbst setzen kann. Ausgewertet wird er deshalb
+nur, wenn die Verbindung von einem hier eingetragenen Vermittler kommt.
+
+Ohne diesen Wert teilen sich alle Zugriffe die Adresse des Proxys, und die
+Begrenzung der Anmeldeversuche trifft dann das ganze Kollegium gemeinsam. Ein
+Hinweis im Fehlerprotokoll weist darauf hin, sobald der Kopf auftaucht und
+`TRUSTED_PROXIES` leer ist.
 
 ### Datenbank
 
@@ -179,20 +205,13 @@ Für die Anbindung an den schuleigenen IServ-Server müssen `ISERV_HOST`, `ISERV
 
 ### E-Mail / SMTP
 
-Die SMTP-Konfiguration befindet sich in **`src/config/mail.php`**. Tragen Sie dort Ihre SMTP-Zugangsdaten für den Benachrichtigungsversand ein:
+Die Zugangsdaten stehen in der `.env` (siehe oben), nicht mehr in
+`src/config/mail.php`. Diese Datei liest sie nur noch aus der Umgebung.
 
-```php
-return [
-    'host'       => 'smtp.example.com',
-    'port'       => 587,
-    'username'   => 'user@example.com',
-    'password'   => 'secret',
-    'from_email' => 'noreply@schule.de',
-    'from_name'  => 'SchoolHub Feedback',
-    'encryption' => 'tls',
-    'auth'       => true
-];
-```
+Vorher stand dort ein Block mit Platzhaltern und der Aufforderung, die
+echten Zugangsdaten einzutragen — in einer Datei, die im Repository liegt.
+Bleibt `SMTP_HOST` leer, wird nichts versendet und ein Hinweis ins
+Fehlerprotokoll geschrieben.
 
 ---
 

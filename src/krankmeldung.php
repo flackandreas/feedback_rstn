@@ -30,7 +30,18 @@ if ($edit_id) {
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $csrf_token = $_POST['csrf_token'] ?? '';
     $post_edit_id = $_POST['edit_id'] ?? null;
-    
+
+    // Uebersteigt die ganze Sendung post_max_size, verwirft PHP sie, bevor
+    // der Code sie sieht: $_POST und $_FILES sind dann leer. Ohne diesen
+    // Zweig scheitert als naechstes die Tokenpruefung, und die Lehrkraft
+    // liest "Sicherheitsfehler: Ungueltiger Token" - eine Meldung, die von
+    // einem zu grossen Attest so weit weg fuehrt wie moeglich.
+    if ($_POST === [] && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+        $_SESSION['flash_error'] = 'Die Datei ist zu groß. Bitte ein kleineres Bild oder PDF hochladen.';
+        header("Location: /krankmeldung.php");
+        exit;
+    }
+
     if (!verify_csrf_token($csrf_token)) {
         $_SESSION['flash_error'] = "Sicherheitsfehler: Ungültiger Token. Bitte laden Sie die Seite neu.";
     } else {
@@ -42,6 +53,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // Handle file upload
         $attachment_path = null;
         $attachment_fehler = false;
+        // Ein zu grosses Attest weist PHP ab, bevor der Code es sieht. Bisher
+        // fiel der ganze Block dann stillschweigend aus: die Krankmeldung ging
+        // durch, der Anhang fehlte, und die Bestaetigung sagte nichts davon.
+        $upload_fehler = (int) ($_FILES['attachment']['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($upload_fehler !== UPLOAD_ERR_OK && $upload_fehler !== UPLOAD_ERR_NO_FILE) {
+            $_SESSION['flash_error'] = match ($upload_fehler) {
+                UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE =>
+                    'Die Datei ist zu groß. Bitte ein kleineres Bild oder PDF hochladen.',
+                UPLOAD_ERR_PARTIAL =>
+                    'Die Datei wurde nur teilweise übertragen. Bitte erneut versuchen.',
+                default =>
+                    'Die Datei konnte nicht entgegengenommen werden. Bitte erneut versuchen.',
+            };
+            error_log('krankmeldung: Upload-Fehler ' . $upload_fehler);
+        }
+
         if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ERR_OK) {
             // Die Endung kommt aus dem geprueften MIME-Typ, nicht aus dem
             // Namen der hochgeladenen Datei.

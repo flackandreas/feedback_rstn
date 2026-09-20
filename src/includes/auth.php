@@ -4,11 +4,18 @@
  * Session management and authentication checks.
  */
 
+require_once __DIR__ . '/request.php';
+
 session_name('feedback_session');
 session_set_cookie_params([
+    'path'     => '/',
     'httponly' => true,
     'samesite' => 'Strict',
-    'secure'   => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
+    // request_is_https() beruecksichtigt X-Forwarded-Proto. Hinter dem
+    // Reverse Proxy ist $_SERVER['HTTPS'] nicht gesetzt - das
+    // Sitzungscookie ging deshalb ohne Secure-Flag hinaus und war damit
+    // auch ueber eine unverschluesselte Verbindung zu bekommen.
+    'secure'   => request_is_https(),
 ]);
 session_start();
 

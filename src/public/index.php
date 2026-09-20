@@ -4,17 +4,49 @@
  * Front Controller & Router
  */
 
+require_once __DIR__ . '/../includes/request.php';
+
 // 1. Security Headers
 header("X-Frame-Options: DENY");
 header("X-Content-Type-Options: nosniff");
 header("Referrer-Policy: strict-origin-when-cross-origin");
 header("Permissions-Policy: geolocation=(), camera=(), microphone=()");
 header("X-XSS-Protection: 1; mode=block");
-if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+// Hinter dem Reverse Proxy ist $_SERVER['HTTPS'] nicht gesetzt - dieser
+// Kopf wurde deshalb im Betrieb nie gesendet, also genau dort nicht, wo er
+// gebraucht wird. request_is_https() sieht auch X-Forwarded-Proto an.
+if (request_is_https()) {
     header("Strict-Transport-Security: max-age=31536000; includeSubDomains");
 }
-// Content-Security-Policy (Base)
-header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://api.qrserver.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self';");
+// Content-Security-Policy
+//
+// Skripte, Schriften und Bilder kommen ausschliesslich vom eigenen Server.
+// Entfallen sind:
+//
+//   cdn.jsdelivr.net    zweite Einbindung von SweetAlert2 in
+//                       admin_lehrer.twig; die Bibliothek liegt laengst unter
+//                       /vendor/sweetalert2/ auf diesem Server
+//   fonts.googleapis.com / fonts.gstatic.com
+//                       die Schriften liegen seit laengerem lokal, die
+//                       Erlaubnis war nur noch uebrig
+//   api.qrserver.com    von keiner Seite verwendet
+//   'unsafe-eval'       an keiner Stelle gebraucht
+//
+// 'unsafe-inline' bleibt vorerst noetig, weil die Templates durchgaengig mit
+// inline-Attributen (style="...", onclick="...") arbeiten.
+header(
+    "Content-Security-Policy: "
+    . "default-src 'self'; "
+    . "script-src 'self' 'unsafe-inline'; "
+    . "style-src 'self' 'unsafe-inline'; "
+    . "img-src 'self' data: blob:; "
+    . "font-src 'self'; "
+    . "connect-src 'self'; "
+    . "object-src 'none'; "
+    . "base-uri 'self'; "
+    . "form-action 'self'; "
+    . "frame-ancestors 'none'"
+);
 
 
 // 2. Routing

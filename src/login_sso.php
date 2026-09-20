@@ -25,7 +25,8 @@ if (empty($iserv_host) || empty($client_id) || empty($client_secret)) {
 }
 
 // Dynamische Erstellung der Redirect-URI (muss bei IServ registriert sein)
-$scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? 'https' : 'http';
+require_once __DIR__ . '/includes/request.php';
+$scheme = request_is_https() ? 'https' : 'http';
 $redirect_uri = $scheme . '://' . $_SERVER['HTTP_HOST'] . '/login_sso.php';
 
 $client = new \GuzzleHttp\Client();

@@ -19,13 +19,53 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Mobile Sidebar Toggle
+    // Seitenleiste. Am Desktop klappt der Knopf sie auf Symbole ein. Auf
+    // schmalen Bildschirmen ist sie eine Schublade ueber dem Inhalt: die
+    // Kopfleiste oeffnet sie, der Knopf in ihr, ein Tipp daneben und Escape
+    // schliessen sie. Die Grenze steht auch in app_styles.css.
     const navToggle = document.getElementById('nav-toggle');
     const appLayout = document.getElementById('appLayout');
+    const navOeffnen = document.getElementById('nav-oeffnen');
+    const navAbdeckung = document.getElementById('nav-abdeckung');
+    const schmal = window.matchMedia('(max-width: 768px)');
+
+    function navSchublade(offen, fokus = true) {
+        appLayout.classList.toggle('nav-offen', offen);
+        document.body.classList.toggle('nav-gesperrt', offen);
+        if (navOeffnen) {
+            navOeffnen.setAttribute('aria-expanded', offen ? 'true' : 'false');
+        }
+        if (fokus) {
+            (offen ? navToggle : navOeffnen)?.focus();
+        }
+    }
+
+    function navBeschriften() {
+        navToggle.setAttribute('aria-label', schmal.matches ? 'Menü schließen' : 'Menü ein- oder ausklappen');
+    }
 
     if (navToggle && appLayout) {
+        navBeschriften();
         navToggle.addEventListener('click', () => {
-            appLayout.classList.toggle('collapsed');
+            if (schmal.matches) {
+                navSchublade(false);
+            } else {
+                appLayout.classList.toggle('collapsed');
+            }
+        });
+        navOeffnen?.addEventListener('click', () => navSchublade(true));
+        navAbdeckung?.addEventListener('click', () => navSchublade(false));
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && appLayout.classList.contains('nav-offen')) {
+                navSchublade(false);
+            }
+        });
+        // Wird das Fenster breiter (Tablet gedreht), gibt es keine Schublade mehr.
+        schmal.addEventListener('change', () => {
+            navBeschriften();
+            if (!schmal.matches) {
+                navSchublade(false, false);
+            }
         });
     }
 

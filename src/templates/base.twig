@@ -96,8 +96,32 @@
 
 {% if is_logged_in %}
 <div class="app-layout" id="appLayout">
+    {# Kopfleiste fuer schmale Bildschirme. Dort liegt die Seitenleiste als
+       Schublade ueber dem Inhalt und wird von hier aus geoeffnet. Am Desktop
+       sind Kopfleiste und Abdeckung ausgeblendet (app_styles.css, Abschnitt
+       "Schmale Bildschirme"). #}
+    <header class="kopfleiste">
+        <button type="button" class="kopfleiste__menue" id="nav-oeffnen" aria-controls="sidebar" aria-expanded="false" aria-label="Menü öffnen">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/>
+            </svg>
+        </button>
+        <a href="/dashboard" class="kopfleiste__marke">
+            <svg width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                <path d="M16 4L4 10L16 16L28 10L16 4Z" fill="currentColor"/>
+                <path d="M4 14.5V21.5L16 27.5L28 21.5V14.5L16 20.5L4 14.5Z" fill="currentColor" opacity="0.55"/>
+            </svg>
+            <span class="marke__text">
+                <span class="marke__name">SchulOS</span>
+                <span class="marke__modul">Antragssystem</span>
+            </span>
+        </a>
+    </header>
+    <div class="nav-abdeckung" id="nav-abdeckung"></div>
+
     <!-- Sidebar Navigation -->
-    <nav class="sidebar" id="sidebar">
+    <nav class="sidebar" id="sidebar" aria-label="Hauptmenü">
         <div class="sidebar-header">
             <div>
                 <div class="sidebar-title" style="display: flex; align-items: center; gap: 3px; font-weight: 600;">
@@ -113,9 +137,14 @@
                 <span class="sidebar-schule">Verwaltung</span>
             </div>
             <button id="nav-toggle" aria-label="Menü ein- oder ausklappen">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                <svg class="nav-toggle__menue" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
                     <line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/>
+                </svg>
+                {# In der Schublade auf dem Handy schliesst der Knopf das Menue. #}
+                <svg class="nav-toggle__schliessen" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                    <line x1="6" x2="18" y1="6" y2="18"/><line x1="18" x2="6" y1="6" y2="18"/>
                 </svg>
             </button>
         </div>

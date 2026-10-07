@@ -95,6 +95,50 @@
     .weekday-name {
         padding: 12px 5px;
     }
+
+    .weekday-kurz {
+        display: none;
+    }
+
+    @media (max-width: 768px) {
+        /* Fuenf ausgeschriebene Wochentage passen auf dem Handy nicht
+           nebeneinander - "Donnerstag" lief in "Freitag". Sichtbar steht die
+           Kurzform da, vorgelesen wird weiter das ganze Wort. */
+        .weekday-lang {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip-path: inset(50%);
+            white-space: nowrap;
+        }
+
+        .weekday-kurz {
+            display: inline;
+        }
+
+        .calendar-control-bar {
+            gap: 8px;
+            padding: 12px;
+        }
+
+        .calendar-title {
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .kal-wort {
+            display: none;
+        }
+
+        .calendar-nav-btn::before {
+            content: attr(data-pfeil);
+        }
+
+        .calendar-legend {
+            padding: 10px 12px;
+        }
+    }
     
     .grid-days {
         display: grid;
@@ -304,9 +348,12 @@
 <div class="calendar-container">
     <!-- Header control bar -->
     <div class="calendar-control-bar">
-        <button class="calendar-nav-btn" onclick="navigateMonth(-1)">&larr; Vorheriger</button>
+        {# Auf dem Handy steht statt der Beschriftung nur der Pfeil aus data-pfeil;
+           vorgelesen wird aria-label. Der Text bleibt ein Stueck - geteilt setzte
+           der Browser ihn am Desktop um einen Pixel anders. #}
+        <button class="calendar-nav-btn" onclick="navigateMonth(-1)" aria-label="Vorheriger Monat" data-pfeil="&larr;"><span class="kal-wort">&larr; Vorheriger</span></button>
         <h3 class="calendar-title" id="calendar-month-year-label">Month Year</h3>
-        <button class="calendar-nav-btn" onclick="navigateMonth(1)">Nächster &rarr;</button>
+        <button class="calendar-nav-btn" onclick="navigateMonth(1)" aria-label="Nächster Monat" data-pfeil="&rarr;"><span class="kal-wort">Nächster &rarr;</span></button>
     </div>
     
     <!-- Legend -->
@@ -331,11 +378,12 @@
     
     <!-- Weekdays Header -->
     <div class="grid-weekdays">
-        <div class="weekday-name">Montag</div>
-        <div class="weekday-name">Dienstag</div>
-        <div class="weekday-name">Mittwoch</div>
-        <div class="weekday-name">Donnerstag</div>
-        <div class="weekday-name">Freitag</div>
+        {# Die Kurzform steht nur auf dem Handy da, siehe @media oben. #}
+        <div class="weekday-name"><span class="weekday-lang">Montag</span><span class="weekday-kurz" aria-hidden="true">Mo</span></div>
+        <div class="weekday-name"><span class="weekday-lang">Dienstag</span><span class="weekday-kurz" aria-hidden="true">Di</span></div>
+        <div class="weekday-name"><span class="weekday-lang">Mittwoch</span><span class="weekday-kurz" aria-hidden="true">Mi</span></div>
+        <div class="weekday-name"><span class="weekday-lang">Donnerstag</span><span class="weekday-kurz" aria-hidden="true">Do</span></div>
+        <div class="weekday-name"><span class="weekday-lang">Freitag</span><span class="weekday-kurz" aria-hidden="true">Fr</span></div>
     </div>
     
     <!-- Days Grid -->

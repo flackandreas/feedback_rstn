@@ -1645,3 +1645,305 @@ body.dark-mode .rueckfrage-box {
 body.dark-mode .rueckfrage-box__eintrag + .rueckfrage-box__eintrag {
     border-top-color: rgba(255, 255, 255, 0.15);
 }
+
+/* =========================================================================
+   Schmale Bildschirme (Handy)
+   -------------------------------------------------------------------------
+   Bisher stand die Seitenleiste auch auf dem Handy fest neben dem Inhalt:
+   240 von 390 Pixeln, fuer die Seite blieben 150. Unter 768 Pixeln ist sie
+   jetzt eine Schublade, die ueber den Inhalt faehrt. Geoeffnet wird sie aus
+   einer schmalen Kopfleiste, geschlossen mit dem Knopf in ihr, einem Tipp
+   daneben oder Escape (js/app.js).
+
+   Ausser den drei ausgeblendeten Elementen gleich hier gilt alles nur
+   unterhalb dieser Breite - am Desktop aendert sich nichts.
+   ========================================================================= */
+
+.kopfleiste,
+.nav-abdeckung,
+.nav-toggle__schliessen {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .app-layout,
+    .app-layout.collapsed {
+        display: block;
+    }
+
+    .kopfleiste {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        position: sticky;
+        top: 0;
+        z-index: 90;
+        min-height: 56px;
+        padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
+        background-color: var(--bg-content);
+        border-bottom: 1px solid var(--border-color);
+        box-shadow: var(--shadow-soft);
+    }
+
+    /* 44 Pixel: die Mindestgroesse fuer ein Ziel, das man mit dem Daumen trifft. */
+    .kopfleiste__menue {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        background: none;
+        border: none;
+        color: var(--text-dark);
+        cursor: pointer;
+    }
+
+    .kopfleiste__marke {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        color: var(--text-dark);
+        text-decoration: none;
+        font-family: var(--font-display);
+    }
+
+    .kopfleiste__marke svg {
+        flex-shrink: 0;
+        color: var(--primary-color);
+    }
+
+    .kopfleiste .marke__name {
+        font-size: var(--text-lg);
+    }
+
+    .kopfleiste .marke__modul {
+        color: var(--primary-color);
+        opacity: 1;
+    }
+
+    /* Die Schublade. visibility nimmt sie geschlossen aus der Tab-Reihenfolge
+       und dem Vorlesen - verschoben allein waeren die Links weiter erreichbar. */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: min(300px, 85vw);
+        height: auto;
+        transform: translateX(-100%);
+        visibility: hidden;
+        transition: transform 0.25s ease, visibility 0s linear 0.25s;
+    }
+
+    .app-layout.nav-offen .sidebar {
+        transform: none;
+        visibility: visible;
+        transition: transform 0.25s ease;
+    }
+
+    .nav-abdeckung {
+        position: fixed;
+        inset: 0;
+        z-index: 99;
+        background-color: rgba(6, 48, 31, 0.45);
+    }
+
+    .app-layout.nav-offen .nav-abdeckung {
+        display: block;
+    }
+
+    /* Hinter der offenen Schublade bleibt die Seite stehen. */
+    body.nav-gesperrt {
+        overflow: hidden;
+    }
+
+    /* Der Knopf oben in der Seitenleiste klappt sie am Desktop ein - hier
+       schliesst er die Schublade und zeigt deshalb ein Kreuz. */
+    #nav-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+    }
+
+    .nav-toggle__menue {
+        display: none;
+    }
+
+    .nav-toggle__schliessen {
+        display: block;
+    }
+
+    /* Eingeklappt gibt es auf dem Handy nicht: in der Schublade steht alles. */
+    .app-layout.collapsed .sidebar-header {
+        justify-content: space-between;
+    }
+
+    .app-layout.collapsed .sidebar-header > div:first-child {
+        display: block;
+    }
+
+    .app-layout.collapsed .nav-text,
+    .app-layout.collapsed .nav-label {
+        opacity: 1;
+        width: auto;
+        overflow: visible;
+    }
+
+    .main-content {
+        padding: var(--space-4);
+    }
+
+    .content-box {
+        padding: var(--space-4);
+    }
+
+    /* Ueberschrift und Filter einer Seite: untereinander, wenn es eng wird. */
+    .seitenkopf {
+        flex-wrap: wrap;
+        gap: var(--space-2) var(--space-4);
+    }
+
+    /* ---------- Tabellen als Karten ("Meine Antraege") ----------
+       Sechs Spalten passen nicht auf ein Handy; die Tabelle lief seitlich
+       aus dem Bild, und die Rueckfrage mit dem Antwortfeld lag ganz rechts
+       ausserhalb. Jede Zeile wird zur Karte: oben Art und Status, darunter
+       Datum und Details mit der Rueckfrage in voller Breite, unten der
+       Eingang und "Bearbeiten". */
+    .data-table.data-table--karten {
+        display: block;
+        overflow: visible;
+        margin-top: 0;
+    }
+
+    .data-table--karten thead {
+        display: none;
+    }
+
+    .data-table--karten tbody {
+        display: grid;
+        gap: var(--space-3);
+    }
+
+    .data-table--karten tr,
+    .data-table--karten tbody tr:nth-child(even) {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+            "typ      status"
+            "datum    datum"
+            "details  details"
+            "gesendet aktion";
+        align-items: center;
+        gap: var(--space-1) var(--space-3);
+        padding: var(--space-3) var(--space-4);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        background-color: var(--bg-content);
+    }
+
+    .data-table--karten td {
+        display: block;
+        min-width: 0;
+        padding: 0;
+        border: none;
+    }
+
+    .karte__typ {
+        grid-area: typ;
+        font-weight: 600;
+    }
+
+    .karte__status {
+        grid-area: status;
+        justify-self: end;
+        text-align: right;
+    }
+
+    .karte__datum {
+        grid-area: datum;
+    }
+
+    .karte__details {
+        grid-area: details;
+    }
+
+    .karte__gesendet {
+        grid-area: gesendet;
+    }
+
+    .karte__gesendet::before {
+        content: attr(data-label) " ";
+    }
+
+    .karte__aktion {
+        grid-area: aktion;
+        justify-self: end;
+    }
+
+    .karte__aktion:empty {
+        display: none;
+    }
+
+    /* Die Knoepfe tragen ihre Groesse fuer den Desktop im style-Attribut -
+       fuer den Daumen sind sie dort zu klein. */
+    .karte__aktion .button-secondary {
+        display: inline-block;
+        padding: 8px 14px !important;
+        font-size: 0.9em !important;
+    }
+
+    .data-table--karten .rueckfrage-box {
+        min-width: 0;
+    }
+
+    /* ---------- Kennzahlen ----------
+       Drei Kaesten nebeneinander liessen jeder Beschriftung 100 Pixel -
+       "Krankmeldungen (letzte 30 Tage)" wurde abgeschnitten. Auf dem Handy
+       stehen sie untereinander, die Beschriftung links, die Zahl rechts. */
+    .kpi-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .kpi-grid .kpi-box {
+        flex-direction: row;
+        align-items: center;
+        gap: var(--space-3);
+        padding: var(--space-3) var(--space-4);
+        text-align: left;
+    }
+
+    .kpi-grid .kpi-box span {
+        margin-bottom: 0;
+    }
+
+    /* ---------- Formulare ----------
+       Unter 16 Pixeln zoomt Safari auf dem iPhone beim Antippen eines Felds
+       in die Seite hinein und bleibt dort - die Felder hatten 13 bis 15. */
+    input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    select,
+    textarea {
+        font-size: 16px;
+    }
+
+    /* Dateiauswahl und Knopf nebeneinander: auf dem Handy lief der Knopf
+       aus dem Kasten (Lehrkraefte importieren). */
+    .datei-zeile {
+        flex-wrap: wrap;
+    }
+
+    /* Anmeldung: der Kasten stiess links und rechts an den Rand. */
+    .login-layout {
+        padding: var(--space-4);
+    }
+}
+
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+    .sidebar,
+    .app-layout.nav-offen .sidebar {
+        transition: none;
+    }
+}

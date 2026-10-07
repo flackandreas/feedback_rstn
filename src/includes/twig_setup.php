@@ -43,7 +43,16 @@ $twig->addFilter(new \Twig\TwigFilter('json_decode', function ($string) {
 }));
 
 // Global pending counts for admin badges
-if (isset($conn) && isset($_SESSION['is_admin']) && $_SESSION['is_admin'] == 1) {
+//
+// Bisher nur, wenn die Seite ihre Datenbankverbindung schon vor dieser Datei
+// geoeffnet hatte. Auf der AU-Seite, der Lehrer- und der Systemverwaltung und
+// in den Formularen war das nicht so - dort fehlten die roten Zaehler, als
+// gaebe es keine offenen Antraege. Fehlt die Verbindung, holt sich diese
+// Stelle jetzt selbst eine.
+if (isset($_SESSION['is_admin']) && $_SESSION['is_admin'] == 1) {
+    require_once __DIR__ . '/../config/database.php';
     require_once __DIR__ . '/admin_helpers.php';
-    $twig->addGlobal('pending_counts', get_pending_counts($conn));
+    $twig->addGlobal('pending_counts', get_pending_counts(
+        isset($conn) && $conn instanceof PDO ? $conn : db_connect()
+    ));
 }

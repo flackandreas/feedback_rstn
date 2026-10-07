@@ -128,7 +128,7 @@ if ($action === 'export') {
     // Laesst sich das Arbeitsverzeichnis nicht anlegen, hat der Export keinen
     // Zweck - frueher lief er blind weiter und erzeugte ein leeres Archiv.
     $verzeichnisse = [$tmp_dir, "$tmp_dir/Krankmeldungen", "$tmp_dir/Veranstaltungen",
-                      "$tmp_dir/Freistellungen", "$tmp_dir/Anhaenge"];
+                      "$tmp_dir/Freistellungen", "$tmp_dir/Entscheidungen", "$tmp_dir/Anhaenge"];
     foreach ($verzeichnisse as $verzeichnis) {
         if (!is_dir($verzeichnis) && !@mkdir($verzeichnis, 0775, true) && !is_dir($verzeichnis)) {
             error_log("admin_archive: $verzeichnis nicht anlegbar");
@@ -197,6 +197,29 @@ if ($action === 'export') {
         $csv .= archiv_csv($r);
     }
     file_put_contents($tmp_dir . "/Freistellungen/freistellungen_$year.csv", "\xEF\xBB\xBF" . $csv);
+
+    // --- 4. Entscheidungen der Schulleitung (Audit M3) ---
+    // Der Abschluss loescht sie mit ihren Antraegen (ON DELETE CASCADE),
+    // deshalb gehoeren sie ins Archiv. antrag_id verweist auf die ID in
+    // freistellungen_*.csv bzw. veranstaltungen_*.csv.
+    $stmt = $conn->prepare("
+        SELECT e.id, 'Freistellung' AS antragsart, e.freistellung_id AS antrag_id, e.status_vorher, e.status_neu,
+               e.nachricht, e.entschieden_von, e.entschieden_von_name, e.entschieden_am
+          FROM antrag_entscheidungen e JOIN exemption_requests r ON r.id = e.freistellung_id
+         WHERE r.date_from BETWEEN ? AND ?
+        UNION ALL
+        SELECT e.id, 'Veranstaltung', e.veranstaltung_id, e.status_vorher, e.status_neu,
+               e.nachricht, e.entschieden_von, e.entschieden_von_name, e.entschieden_am
+          FROM antrag_entscheidungen e JOIN extracurricular_requests r ON r.id = e.veranstaltung_id
+         WHERE r.event_date BETWEEN ? AND ?
+        ORDER BY entschieden_am, id");
+    $stmt->execute([$von, $bis, $von, $bis]);
+    $entscheidungen = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $csv = $entscheidungen !== [] ? archiv_csv(array_keys($entscheidungen[0])) : '';
+    foreach ($entscheidungen as $r) {
+        $csv .= archiv_csv($r);
+    }
+    file_put_contents($tmp_dir . "/Entscheidungen/entscheidungen_$year.csv", "\xEF\xBB\xBF" . $csv);
 
 
     // Create Archive using tar (fallback for ZipArchive)

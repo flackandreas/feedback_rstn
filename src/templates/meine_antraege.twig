@@ -81,6 +81,19 @@
                             </td>
                             <td style="color: var(--text-muted);">
                                 {{ r.details|slice(0, 50) }}{% if r.details|length > 50 %}...{% endif %}
+                                {# Rueckfrage der Schulleitung (Audit W2). Aeltere Rueckfragen
+                                   haben keinen Text - dann bleibt es beim Hinweis. #}
+                                {% if r.status == 'query' %}
+                                    <div class="rueckfrage-box">
+                                        <div class="rueckfrage-box__kopf">Rückfrage der Schulleitung</div>
+                                        {% if r.rueckfrage %}
+                                            <div class="rueckfrage-box__text">{{ r.rueckfrage.text }}</div>
+                                            <div class="rueckfrage-box__von">{{ r.rueckfrage.von }}, {{ r.rueckfrage.am }}</div>
+                                        {% else %}
+                                            <div class="rueckfrage-box__text">Bitte Rücksprache mit der Schulleitung halten.</div>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
                             </td>
                             <td style="font-size: 0.85em; color: var(--text-muted);">
                                 {{ r.created_at|date('d.m.y H:i') }}

@@ -42,7 +42,9 @@ function run_all_migrations() {
         'alter_rate_limits.sql',
         'alter_portal_konten.sql',
         'alter_konten_haerten.sql',
-        'alter_sick_leave_seen_at.sql'
+        'alter_sick_leave_seen_at.sql',
+        'alter_entscheidungen_loeschschutz.sql',
+        'alter_entscheidungen_nachricht.sql'
     ];
 
     foreach ($sql_files as $file) {

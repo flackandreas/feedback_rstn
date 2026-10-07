@@ -6,6 +6,7 @@
 
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/entscheidungen.php';
 
 require_admin();
 
@@ -51,6 +52,16 @@ $stmt_exempt = $conn->query("
     ORDER BY FIELD(r.status, 'pending') DESC, r.created_at DESC
 ");
 $exempt_requests = $stmt_exempt->fetchAll(PDO::FETCH_ASSOC);
+
+// Wer hat wann entschieden (Audit M3) und was wurde gefragt (Audit W2), fuer die Detailansicht
+$ids = array_column($exempt_requests, 'id');
+$verlauf = entscheidungen_verlauf($conn, 'exemption_requests', $ids);
+$rueckfragen = rueckfragen($conn, 'exemption_requests', $ids);
+foreach ($exempt_requests as &$r) {
+    $r['verlauf'] = $verlauf[(int) $r['id']] ?? [];
+    $r['rueckfrage'] = $rueckfragen[(int) $r['id']] ?? null;
+}
+unset($r);
 
 $csrf_token = get_csrf_token();
 require_once __DIR__ . '/includes/twig_setup.php';

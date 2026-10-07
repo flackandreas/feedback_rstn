@@ -4,13 +4,48 @@
  * Helper functions for fetching and parsing local and external IServ calendars.
  */
 
+require_once __DIR__ . '/request.php';
+
+/**
+ * Interne Netze, aus denen Kalender trotzdem geholt werden duerfen.
+ *
+ * Einzeladressen oder CIDR-Bereiche aus KALENDER_INTERNE_QUELLEN,
+ * kommagetrennt. Im Schulnetz loest etwa der IServ-Name auf eine private
+ * Adresse auf; ohne Freigabe liesse sich der Schulkalender nicht einbinden.
+ * Bewusst ohne Abkuerzung wie "private": die Docker-Netze, in denen Datenbank
+ * und phpMyAdmin haengen, sollen nie versehentlich mit freigegeben werden.
+ *
+ * @return list<string>
+ */
+function calendar_internal_sources(): array
+{
+    $roh = trim((string) ($_ENV['KALENDER_INTERNE_QUELLEN'] ?? getenv('KALENDER_INTERNE_QUELLEN') ?: ''));
+
+    return array_values(array_filter(array_map('trim', explode(',', $roh)), static fn ($b) => $b !== ''));
+}
+
+/**
+ * @param list<string> $freigegeben
+ */
+function calendar_internal_source_allowed(string $adresse, array $freigegeben): bool
+{
+    foreach ($freigegeben as $bereich) {
+        if (request_ip_in_range($adresse, $bereich)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 /**
  * Prueft, ob eine Adresse als Kalenderquelle zulaessig ist.
  *
  * Der Server ruft diese Adresse selbst ab. Ohne Pruefung koennte darueber das
  * Hausnetz abgetastet werden - auf demselben Rechner laeuft unter anderem ein
  * phpMyAdmin. Deshalb nur http/https, keine Zugangsdaten in der Adresse und
- * keine Ziele im privaten oder reservierten Adressbereich.
+ * keine Ziele im privaten oder reservierten Adressbereich - ausser denen, die
+ * in KALENDER_INTERNE_QUELLEN ausdruecklich freigegeben sind.
  *
  * @return array{ok:bool,fehler?:string}
  */
@@ -54,14 +89,17 @@ function validate_calendar_url($url) {
         return ['ok' => false, 'fehler' => 'Der Rechnername „' . $host . '" ist nicht auflösbar.'];
     }
 
+    $freigegeben = calendar_internal_sources();
+
     foreach ($adressen as $adresse) {
         $oeffentlich = filter_var(
             $adresse,
             FILTER_VALIDATE_IP,
             FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
         );
-        if ($oeffentlich === false) {
-            return ['ok' => false, 'fehler' => 'Die Adresse zeigt ins interne Netz (' . $adresse . ').'];
+        if ($oeffentlich === false && !calendar_internal_source_allowed($adresse, $freigegeben)) {
+            return ['ok' => false, 'fehler' => 'Die Adresse zeigt ins interne Netz (' . $adresse . ') '
+                . 'und ist nicht als interne Kalenderquelle freigegeben.'];
         }
     }
 

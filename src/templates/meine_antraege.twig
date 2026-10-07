@@ -1,7 +1,7 @@
 {% extends "base.twig" %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+<div class="seitenkopf" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <h2>Meine Anträge & Meldungen</h2>
     
     <!-- Filter Dropdown -->
@@ -25,7 +25,10 @@
         </p>
     {% else %}
         <div style="overflow-x: auto;">
-            <table class="data-table">
+            {# Auf dem Handy wird jede Zeile zur Karte (app_styles.css,
+               "Schmale Bildschirme"). Dafuer tragen die Zellen ihre Rolle als
+               Klasse - am Desktop haben diese Klassen keine Regeln. #}
+            <table class="data-table data-table--karten">
                 <thead>
                     <tr>
                         <th>Datum</th>
@@ -60,7 +63,7 @@
                         {% endset %}
                         
                         <tr>
-                            <td style="font-weight: 500;">
+                            <td class="karte__datum" style="font-weight: 500;">
                                 {% if r.date_end and r.date_end != r.date_main %}
                                     {{ r.date_main|date('d.m.Y') }} - {{ r.date_end|date('d.m.Y') }}
                                 {% else %}
@@ -70,7 +73,7 @@
                                     <br><span style="color: #8e44ad; font-size: 0.75em; font-weight: 600;">(Geändert am {{ r.modified_at|date('d.m.Y') }})</span>
                                 {% endif %}
                             </td>
-                            <td>
+                            <td class="karte__typ">
                                 {% if r.type == 'Ausflug' %}
                                     {{ r.type }}
                                 {% elseif r.type == 'Freistellung' %}
@@ -79,7 +82,7 @@
                                     {{ r.type }}
                                 {% endif %}
                             </td>
-                            <td style="color: var(--text-muted);">
+                            <td class="karte__details" style="color: var(--text-muted);">
                                 {{ r.details|slice(0, 50) }}{% if r.details|length > 50 %}...{% endif %}
                                 {# Rueckfrage der Schulleitung (Audit W2) und die Antworten
                                    darauf. Aeltere Rueckfragen haben keinen Text - dann bleibt
@@ -117,10 +120,10 @@
                                     </div>
                                 {% endif %}
                             </td>
-                            <td style="font-size: 0.85em; color: var(--text-muted);">
+                            <td class="karte__gesendet" data-label="Gesendet am" style="font-size: 0.85em; color: var(--text-muted);">
                                 {{ r.created_at|date('d.m.y H:i') }}
                             </td>
-                            <td>
+                            <td class="karte__status">
                                 <span style="display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.8em; font-weight: 600; color: white; background-color: {{ statusColor }};">
                                     {{ statusText|trim }}
                                 </span>
@@ -135,12 +138,14 @@
                                     <br><span style="color: var(--text-muted); font-size: 0.75em;">noch nicht gelesen</span>
                                 {% endif %}
                             </td>
-                            <td>
-                                {% if r.type == 'Ausflug' %}
+                            {# Ohne Link bleibt die Zelle ganz leer (die Minuszeichen
+                               nehmen den Leerraum mit) - die Karte blendet sie dann aus. #}
+                            <td class="karte__aktion">
+                                {%- if r.type == 'Ausflug' %}
                                     <a href="/antrag_ausserunterrichtlich.php?edit_id={{ r.id }}" class="button-secondary" style="padding: 4px 8px; font-size: 0.8em; text-decoration: none;">Bearbeiten</a>
-                                {% elseif r.type == 'Krankmeldung' %}
+                                {%- elseif r.type == 'Krankmeldung' %}
                                     <a href="/krankmeldung.php?id={{ r.id }}" class="button-secondary" style="padding: 4px 8px; font-size: 0.8em; text-decoration: none;">Bearbeiten</a>
-                                {% endif %}
+                                {%- endif -%}
                             </td>
                         </tr>
                     {% endfor %}

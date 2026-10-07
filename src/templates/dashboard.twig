@@ -47,12 +47,20 @@
 {% if total_queries > 0 %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Die Rueckfrage selbst steht unter "Meine Antraege" (Audit W2).
     Swal.fire({
-        title: 'Rücksprache mit der Schulleitung',
-        text: 'Es liegen {{ total_queries }} Anträge vor, zu denen die Schulleitung gerne mit dir Rücksprache halten würde. Bitte melde dich kurz im Sekretariat.',
+        title: 'Rückfrage der Schulleitung',
+        text: '{{ total_queries == 1 ? "Die Schulleitung hat eine Rückfrage zu einem deiner Anträge." : "Die Schulleitung hat Rückfragen zu " ~ total_queries ~ " deiner Anträge." }} Du findest sie unter „Meine Anträge“.',
         icon: 'info',
+        showCancelButton: true,
         confirmButtonColor: 'var(--primary-color)',
-        confirmButtonText: 'Verstanden'
+        cancelButtonColor: 'var(--text-muted)',
+        confirmButtonText: 'Ansehen',
+        cancelButtonText: 'Später'
+    }).then(function (ergebnis) {
+        if (ergebnis.isConfirmed) {
+            window.location.href = '/meine_antraege.php?status=offen';
+        }
     });
 });
 </script>

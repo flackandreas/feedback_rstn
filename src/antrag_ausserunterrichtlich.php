@@ -11,8 +11,9 @@ require_once __DIR__ . '/includes/twig_setup.php';
 
 require_login();
 
-// Run DB migration silently on first load
-require_once __DIR__ . '/run_alter_extra.php';
+// Frueher lief hier bei jedem Aufruf run_alter_extra.php und baute die
+// Tabelle um. Die Spalten spielt laengst die regulaere Migration ein
+// (includes/migrations.php, alter_extracurricular.sql).
 
 $user_id = get_current_user_id();
 $edit_id = $_GET['edit_id'] ?? $_POST['edit_id'] ?? null;
@@ -102,15 +103,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         // Notify admin if approved request was modified
                         if ($is_modified && $ext['status'] === 'approved') {
                             require_once __DIR__ . '/includes/mailer.php';
+                            require_once __DIR__ . '/includes/mail_texte.php';
                             $stmt_admin = $conn->query("SELECT setting_value FROM app_settings WHERE setting_key = 'report_email'");
                             $admin_email = $stmt_admin->fetchColumn();
-                            
+
                             if ($admin_email) {
-                                $admin_subject = "Änderung an bereits genehmigtem Antrag (ID $edit_id)";
-                                $admin_body = "<h3>Achtung: Änderung!</h3>
-                                    <p>Der bereits genehmigte Antrag von <strong>" . get_current_user_name() . "</strong> 
-                                    für die Veranstaltung <strong>$event_name</strong> (Klasse $class_name) wurde nachträglich geändert.</p>
-                                    <p>Bitte überprüfen Sie die Änderungen im Admin-Dashboard.</p>";
+                                // (int): edit_id kommt ungeprueft aus der Adresse und steht im Betreff.
+                                $admin_subject = "Änderung an bereits genehmigtem Antrag (ID " . (int) $edit_id . ")";
+                                $admin_body = mail_text_aenderung_nach_genehmigung((string) get_current_user_name(), (string) $event_name, (string) $class_name);
                                 send_notification_email($admin_email, $admin_subject, $admin_body);
                             }
                         }

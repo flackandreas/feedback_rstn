@@ -1433,3 +1433,156 @@ textarea {
     margin-top: 3px;
     color: var(--text-dark);
 }
+
+/* =========================================================================
+   Seitenleiste im hellen Design: leicht statt wuchtig
+   -------------------------------------------------------------------------
+   Vorher trug die Seitenleiste die Modulfarbe fast schwarz und vollflaechig -
+   neben der hellen Wellenflaeche wirkte sie wie ein Block. Jetzt eine helle
+   Flaeche mit einem Hauch Modulfarbe, am Fuss die Wellen von schulos.de in
+   der Modulfarbe. Die Modulfarbe traegt das Logo, den Modulnamen, die Symbole
+   und die aktuelle Seite - so bleibt jedes Modul auf einen Blick erkennbar.
+
+   Nur fuer das helle Design; das dunkle bleibt, wie es war. Die Farben kommen
+   aus den Variablen oben, der Block ist deshalb in beiden Modulen gleich.
+   Nur img/wellen-leiste.svg ist je Modul in dessen Farbe gezeichnet.
+   ========================================================================= */
+
+body:not(.dark-mode) .sidebar {
+    /* Weiter oben gilt hier ein heller Ton fuer den dunklen Grund. Auf der
+       hellen Flaeche wieder der normale Wert: 5,2:1 auf Weiss. */
+    --text-muted: #4a7565;
+
+    color: var(--text-dark);
+    background-color: var(--bg-content);
+    background-image:
+        url('/img/wellen-leiste.svg'),
+        linear-gradient(180deg, rgba(var(--primary-color-rgb), 0.07) 0%, rgba(var(--primary-color-rgb), 0.02) 55%, rgba(var(--primary-color-rgb), 0) 100%);
+    background-repeat: no-repeat, no-repeat;
+    background-position: bottom center, top center;
+    background-size: 100% 100%, 100% 100%;
+    border-right: 1px solid var(--border-color);
+    box-shadow: 6px 0 24px rgba(var(--primary-color-rgb), 0.05);
+}
+
+/* ---------- Marke ---------- */
+
+body:not(.dark-mode) .sidebar-title {
+    color: var(--text-dark);
+}
+
+body:not(.dark-mode) .sidebar-title svg {
+    color: var(--primary-color);
+}
+
+body:not(.dark-mode) .marke__modul {
+    color: var(--primary-color);
+    opacity: 1;
+}
+
+body:not(.dark-mode) #nav-toggle {
+    color: var(--text-muted);
+}
+
+/* ---------- Eintraege ---------- */
+
+body:not(.dark-mode) .nav-item a {
+    color: var(--text-dark);
+}
+
+body:not(.dark-mode) .nav-item a .nav-icon {
+    color: var(--primary-color);
+}
+
+body:not(.dark-mode) .nav-item a:hover {
+    background-color: rgba(var(--primary-color-rgb), 0.08);
+}
+
+/* Die Vorlagen markieren die aktuelle Seite schon lange mit "active" - nur
+   sichtbar war das bisher nicht. */
+body:not(.dark-mode) .nav-item a.active {
+    background-color: var(--primary-bg-light);
+    color: var(--primary-dark);
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 var(--primary-color);
+}
+
+body:not(.dark-mode) .nav-label {
+    color: var(--text-muted);
+    opacity: 1;
+}
+
+body:not(.dark-mode) .nav-separator {
+    background-color: var(--border-color);
+    opacity: 1;
+}
+
+/* ---------- Aufklappmenue ("Neuer Antrag") ----------
+   Die Regeln dafuer stehen in base.twig und sind fuer die dunkle Leiste
+   gemacht: fast weisse Schrift, weisse Hervorhebung. Auf der hellen Flaeche
+   war der Eintrag kaum zu lesen und die Hervorhebung unsichtbar. */
+
+body:not(.dark-mode) .nav-summary {
+    color: var(--text-dark);
+}
+
+body:not(.dark-mode) .nav-summary .nav-icon {
+    color: var(--primary-color);
+}
+
+body:not(.dark-mode) .nav-summary:hover {
+    background-color: rgba(var(--primary-color-rgb), 0.08);
+}
+
+body:not(.dark-mode) .nav-details[open] .nav-summary {
+    background-color: rgba(var(--primary-color-rgb), 0.05);
+}
+
+body:not(.dark-mode) .nav-summary-arrow {
+    color: var(--text-muted);
+}
+
+body:not(.dark-mode) .nav-submenu a:hover {
+    background-color: rgba(var(--primary-color-rgb), 0.08);
+}
+
+/* =========================================================================
+   Rueckfrage der Schulleitung (Audit W2)
+   -------------------------------------------------------------------------
+   Steht unter "Meine Antraege" beim Antrag, solange er auf Rueckfrage steht.
+   Im Feld "Details" statt in einer eigenen Tabellenzeile, damit die
+   Streifen der Tabelle nicht durcheinandergeraten. Deckende Flaeche, weil
+   ein durchscheinender Kasten auf den gruenen Streifen truebe wirkt.
+   ========================================================================= */
+
+.rueckfrage-box {
+    margin-top: 8px;
+    min-width: 220px;
+    padding: 8px 10px;
+    border-left: 4px solid var(--warning-color);
+    border-radius: 4px;
+    background-color: #fcf3e8;
+    color: var(--text-dark);
+}
+
+body.dark-mode .rueckfrage-box {
+    background-color: #2d331e;
+}
+
+.rueckfrage-box__kopf {
+    font-size: 0.8em;
+    font-weight: 600;
+    color: var(--warning-color-dark);
+}
+
+.rueckfrage-box__text {
+    margin-top: 2px;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.rueckfrage-box__von {
+    margin-top: 4px;
+    font-size: 0.75em;
+    color: var(--text-muted);
+}

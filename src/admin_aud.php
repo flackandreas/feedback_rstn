@@ -8,6 +8,7 @@ require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/twig_setup.php';
 require_once __DIR__ . '/includes/admin_helpers.php';
+require_once __DIR__ . '/includes/entscheidungen.php';
 
 require_admin();
 
@@ -32,6 +33,16 @@ $stmt_extra = $conn->query("
     ORDER BY r.aud_type ASC, FIELD(r.status, 'pending') DESC, r.created_at DESC
 ");
 $extra_requests = $stmt_extra->fetchAll(PDO::FETCH_ASSOC);
+
+// Wer hat wann entschieden (Audit M3) und was wurde gefragt (Audit W2), fuer die Detailansicht
+$ids = array_column($extra_requests, 'id');
+$verlauf = entscheidungen_verlauf($conn, 'extracurricular_requests', $ids);
+$rueckfragen = rueckfragen($conn, 'extracurricular_requests', $ids);
+foreach ($extra_requests as &$r) {
+    $r['verlauf'] = $verlauf[(int) $r['id']] ?? [];
+    $r['rueckfrage'] = $rueckfragen[(int) $r['id']] ?? null;
+}
+unset($r);
 
 // Uebersicht der AUD-Tage. Abschaltbar, weil AUD 1 bis AUD 7 eine
 // Besonderheit der Realschule Titisee-Neustadt sind - anderswo stuenden dort

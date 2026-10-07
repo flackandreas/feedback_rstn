@@ -42,13 +42,15 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {# Der Wochentag steht am Datum, seit der Antrag ihn nicht mehr abfragt. #}
+                    {% set wt = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'] %}
                     {% for r in exempt_requests %}
                         {% set data = {
                             type: 'freistellung',
                             id: r.id,
                             teacher: r.teacher_name ~ ' (' ~ r.kuerzel ~ ')',
-                            date_from: r.date_from|date('d.m.Y'),
-                            date_to: r.date_to|date('d.m.Y'),
+                            date_from: wt[r.date_from|date('w')] ~ ', ' ~ r.date_from|date('d.m.Y'),
+                            date_to: wt[r.date_to|date('w')] ~ ', ' ~ r.date_to|date('d.m.Y'),
                             reason_type: r.reason_type|default(''),
                             days_of_week: r.days_of_week|default(''),
                             classes: r.classes|default(''),
@@ -56,7 +58,9 @@
                             hour_from: r.hour_from|default(''),
                             hour_to: r.hour_to|default(''),
                             reason: r.reason|default(''),
-                            status: r.status
+                            status: r.status,
+                            verlauf: r.verlauf|default([]),
+                            rueckfrage: r.rueckfrage|default(null)
                         } %}
                         <tr style="{{ (r.status != 'pending' and r.status != 'query') ? 'opacity: 0.65;' : '' }} cursor:pointer;" 
                             class="detail-row" 
@@ -71,8 +75,8 @@
                                     </div>
                                 {% endif %}
                             </td>
-                            <td>{{ r.date_from|date('d.m.Y') }}</td>
-                            <td>{{ r.date_to|date('d.m.Y') }}</td>
+                            <td>{{ wt[r.date_from|date('w')] }}, {{ r.date_from|date('d.m.Y') }}</td>
+                            <td>{{ wt[r.date_to|date('w')] }}, {{ r.date_to|date('d.m.Y') }}</td>
                             <td>{{ r.reason_type|default('—') }}</td>
                             <td onclick="event.stopPropagation();">
                                 {% if r.status == 'pending' %}
@@ -84,6 +88,7 @@
                                         <button type="button" class="button-warning btn-query" style="background-color: var(--warning-color); padding: 5px 10px; font-size: 0.85em; margin-right: 5px; color: white; border: none;" title="Rückfrage"></button>
                                         <button type="button" class="button-danger btn-reject" style="padding: 5px 10px; font-size: 0.85em;" title="Ablehnen"></button>
                                         <input type="hidden" name="action" value="" class="action-input">
+                                        <input type="hidden" name="rueckfrage" value="" class="rueckfrage-input">
                                     </form>
                                 {% elseif r.status == 'query' %}
                                     <form method="POST" action="/admin_action.php" style="display:inline-block; margin:0;" class="admin-action-form">
@@ -93,6 +98,7 @@
                                         <button type="button" class="button-primary btn-approve" style="background-color: var(--success-color); padding: 5px 10px; font-size: 0.85em; margin-right: 5px;" title="Genehmigen"></button>
                                         <button type="button" class="button-danger btn-reject" style="padding: 5px 10px; font-size: 0.85em;" title="Ablehnen"></button>
                                         <input type="hidden" name="action" value="" class="action-input">
+                                        <input type="hidden" name="rueckfrage" value="" class="rueckfrage-input">
                                     </form>
                                     <div style="margin-top: 5px;"><span class="badge" style="background-color: var(--warning-color); color: white; font-size: 0.75em;">RÜCKFRAGE</span></div>
                                 {% else %}
@@ -148,12 +154,26 @@
     });
 
 // ── Helper to build a detail row ────────────────────────────────────────────
-function row(label, value) {
-    if (!value && value !== 0) return '';
+// Die Werte stammen aus den Formularen der Lehrkraefte und landen per
+// innerHTML im Panel. row() setzt sie deshalb immer als Text ein; nur HTML,
+// das dieser Code selbst baut (Haekchen, Status), geht ueber rowHtml().
+// Vorher lief z.B. ein <img onerror=...> in der Begruendung im Browser der
+// Schulleitung mit deren Rechten (Audit H1).
+function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+}
+
+function rowHtml(label, html) {
+    if (!html && html !== 0) return '';
     return `<div style="display:grid;grid-template-columns:140px 1fr;gap:6px;padding:8px 0;border-bottom:1px solid var(--border-color,#eee);">
         <span style="font-size:0.8em;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">${label}</span>
-        <span>${value}</span>
+        <span>${html}</span>
     </div>`;
+}
+
+function row(label, value) {
+    if (!value && value !== 0) return '';
+    return rowHtml(label, esc(value));
 }
 
 function badge(ok) {
@@ -189,15 +209,20 @@ function openDetailPanel(d) {
         body += row('Verkehrsmittel', d.transport);
         if (d.start_time) body += row('Beginn', `${d.start_time} Uhr, ${d.start_location||'—'}`);
         if (d.return_time) body += row('Rückkehr', `${d.return_time} Uhr, ${d.return_location||'—'}`);
-        body += row('Heimfahrt geregelt', badge(d.return_trip_arranged));
+        body += rowHtml('Heimfahrt geregelt', badge(d.return_trip_arranged));
         body += row('Aufsicht', d.supervisors);
-        body += row('Einverständniserklärung', d.consent_form ? `<strong>${d.consent_form.toUpperCase()}</strong>` : '—');
-        body += row('Stundenplan benachrichtigt', badge(d.schedule_notified));
+        body += rowHtml('Einverständniserklärung', d.consent_form ? `<strong>${esc(d.consent_form.toUpperCase())}</strong>` : '—');
+        body += rowHtml('Stundenplan benachrichtigt', badge(d.schedule_notified));
     }
 
     const statusColor = d.status === 'approved' ? 'var(--success-color)' : (d.status === 'rejected' ? 'var(--danger-color)' : (d.status === 'query' ? 'var(--warning-color)' : 'var(--text-muted)'));
     const statusText = d.status === 'approved' ? 'GENEHMIGT' : (d.status === 'rejected' ? 'ABGELEHNT' : (d.status === 'query' ? 'RÜCKFRAGE' : 'AUSSTEHEND'));
-    body += row('Status', `<span style="color:${statusColor};font-weight:700;">${statusText}</span>`);
+    body += rowHtml('Status', `<span style="color:${statusColor};font-weight:700;">${statusText}</span>`);
+    if (d.rueckfrage) {
+        body += rowHtml('Rückfrage', `<span style="white-space:pre-line;">${esc(d.rueckfrage.text)}</span>`
+            + `<br><span style="font-size:0.8em;color:var(--text-muted);">${esc(d.rueckfrage.von)}, ${esc(d.rueckfrage.am)}</span>`);
+    }
+    if (d.verlauf && d.verlauf.length) body += rowHtml('Verlauf', d.verlauf.map(esc).join('<br>'));
 
     document.getElementById('panel-title').textContent = title;
     document.getElementById('panel-body').innerHTML = body;
@@ -269,22 +294,33 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
-    // Handle query buttons
+    // Rueckfrage: Die Schulleitung formuliert die Frage gleich im Dialog. Sie
+    // geht per Mail an die Lehrkraft und steht bei ihr unter "Meine Antraege"
+    // (Audit W2). Der Name kommt ueber text, nicht html, in den Dialog -
+    // SweetAlert setzt ihn dann als reinen Text ein.
     document.querySelectorAll('.btn-query').forEach(button => {
         button.addEventListener('click', function(e) {
             const form = this.closest('form');
-            form.querySelector('.action-input').value = 'query';
+            const zeile = this.closest('.detail-row');
+            const lehrkraft = zeile ? JSON.parse(zeile.dataset.info).teacher : '';
             Swal.fire({
-                title: 'Rücksprache halten?',
-                text: "Soll die Lehrkraft zu einer Rücksprache mit der Schulleitung aufgefordert werden? Der Antrag bleibt im System sichtbar.",
-                icon: 'info',
+                title: 'Rückfrage stellen',
+                text: (lehrkraft ? `An ${lehrkraft}. ` : '') + 'Die Frage geht per Mail an die Lehrkraft und erscheint bei ihr unter „Meine Anträge“.',
+                input: 'textarea',
+                inputPlaceholder: 'Ihre Rückfrage …',
+                inputAttributes: { maxlength: '2000', 'aria-label': 'Rückfrage an die Lehrkraft' },
+                inputValidator: (wert) => (wert || '').trim() === '' ? 'Bitte die Rückfrage formulieren.' : undefined,
                 showCancelButton: true,
                 confirmButtonColor: 'var(--warning-color)',
-                cancelButtonColor: 'var(--text-muted)',
-                confirmButtonText: 'Ja, Rückfrage stellen',
+            cancelButtonColor: 'var(--text-muted)',
+                confirmButtonText: 'Rückfrage senden',
                 cancelButtonText: 'Abbrechen'
             }).then((result) => {
-                if (result.isConfirmed) { form.submit(); }
+                if (result.isConfirmed) {
+                    form.querySelector('.action-input').value = 'query';
+                    form.querySelector('.rueckfrage-input').value = result.value.trim();
+                    form.submit();
+                }
             });
         });
     });

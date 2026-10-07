@@ -7,6 +7,7 @@
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/migrations.php';
+require_once __DIR__ . '/includes/entscheidungen.php';
 run_all_migrations();
 
 require_login();
@@ -79,6 +80,24 @@ $sql_sick = "SELECT id, 'Krankmeldung' AS type, notes AS details, date_from AS d
 $stmt = $conn->prepare("{$sql_extra} UNION ALL {$sql_exempt} UNION ALL {$sql_sick} ORDER BY created_at DESC");
 $stmt->execute([$user_id, $user_id, $user_id]);
 $requests = $stmt->fetchAll();
+
+// Steht ein Antrag auf Rueckfrage, zeigt die Liste den Text der Schulleitung
+// (Audit W2). Die IDs sind nur je Art eindeutig.
+$tabellen = ['Ausflug' => 'extracurricular_requests', 'Freistellung' => 'exemption_requests'];
+$rueckfragen = [];
+foreach ($tabellen as $art => $tabelle) {
+    $ids = [];
+    foreach ($requests as $r) {
+        if ($r['type'] === $art && $r['status'] === 'query') {
+            $ids[] = $r['id'];
+        }
+    }
+    $rueckfragen[$art] = rueckfragen($conn, $tabelle, $ids);
+}
+foreach ($requests as &$r) {
+    $r['rueckfrage'] = $rueckfragen[$r['type']][(int) $r['id']] ?? null;
+}
+unset($r);
 
 require_once __DIR__ . '/includes/twig_setup.php';
 

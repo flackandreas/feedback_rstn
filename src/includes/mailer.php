@@ -4,10 +4,11 @@
  * Wrapper function for sending emails using PHPMailer.
  */
 
-// Load PHPMailer classes from our manually downloaded folder
-require_once __DIR__ . '/../vendor/PHPMailer/src/Exception.php';
-require_once __DIR__ . '/../vendor/PHPMailer/src/PHPMailer.php';
-require_once __DIR__ . '/../vendor/PHPMailer/src/SMTP.php';
+// PHPMailer kommt ueber Composer (vendor/phpmailer/phpmailer). Die frueher
+// von Hand kopierte Fassung unter vendor/PHPMailer wurde mit dem Update der
+// Abhaengigkeiten entfernt; die Verweise darauf brachen jede Aktion ab, die
+// eine Mail verschickt - etwa das Genehmigen eines Antrags.
+require_once __DIR__ . '/../vendor/autoload.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -66,8 +67,10 @@ function send_notification_email($to, $subject, $body) {
         $mail->isHTML(true);
         $mail->Subject = $subject;
         $mail->Body    = $body;
-        // Strip HTML for plain text alternative
-        $mail->AltBody = strip_tags($body);
+        // Klartext-Fassung: Tags entfernen und die maskierten Zeichen
+        // zurueckwandeln (includes/mail_texte.php), sonst stuende dort
+        // "M&amp;M" statt "M&M".
+        $mail->AltBody = html_entity_decode(strip_tags($body), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
         $mail->send();
         return true;

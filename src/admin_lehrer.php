@@ -82,7 +82,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $stmt->execute([$id]);
                     $_SESSION['flash_success'] = "Lehrkraft erfolgreich gelöscht.";
                 } catch (PDOException $e) {
-                    $_SESSION['flash_error'] = "Fehler beim Löschen. Eventuell gibt es noch verknüpfte Anträge.";
+                    // 1451: Das Konto hat noch Antraege oder Krankmeldungen.
+                    // Die verschwinden nur mit dem Jahresabschluss (Audit M3).
+                    if (($e->errorInfo[1] ?? null) == 1451) {
+                        $_SESSION['flash_error'] = "Dieses Konto hat noch Anträge oder Krankmeldungen und lässt sich erst löschen, wenn der Jahresabschluss sie entfernt hat. Sperren lässt sich das Konto jederzeit im Portal.";
+                    } else {
+                        error_log('admin_lehrer: Loeschen fehlgeschlagen: ' . $e->getMessage());
+                        $_SESSION['flash_error'] = "Fehler beim Löschen.";
+                    }
                 }
             }
         } elseif ($action === 'import_csv') {

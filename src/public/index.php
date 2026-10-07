@@ -80,11 +80,25 @@ $routes = [
     'healthz' => 'healthz.php'
 ];
 
-// Fallback for legacy .php requests or exact matches
+// Seiten, die auch unter ihrem Dateinamen aufrufbar sind (/login.php usw.).
+//
+// Frueher war jede PHP-Datei im Hauptordner von src/ aufrufbar. Darunter
+// waren cron_report.php, das mit einem oeffentlich bekannten Schluessel den
+// Krankenstand ausgab, und run_alter_extra.php, das ohne Anmeldung die
+// Tabellen umbaute (Audit K1, M1). Eine Datei, die dort abgelegt wird, ist
+// jetzt erst erreichbar, wenn sie hier steht.
+$direkt = [
+    'admin_action.php', 'admin_archive.php', 'admin_aud.php', 'admin_dashboard.php',
+    'admin_lehrer.php', 'admin_sick_leaves.php', 'admin_system.php',
+    'antrag_ausserunterrichtlich.php', 'antrag_freistellung.php', 'attest.php',
+    'calendar.php', 'change_password.php', 'dashboard_antraege.php', 'export_sick_leaves.php',
+    'healthz.php', 'index.php', 'krankmeldung.php', 'login.php', 'login_sso.php', 'logout.php',
+    'meine_antraege.php', 'sso_abmelden.php', 'sso_rueckweg.php', 'sso_start.php',
+];
+
 if (array_key_exists($request, $routes)) {
     $file = $routes[$request];
-} elseif (preg_match('/^[a-zA-Z0-9_-]+\.php$/', $request) && file_exists(__DIR__ . '/../' . $request)) {
-    // Securely allow direct access to root-level PHP controllers only (no directory traversal, no subdirectories like config/ or vendor/)
+} elseif (in_array($request, $direkt, true)) {
     $file = $request;
 } else {
     // Frueher landete jeder unbekannte Pfad auf index.php. Das verschleiert

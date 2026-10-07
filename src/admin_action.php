@@ -7,6 +7,8 @@
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/mailer.php';
+require_once __DIR__ . '/includes/mail_texte.php';
+require_once __DIR__ . '/includes/entscheidungen.php';
 
 require_admin(); // Security block
 
@@ -18,7 +20,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
     }
 
-    $request_id = (int)$_POST['id'] ?? 0;
+    $request_id = (int) ($_POST['id'] ?? 0);
     $request_type = $_POST['type'] ?? '';
     $action = $_POST['action'] ?? '';
 
@@ -30,17 +32,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         elseif ($action === 'query') $status = 'query';
         
         $table = ($request_type === 'ausflug') ? 'extracurricular_requests' : 'exemption_requests';
-        
+
+        // Eine Rueckfrage braucht ihren Text (Audit W2). Vorher bekam die
+        // Lehrkraft nur "Bitte halte kurz Rücksprache" und musste raten, worum es geht.
+        $rueckfrage = null;
+        if ($action === 'query') {
+            $rueckfrage = trim(str_replace(["\r\n", "\r"], "\n", (string) ($_POST['rueckfrage'] ?? '')));
+            if ($rueckfrage === '' || mb_strlen($rueckfrage) > 2000) {
+                $_SESSION['flash_error'] = $rueckfrage === ''
+                    ? "Bitte die Rückfrage formulieren. Der Antrag ist unverändert."
+                    : "Die Rückfrage ist zu lang (höchstens 2000 Zeichen). Der Antrag ist unverändert.";
+                header("Location: /admin_dashboard.php");
+                exit;
+            }
+        }
+
         try {
             // First, get teacher email, name, and request details
             $details_query = "";
             if ($table === 'extracurricular_requests') {
-                $details_query = "SELECT t.email, t.name as teacher_name, r.class_name, r.event_date, r.event_date_to, r.destination 
+                $details_query = "SELECT r.status, t.email, t.name as teacher_name, r.class_name, r.event_date, r.event_date_to, r.destination 
                                   FROM extracurricular_requests r 
                                   JOIN teachers t ON r.teacher_id = t.id 
                                   WHERE r.id = ?";
             } else {
-                $details_query = "SELECT t.email, t.name as teacher_name, r.date_from, r.date_to, r.reason 
+                $details_query = "SELECT r.status, t.email, t.name as teacher_name, r.date_from, r.date_to, r.reason 
                                   FROM exemption_requests r 
                                   JOIN teachers t ON r.teacher_id = t.id 
                                   WHERE r.id = ?";
@@ -50,53 +66,43 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $stmt_details->execute([$request_id]);
             $request_details = $stmt_details->fetch(PDO::FETCH_ASSOC);
 
+            if (!$request_details) {
+                $_SESSION['flash_error'] = "Antrag nicht gefunden.";
+                header("Location: /admin_dashboard.php");
+                exit;
+            }
+
             if ($table === 'extracurricular_requests' && $action === 'approve') {
                 $stmt = $conn->prepare("UPDATE {$table} SET status = ?, modified_after_approval = 0, modified_at = NULL WHERE id = ?");
             } else {
                 $stmt = $conn->prepare("UPDATE {$table} SET status = ? WHERE id = ?");
             }
-            if ($stmt->execute([$status, $request_id])) {
-                $_SESSION['flash_success'] = "Antrag erfolgreich bearbeitet.";
-                
-                // Send email notification
-                if ($request_details && !empty($request_details['email'])) {
-                    $status_text = 'unbekannt';
-                    if ($status === 'approved') $status_text = 'genehmigt';
-                    elseif ($status === 'rejected') $status_text = 'abgelehnt';
-                    elseif ($status === 'query') $status_text = 'mit Rückfrage versehen';
 
-                    $request_type_text = ($table === 'extracurricular_requests') ? 'außerunterrichtliche Veranstaltung' : 'Freistellung';
-                    
-                    $subject = "Update zu deinem Antrag auf $request_type_text";
-                    $body = "<p>Hallo {$request_details['teacher_name']},</p>";
-                    
-                    if ($status === 'query') {
-                        $body .= "<p>zu deinem Antrag auf $request_type_text gibt es eine <strong>Rückfrage der Schulleitung</strong>.</p>";
-                        $body .= "<p>Bitte halte kurz Rücksprache mit der Schulleitung.</p>";
-                    } else {
-                        $body .= "<p>dein Antrag auf $request_type_text wurde soeben <strong>{$status_text}</strong>.</p>";
-                    }
-                    
-                    if ($table === 'extracurricular_requests') {
-                        $start = date('d.m.Y', strtotime($request_details['event_date']));
-                        $end = (!empty($request_details['event_date_to']) && $request_details['event_date_to'] !== $request_details['event_date']) 
-                            ? date('d.m.Y', strtotime($request_details['event_date_to'])) 
-                            : null;
-                        
-                        $date_str = $end ? "vom $start bis $end" : "am $start";
-                        $body .= "<p>Details: {$request_details['class_name']} nach {$request_details['destination']} $date_str</p>";
-                    } else {
-                        $body .= "<p>Details: Zeitraum vom " . date('d.m.Y', strtotime($request_details['date_from'])) . " bis " . date('d.m.Y', strtotime($request_details['date_to'])) . "</p>";
-                    }
-                    
-                    $body .= "<p>Viele Grüße,<br>Dein Feedback-System Team</p>";
+            // Entscheidung und Protokolleintrag (Audit M3) gelten nur zusammen.
+            $conn->beginTransaction();
+            try {
+                $stmt->execute([$status, $request_id]);
+                entscheidung_protokollieren($conn, $table, $request_id, $request_details['status'], $status, $rueckfrage);
+                $conn->commit();
+            } catch (PDOException $e) {
+                $conn->rollBack();
+                throw $e;
+            }
 
-                    if (!send_notification_email($request_details['email'], $subject, $body)) {
-                        $_SESSION['flash_error'] = "Status gespeichert, aber E-Mail konnte nicht gesendet werden.";
-                    }
+            $_SESSION['flash_success'] = "Antrag erfolgreich bearbeitet.";
+
+            // Send email notification
+            if (!empty($request_details['email'])) {
+                $request_type_text = ($table === 'extracurricular_requests') ? 'außerunterrichtliche Veranstaltung' : 'Freistellung';
+
+                $subject = $status === 'query'
+                    ? "Rückfrage zu deinem Antrag auf $request_type_text"
+                    : "Update zu deinem Antrag auf $request_type_text";
+                $body = mail_text_entscheidung($status, $table, $request_details, $rueckfrage, entscheidung_bearbeiter());
+
+                if (!send_notification_email($request_details['email'], $subject, $body)) {
+                    $_SESSION['flash_error'] = "Status gespeichert, aber E-Mail konnte nicht gesendet werden.";
                 }
-            } else {
-                $_SESSION['flash_error'] = "Verarbeitung fehlgeschlagen.";
             }
         } catch (PDOException $e) {
             $_SESSION['flash_error'] = "Datenbankfehler bei der Bearbeitung.";

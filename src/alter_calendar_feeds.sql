@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS calendar_feeds (
 --
 -- Die Uebernahme hat auf den bestehenden Installationen stattgefunden, die
 -- Zeile hat ihren Zweck also erfuellt. Eine neue Installation traegt ihren
--- Kalender unter Systemverwaltung ein; dort gehoert er hin.
+-- Kalender unter Systemverwaltung ein, dort gehoert er hin.
 --
 -- Der Schluessel steht weiterhin in der Versionsgeschichte. Ihn zu entfernen
 -- reicht deshalb nicht: er gehoert in IServ gewechselt und danach ueber die

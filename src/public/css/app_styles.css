@@ -1586,3 +1586,62 @@ body.dark-mode .rueckfrage-box {
     font-size: 0.75em;
     color: var(--text-muted);
 }
+
+/* Ein Beitrag im Wortwechsel: Rueckfrage oder Antwort. */
+.rueckfrage-box__eintrag + .rueckfrage-box__eintrag {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(0, 0, 0, 0.12);
+}
+
+/* Die eigene Antwort hebt sich durch die Primaerfarbe von der Frage ab. */
+.rueckfrage-box__eintrag--antwort {
+    padding-left: 8px;
+    border-left: 3px solid var(--primary-color);
+}
+
+.rueckfrage-box__formular {
+    margin-top: 10px;
+}
+
+.rueckfrage-box__label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.8em;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.rueckfrage-box__formular textarea {
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.rueckfrage-box__fuss {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 6px;
+    font-size: 0.75em;
+    color: var(--text-muted);
+}
+
+.rueckfrage-box__fuss .button-primary {
+    font-size: 1.1em;
+    padding: 6px 12px;
+}
+
+.rueckfrage-box__hinweis {
+    margin-top: 8px;
+    font-size: 0.8em;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+body.dark-mode .rueckfrage-box__eintrag + .rueckfrage-box__eintrag {
+    border-top-color: rgba(255, 255, 255, 0.15);
+}

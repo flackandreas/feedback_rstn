@@ -60,7 +60,7 @@
                             reason: r.reason|default(''),
                             status: r.status,
                             verlauf: r.verlauf|default([]),
-                            rueckfrage: r.rueckfrage|default(null)
+                            gespraech: r.gespraech|default([])
                         } %}
                         <tr style="{{ (r.status != 'pending' and r.status != 'query') ? 'opacity: 0.65;' : '' }} cursor:pointer;" 
                             class="detail-row" 
@@ -72,6 +72,11 @@
                                 {% if r.modified_at %}
                                     <div style="margin-top: 4px;">
                                         <span class="badge" style="background-color: #8e44ad; color: white; font-size: 0.7em; padding: 2px 5px; border-radius: 3px;">GEÄNDERT (am {{ r.modified_at|date('d.m.Y') }})</span>
+                                    </div>
+                                {% endif %}
+                                {% if r.beantwortet %}
+                                    <div style="margin-top: 4px;">
+                                        <span class="badge" style="background-color: var(--primary-color); color: white; font-size: 0.7em; padding: 2px 5px; border-radius: 3px;">RÜCKFRAGE BEANTWORTET</span>
                                     </div>
                                 {% endif %}
                             </td>
@@ -218,9 +223,15 @@ function openDetailPanel(d) {
     const statusColor = d.status === 'approved' ? 'var(--success-color)' : (d.status === 'rejected' ? 'var(--danger-color)' : (d.status === 'query' ? 'var(--warning-color)' : 'var(--text-muted)'));
     const statusText = d.status === 'approved' ? 'GENEHMIGT' : (d.status === 'rejected' ? 'ABGELEHNT' : (d.status === 'query' ? 'RÜCKFRAGE' : 'AUSSTEHEND'));
     body += rowHtml('Status', `<span style="color:${statusColor};font-weight:700;">${statusText}</span>`);
-    if (d.rueckfrage) {
-        body += rowHtml('Rückfrage', `<span style="white-space:pre-line;">${esc(d.rueckfrage.text)}</span>`
-            + `<br><span style="font-size:0.8em;color:var(--text-muted);">${esc(d.rueckfrage.von)}, ${esc(d.rueckfrage.am)}</span>`);
+    // Rueckfragen und Antworten in ihrer Reihenfolge. Die Texte kommen aus
+    // Formularen und gehen nur ueber esc() ins Panel.
+    if (d.gespraech && d.gespraech.length) {
+        body += rowHtml('Rückfrage', d.gespraech.map(n =>
+            `<div style="margin-bottom:8px;${n.art === 'antwort' ? 'padding-left:8px;border-left:3px solid var(--primary-color);' : ''}">`
+            + `<span style="white-space:pre-line;">${esc(n.text)}</span>`
+            + `<br><span style="font-size:0.8em;color:var(--text-muted);">${n.art === 'antwort' ? 'Antwort von ' : ''}${esc(n.von)}, ${esc(n.am)}</span>`
+            + `</div>`
+        ).join(''));
     }
     if (d.verlauf && d.verlauf.length) body += rowHtml('Verlauf', d.verlauf.map(esc).join('<br>'));
 
@@ -305,7 +316,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const lehrkraft = zeile ? JSON.parse(zeile.dataset.info).teacher : '';
             Swal.fire({
                 title: 'Rückfrage stellen',
-                text: (lehrkraft ? `An ${lehrkraft}. ` : '') + 'Die Frage geht per Mail an die Lehrkraft und erscheint bei ihr unter „Meine Anträge“.',
+                text: (lehrkraft ? `An ${lehrkraft}. ` : '') + 'Die Frage geht per Mail an die Lehrkraft und erscheint bei ihr unter „Meine Anträge“, wo sie antworten kann.',
                 input: 'textarea',
                 inputPlaceholder: 'Ihre Rückfrage …',
                 inputAttributes: { maxlength: '2000', 'aria-label': 'Rückfrage an die Lehrkraft' },

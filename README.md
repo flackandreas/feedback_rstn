@@ -118,6 +118,7 @@ feedback_rstn/
 │   ├── antrag_freistellung.php # Freistellungsantrag
 │   ├── antrag_ausserunterrichtlich.php # AUD-Antrag
 │   ├── meine_antraege.php      # Eigene Anträge der Lehrkraft
+│   ├── rueckfrage_antwort.php  # Antwort der Lehrkraft auf eine Rückfrage
 │   ├── calendar.php            # Kalenderansicht
 │   ├── calendar_feed.php       # iCal Feed Endpunkt
 │   ├── admin_dashboard.php     # Schulleitung: Gesamtübersicht & Statistik
@@ -180,6 +181,10 @@ SMTP_PASS=
 SMTP_VERSCHLUESSELUNG=tls
 SMTP_ABSENDER=noreply@schule.de
 SMTP_ABSENDERNAME=
+
+# Adresse des Antragssystems, wie sie im Browser steht. Die Mails zu
+# Rückfragen verlinken damit ins System; ohne den Wert fehlt der Link.
+APP_URL=https://antraege.meine-schule.de
 ```
 
 ### Vertrauenswürdige Vermittler (`TRUSTED_PROXIES`)
@@ -211,7 +216,12 @@ Die Zugangsdaten stehen in der `.env` (siehe oben), nicht mehr in
 Vorher stand dort ein Block mit Platzhaltern und der Aufforderung, die
 echten Zugangsdaten einzutragen — in einer Datei, die im Repository liegt.
 Bleibt `SMTP_HOST` leer, wird nichts versendet und ein Hinweis ins
-Fehlerprotokoll geschrieben.
+Fehlerprotokoll geschrieben. `SMTP_ABSENDER` muss eine gültige Adresse sein:
+Fehlt der Wert, gilt `noreply@localhost`, und das weist PHPMailer ab.
+
+Links in den Mails entstehen nur aus `APP_URL`, nie aus dem Host-Kopf der
+Anfrage — den kann jeder Aufrufer selbst setzen, und ein Link mit fremdem
+Ziel unter dem Absender der Schule wäre eine Vorlage für Phishing.
 
 ---
 
@@ -293,7 +303,7 @@ Wenn das Flag `force_password_change` bei einer Lehrkraft auf `1` steht (z.B. na
 | Krankmeldung | `/krankmeldung.php` | Abwesenheitsmeldung (Zeitraum, Vertretung, Notiz) |
 | Freistellungsantrag | `/antrag_freistellung.php` | Antrag auf Freistellung (Tage, Grund, Stundenweise) |
 | Außerunterrichtliche Veranstaltung | `/antrag_ausserunterrichtlich.php` | Ausflüge, Exkursionen, Studienfahrten |
-| Meine Anträge | `/meine_antraege.php` | Status-Übersicht der eigenen Anträge |
+| Meine Anträge | `/meine_antraege.php` | Status-Übersicht der eigenen Anträge; Rückfragen der Schulleitung lesen und direkt beantworten |
 | Kalender | `/calendar.php` | Kalenderdarstellung aller relevanten Termine |
 | Passwort ändern | `/change_password.php` | Eigenes Passwort aktualisieren |
 

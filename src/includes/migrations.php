@@ -6,8 +6,30 @@
 require_once __DIR__ . '/../config/database.php';
 
 function run_all_migrations() {
-    // Session caching to prevent running migrations query on every request
-    if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['migrations_run'])) {
+    $sql_files = [
+        'alter_extracurricular.sql',
+        'alter_material.sql',
+        'alter_step2.sql',
+        'alter_force_password_change.sql',
+        'alter_sick_leave_is_seen.sql',
+        'alter_extracurricular_end_date.sql',
+        'alter_calendar_feeds.sql',
+        'alter_rate_limits.sql',
+        'alter_portal_konten.sql',
+        'alter_konten_haerten.sql',
+        'alter_sick_leave_seen_at.sql',
+        'alter_entscheidungen_loeschschutz.sql',
+        'alter_entscheidungen_nachricht.sql',
+        'alter_status_rueckfrage.sql',
+        'alter_rueckfrage_antwort.sql'
+    ];
+
+    // Je Sitzung nur einmal pruefen - aber je Stand der Liste. Vorher merkte
+    // sich die Sitzung nur "schon gelaufen". Kam beim Update eine Migration
+    // dazu, liefen angemeldete Sitzungen bis zur naechsten Anmeldung am neuen
+    // Schema vorbei und brachen an der fehlenden Spalte ab.
+    $stand = md5(implode('|', $sql_files));
+    if (session_status() === PHP_SESSION_ACTIVE && ($_SESSION['migrations_run'] ?? null) === $stand) {
         return;
     }
 
@@ -30,22 +52,6 @@ function run_all_migrations() {
     } catch (PDOException $e) {
         error_log("Self-healing check failed: " . $e->getMessage());
     }
-
-    $sql_files = [
-        'alter_extracurricular.sql',
-        'alter_material.sql',
-        'alter_step2.sql',
-        'alter_force_password_change.sql',
-        'alter_sick_leave_is_seen.sql',
-        'alter_extracurricular_end_date.sql',
-        'alter_calendar_feeds.sql',
-        'alter_rate_limits.sql',
-        'alter_portal_konten.sql',
-        'alter_konten_haerten.sql',
-        'alter_sick_leave_seen_at.sql',
-        'alter_entscheidungen_loeschschutz.sql',
-        'alter_entscheidungen_nachricht.sql'
-    ];
 
     foreach ($sql_files as $file) {
         // Check if already executed
@@ -84,6 +90,6 @@ function run_all_migrations() {
     }
 
     if (session_status() === PHP_SESSION_ACTIVE) {
-        $_SESSION['migrations_run'] = true;
+        $_SESSION['migrations_run'] = $stand;
     }
 }

@@ -53,13 +53,16 @@ $stmt_exempt = $conn->query("
 ");
 $exempt_requests = $stmt_exempt->fetchAll(PDO::FETCH_ASSOC);
 
-// Wer hat wann entschieden (Audit M3) und was wurde gefragt (Audit W2), fuer die Detailansicht
+// Wer hat wann entschieden (Audit M3), was wurde gefragt (Audit W2) und was
+// hat die Lehrkraft geantwortet - fuer die Detailansicht. "beantwortet"
+// markiert Antraege, die nach einer Antwort wieder bei der Schulleitung liegen.
 $ids = array_column($exempt_requests, 'id');
 $verlauf = entscheidungen_verlauf($conn, 'exemption_requests', $ids);
-$rueckfragen = rueckfragen($conn, 'exemption_requests', $ids);
+$gespraeche = rueckfrage_gespraeche($conn, 'exemption_requests', $ids);
 foreach ($exempt_requests as &$r) {
     $r['verlauf'] = $verlauf[(int) $r['id']] ?? [];
-    $r['rueckfrage'] = $rueckfragen[(int) $r['id']] ?? null;
+    $r['gespraech'] = $gespraeche[(int) $r['id']] ?? [];
+    $r['beantwortet'] = rueckfrage_beantwortet((string) $r['status'], $r['gespraech']);
 }
 unset($r);
 

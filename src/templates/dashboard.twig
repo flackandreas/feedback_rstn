@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Die Rueckfrage selbst steht unter "Meine Antraege" (Audit W2).
     Swal.fire({
         title: 'Rückfrage der Schulleitung',
-        text: '{{ total_queries == 1 ? "Die Schulleitung hat eine Rückfrage zu einem deiner Anträge." : "Die Schulleitung hat Rückfragen zu " ~ total_queries ~ " deiner Anträge." }} Du findest sie unter „Meine Anträge“.',
+        text: '{{ total_queries == 1 ? "Die Schulleitung hat eine Rückfrage zu einem deiner Anträge." : "Die Schulleitung hat Rückfragen zu " ~ total_queries ~ " deiner Anträge." }} Du findest sie unter „Meine Anträge“ und kannst dort direkt antworten.',
         icon: 'info',
         showCancelButton: true,
         confirmButtonColor: 'var(--primary-color)',

@@ -199,16 +199,18 @@ if ($action === 'export') {
     file_put_contents($tmp_dir . "/Freistellungen/freistellungen_$year.csv", "\xEF\xBB\xBF" . $csv);
 
     // --- 4. Entscheidungen der Schulleitung (Audit M3) ---
+    // Mit art: 'entscheidung' ist ein Schritt der Schulleitung, 'antwort' die
+    // Antwort einer Lehrkraft auf eine Rueckfrage.
     // Der Abschluss loescht sie mit ihren Antraegen (ON DELETE CASCADE),
     // deshalb gehoeren sie ins Archiv. antrag_id verweist auf die ID in
     // freistellungen_*.csv bzw. veranstaltungen_*.csv.
     $stmt = $conn->prepare("
-        SELECT e.id, 'Freistellung' AS antragsart, e.freistellung_id AS antrag_id, e.status_vorher, e.status_neu,
+        SELECT e.id, 'Freistellung' AS antragsart, e.freistellung_id AS antrag_id, e.art, e.status_vorher, e.status_neu,
                e.nachricht, e.entschieden_von, e.entschieden_von_name, e.entschieden_am
           FROM antrag_entscheidungen e JOIN exemption_requests r ON r.id = e.freistellung_id
          WHERE r.date_from BETWEEN ? AND ?
         UNION ALL
-        SELECT e.id, 'Veranstaltung', e.veranstaltung_id, e.status_vorher, e.status_neu,
+        SELECT e.id, 'Veranstaltung', e.veranstaltung_id, e.art, e.status_vorher, e.status_neu,
                e.nachricht, e.entschieden_von, e.entschieden_von_name, e.entschieden_am
           FROM antrag_entscheidungen e JOIN extracurricular_requests r ON r.id = e.veranstaltung_id
          WHERE r.event_date BETWEEN ? AND ?

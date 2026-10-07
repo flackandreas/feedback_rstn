@@ -81,28 +81,43 @@ $stmt = $conn->prepare("{$sql_extra} UNION ALL {$sql_exempt} UNION ALL {$sql_sic
 $stmt->execute([$user_id, $user_id, $user_id]);
 $requests = $stmt->fetchAll();
 
-// Steht ein Antrag auf Rueckfrage, zeigt die Liste den Text der Schulleitung
-// (Audit W2). Die IDs sind nur je Art eindeutig.
+// Rueckfragen der Schulleitung (Audit W2) und die Antworten darauf. Der
+// Wortwechsel bleibt stehen, auch wenn der Antrag wieder offen oder
+// entschieden ist: wer geantwortet hat, soll nachlesen koennen, was. Die IDs
+// sind nur je Art eindeutig.
 $tabellen = ['Ausflug' => 'extracurricular_requests', 'Freistellung' => 'exemption_requests'];
-$rueckfragen = [];
+$gespraeche = [];
 foreach ($tabellen as $art => $tabelle) {
     $ids = [];
     foreach ($requests as $r) {
-        if ($r['type'] === $art && $r['status'] === 'query') {
+        if ($r['type'] === $art) {
             $ids[] = $r['id'];
         }
     }
-    $rueckfragen[$art] = rueckfragen($conn, $tabelle, $ids);
+    $gespraeche[$art] = rueckfrage_gespraeche($conn, $tabelle, $ids);
 }
 foreach ($requests as &$r) {
-    $r['rueckfrage'] = $rueckfragen[$r['type']][(int) $r['id']] ?? null;
+    $r['gespraech'] = $gespraeche[$r['type']][(int) $r['id']] ?? [];
+    $r['beantwortet'] = rueckfrage_beantwortet((string) $r['status'], $r['gespraech']);
 }
 unset($r);
 
 require_once __DIR__ . '/includes/twig_setup.php';
 
+// Meldungen der Seiten, die hierher zurueckfuehren: die Antwort auf eine
+// Rueckfrage und die Aenderung eines Ausflugs. Bisher las diese Seite sie
+// nicht aus - die Bestaetigung fehlte, und die Meldung erschien erst spaeter
+// auf irgendeiner anderen Seite.
+$flash_success = $_SESSION['flash_success'] ?? null;
+$flash_error = $_SESSION['flash_error'] ?? null;
+unset($_SESSION['flash_success'], $_SESSION['flash_error']);
+
 echo $twig->render('meine_antraege.twig', [
     'requests' => $requests,
+    // Fuer das Antwortformular unter einer Rueckfrage.
+    'csrf_token' => get_csrf_token(),
+    'flash_success' => $flash_success,
+    'flash_error' => $flash_error,
     'filter_status' => $filter,
     'current_user_name' => get_current_user_name(),
     'is_admin' => is_current_user_admin(),

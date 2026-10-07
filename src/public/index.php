@@ -93,7 +93,7 @@ $direkt = [
     'antrag_ausserunterrichtlich.php', 'antrag_freistellung.php', 'attest.php',
     'calendar.php', 'change_password.php', 'dashboard_antraege.php', 'export_sick_leaves.php',
     'healthz.php', 'index.php', 'krankmeldung.php', 'login.php', 'login_sso.php', 'logout.php',
-    'meine_antraege.php', 'sso_abmelden.php', 'sso_rueckweg.php', 'sso_start.php',
+    'meine_antraege.php', 'rueckfrage_antwort.php', 'sso_abmelden.php', 'sso_rueckweg.php', 'sso_start.php',
 ];
 
 if (array_key_exists($request, $routes)) {

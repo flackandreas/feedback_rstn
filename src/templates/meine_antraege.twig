@@ -81,16 +81,38 @@
                             </td>
                             <td style="color: var(--text-muted);">
                                 {{ r.details|slice(0, 50) }}{% if r.details|length > 50 %}...{% endif %}
-                                {# Rueckfrage der Schulleitung (Audit W2). Aeltere Rueckfragen
-                                   haben keinen Text - dann bleibt es beim Hinweis. #}
-                                {% if r.status == 'query' %}
+                                {# Rueckfrage der Schulleitung (Audit W2) und die Antworten
+                                   darauf. Aeltere Rueckfragen haben keinen Text - dann bleibt
+                                   es beim Hinweis. Antworten ist freiwillig: wer es im
+                                   Gespraech klaert, schreibt nichts, und die Schulleitung
+                                   entscheidet direkt. #}
+                                {% if r.status == 'query' or r.gespraech is not empty %}
                                     <div class="rueckfrage-box">
                                         <div class="rueckfrage-box__kopf">Rückfrage der Schulleitung</div>
-                                        {% if r.rueckfrage %}
-                                            <div class="rueckfrage-box__text">{{ r.rueckfrage.text }}</div>
-                                            <div class="rueckfrage-box__von">{{ r.rueckfrage.von }}, {{ r.rueckfrage.am }}</div>
+                                        {% for n in r.gespraech %}
+                                            <div class="rueckfrage-box__eintrag{{ n.art == 'antwort' ? ' rueckfrage-box__eintrag--antwort' : '' }}">
+                                                <div class="rueckfrage-box__text">{{ n.text }}</div>
+                                                <div class="rueckfrage-box__von">{{ n.art == 'antwort' ? 'Ihre Antwort' : n.von }}, {{ n.am }}</div>
+                                            </div>
                                         {% else %}
                                             <div class="rueckfrage-box__text">Bitte Rücksprache mit der Schulleitung halten.</div>
+                                        {% endfor %}
+
+                                        {% if r.status == 'query' %}
+                                            {% set feld = 'antwort-' ~ r.type|lower ~ '-' ~ r.id %}
+                                            <form method="POST" action="/rueckfrage_antwort.php" class="rueckfrage-box__formular">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                                <input type="hidden" name="type" value="{{ r.type == 'Ausflug' ? 'ausflug' : 'freistellung' }}">
+                                                <input type="hidden" name="id" value="{{ r.id }}">
+                                                <label for="{{ feld }}" class="rueckfrage-box__label">Antwort an die Schulleitung</label>
+                                                <textarea id="{{ feld }}" name="antwort" rows="3" maxlength="2000" required></textarea>
+                                                <div class="rueckfrage-box__fuss">
+                                                    <span>Lieber im Gespräch klären? Dann ist keine Antwort nötig.</span>
+                                                    <button type="submit" class="button-primary">Antwort senden</button>
+                                                </div>
+                                            </form>
+                                        {% elseif r.beantwortet %}
+                                            <div class="rueckfrage-box__hinweis">Ihre Antwort liegt der Schulleitung vor.</div>
                                         {% endif %}
                                     </div>
                                 {% endif %}

@@ -293,7 +293,7 @@ Wenn das Flag `force_password_change` bei einer Lehrkraft auf `1` steht (z.B. na
 | Krankmeldung | `/krankmeldung.php` | Abwesenheitsmeldung (Zeitraum, Vertretung, Notiz) |
 | Freistellungsantrag | `/antrag_freistellung.php` | Antrag auf Freistellung (Tage, Grund, Stundenweise) |
 | Außerunterrichtliche Veranstaltung | `/antrag_ausserunterrichtlich.php` | Ausflüge, Exkursionen, Studienfahrten |
-| Meine Anträge | `/meine_antraege.php` | Status-Übersicht der eigenen Anträge |
+| Meine Anträge | `/meine_antraege.php` | Status-Übersicht der eigenen Anträge; Rückfragen der Schulleitung lesen und direkt beantworten |
 | Kalender | `/calendar.php` | Kalenderdarstellung aller relevanten Termine |
 | Passwort ändern | `/change_password.php` | Eigenes Passwort aktualisieren |
 

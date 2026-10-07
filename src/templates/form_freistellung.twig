@@ -104,9 +104,9 @@
             </thead>
             <tbody>
                 {% for r in requests %}
-                    {% set statusColor = (r.status == 'pending') ? 'var(--warning-color)' : ((r.status == 'approved') ? 'var(--success-color)' : 'var(--danger-color)') %}
+                    {% set statusColor = (r.status == 'pending' or r.status == 'query') ? 'var(--warning-color)' : ((r.status == 'approved') ? 'var(--success-color)' : 'var(--danger-color)') %}
                     {% set statusText %}
-                        {% if r.status == 'pending' %}AUSSTEHEND{% elseif r.status == 'approved' %}GENEHMIGT{% elseif r.status == 'rejected' %}ABGELEHNT{% else %}{{ r.status|upper }}{% endif %}
+                        {% if r.status == 'pending' %}AUSSTEHEND{% elseif r.status == 'query' %}RÜCKFRAGE{% elseif r.status == 'approved' %}GENEHMIGT{% elseif r.status == 'rejected' %}ABGELEHNT{% else %}{{ r.status|upper }}{% endif %}
                     {% endset %}
                     <tr>
                         <td>{{ r.date_from|date('d.m.Y') }}</td>

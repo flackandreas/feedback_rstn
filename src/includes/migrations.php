@@ -44,7 +44,8 @@ function run_all_migrations() {
         'alter_konten_haerten.sql',
         'alter_sick_leave_seen_at.sql',
         'alter_entscheidungen_loeschschutz.sql',
-        'alter_entscheidungen_nachricht.sql'
+        'alter_entscheidungen_nachricht.sql',
+        'alter_status_rueckfrage.sql'
     ];
 
     foreach ($sql_files as $file) {

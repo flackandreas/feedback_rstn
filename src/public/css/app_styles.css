@@ -317,6 +317,7 @@ input[type="text"],
 input[type="password"],
 input[type="number"],
 input[type="date"],
+input[type="time"],
 select,
 textarea {
     width: 100%;
@@ -1945,5 +1946,127 @@ body.dark-mode .rueckfrage-box__eintrag + .rueckfrage-box__eintrag {
     .sidebar,
     .app-layout.nav-offen .sidebar {
         transition: none;
+    }
+}
+
+/* =========================================================================
+   Antrag nach Vordruck LBV 1211
+   -------------------------------------------------------------------------
+   Das Formular ist in die Abschnitte des Vordrucks gegliedert, damit sich
+   Eingabe und Ausdruck Zeile fuer Zeile vergleichen lassen.
+   ========================================================================= */
+
+.lbv-abschnitt {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 15px 18px 10px;
+    margin: 0 0 20px;
+    min-width: 0;
+}
+
+.lbv-abschnitt--intern {
+    background: var(--bg-main);
+}
+
+.lbv-abschnitt__titel {
+    font-weight: 700;
+    padding: 0 6px;
+}
+
+.lbv-abschnitt__zwischentitel {
+    font-weight: 600;
+    margin: 15px 0 8px;
+}
+
+.lbv-hinweis {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.85em;
+    font-weight: normal;
+    color: var(--text-muted);
+}
+
+.lbv-abschnitt__titel .lbv-hinweis,
+.lbv-abschnitt__zwischentitel .lbv-hinweis {
+    display: inline;
+}
+
+.lbv-hinweis--kasten {
+    margin: 0 0 20px;
+    padding: 10px 14px;
+    border-left: 3px solid var(--primary-color);
+    background: var(--primary-bg-light);
+}
+
+.lbv-haken {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin: 6px 0;
+    font-weight: normal;
+    cursor: pointer;
+}
+
+.lbv-haken input {
+    margin-top: 3px;
+}
+
+/* Name, Vorname, "in Ausbildung" - bei Begleitpersonen davor die Auswahl
+   aus dem Kollegium. */
+.lbv-person {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 0 15px;
+    align-items: end;
+}
+
+.lbv-person--begleitung {
+    grid-template-columns: 1.2fr 1fr 1fr auto;
+}
+
+.lbv-person__haken {
+    margin-bottom: 18px;
+    white-space: nowrap;
+}
+
+/* Beginn, Ankunft, Abfahrt, Ende: je eine Zeile mit Datum und Uhrzeit. */
+.lbv-zeitpunkte {
+    margin: 10px 0;
+}
+
+.lbv-zeitpunkt {
+    display: grid;
+    grid-template-columns: 220px 1fr 1fr;
+    gap: 0 15px;
+    align-items: end;
+}
+
+.lbv-zeitpunkt__titel {
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+    .lbv-person,
+    .lbv-person--begleitung,
+    .lbv-zeitpunkt {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .lbv-person--begleitung > .form-group:first-child,
+    .lbv-zeitpunkt__titel {
+        grid-column: 1 / -1;
+        margin-bottom: 4px;
+    }
+
+    .lbv-person__haken {
+        grid-column: 1 / -1;
+        margin-bottom: 12px;
+    }
+
+    .lbv-person--begleitung {
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 10px;
     }
 }

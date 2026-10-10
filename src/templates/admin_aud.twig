@@ -60,33 +60,9 @@
                             {% else %}
                                 <div style="display: flex; flex-direction: column; gap: 8px;">
                                 {% for r in aud_requests %}
-                                    {% set data = {
-                                        type: 'ausflug',
-                                        id: r.id,
-                                        teacher: r.teacher_name ~ ' (' ~ r.kuerzel ~ ')',
-                                        event_date: r.event_date|date('d.m.Y'),
-                                        event_date_to: r.event_date_to ? r.event_date_to|date('d.m.Y') : '',
-                                        class_name: r.class_name|default(''),
-                                        destination: r.destination|default(''),
-                                        role: r.role|default(''),
-                                        companion: r.companion|default(''),
-                                        event_name: r.event_name|default(''),
-                                        costs: r.costs|default(''),
-                                        transport: r.transport|default(''),
-                                        start_time: r.start_time|default(''),
-                                        start_location: r.start_location|default(''),
-                                        return_time: r.return_time|default(''),
-                                        return_location: r.return_location|default(''),
-                                        return_trip_arranged: r.return_trip_arranged,
-                                        supervisors: r.supervisors|default(''),
-                                        consent_form: r.consent_form|default(''),
-                                        schedule_notified: r.schedule_notified,
-                                        status: r.status,
-                                        verlauf: r.verlauf|default([]),
-                                        gespraech: r.gespraech|default([])
-                                    } %}
-                                    <div class="detail-row" 
-                                         data-info="{{ data|json_encode|e('html_attr') }}"
+                                    {# r.info baut admin_aud.php (veranstaltung_info). #}
+                                    <div class="detail-row"
+                                         data-info="{{ r.info|json_encode|e('html_attr') }}"
                                          style="padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f8fafc; font-size: 0.9em; cursor: pointer; transition: background-color 0.2s;"
                                          onmouseover="this.style.backgroundColor='#edf2f7'"
                                          onmouseout="this.style.backgroundColor='#f8fafc'"
@@ -152,7 +128,10 @@
             <table class="data-table simple" style="font-size: 0.9em;">
                 <thead>
                     <tr>
-                        <th>AUD</th>
+                        {# Der AUD-Tag gehoert zur abschaltbaren AUD-Tage-Uebersicht.
+                           Das Formular fragt ihn nicht mehr ab, die Altwerte
+                           bleiben aber gespeichert. #}
+                        {% if aud_tage_sichtbar %}<th>AUD</th>{% endif %}
                         <th>Lehrkraft</th>
                         <th>Datum</th>
                         <th>Klasse(n)</th>
@@ -162,36 +141,11 @@
                 </thead>
                 <tbody>
                     {% for r in extra_requests %}
-                        {% set data = {
-                            type: 'ausflug',
-                            id: r.id,
-                            teacher: r.teacher_name ~ ' (' ~ r.kuerzel ~ ')',
-                            event_date: r.event_date|date('d.m.Y'),
-                            event_date_to: r.event_date_to ? r.event_date_to|date('d.m.Y') : '',
-                            class_name: r.class_name|default(''),
-                            destination: r.destination|default(''),
-                            role: r.role|default(''),
-                            companion: r.companion|default(''),
-                            event_name: r.event_name|default(''),
-                            costs: r.costs|default(''),
-                            transport: r.transport|default(''),
-                            start_time: r.start_time|default(''),
-                            start_location: r.start_location|default(''),
-                            return_time: r.return_time|default(''),
-                            return_location: r.return_location|default(''),
-                            return_trip_arranged: r.return_trip_arranged,
-                            supervisors: r.supervisors|default(''),
-                            consent_form: r.consent_form|default(''),
-                            schedule_notified: r.schedule_notified,
-                            status: r.status,
-                            verlauf: r.verlauf|default([]),
-                            gespraech: r.gespraech|default([])
-                        } %}
                         <tr style="{{ (r.status != 'pending' and r.status != 'query') ? 'opacity: 0.65;' : '' }} cursor:pointer;"
                             class="detail-row"
-                            data-info="{{ data|json_encode|e('html_attr') }}"
+                            data-info="{{ r.info|json_encode|e('html_attr') }}"
                             title="Klicken für Details">
-                            <td><strong style="color: var(--primary-color);">{{ r.aud_type|default('-') }}</strong></td>
+                            {% if aud_tage_sichtbar %}<td><strong style="color: var(--primary-color);">{{ r.aud_type|default('-') }}</strong></td>{% endif %}
                             <td style="font-weight: 600;">
                                 {{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span>
                                 {% if r.beantwortet %}
@@ -299,28 +253,55 @@ function badge(ok) {
     return ok ? `<span style="color:var(--success-color);font-weight:600;">✓ Ja</span>` : `<span style="color:var(--text-muted);">– Nein</span>`;
 }
 
+// Zwischenueberschrift im Panel; der Text kommt nur aus diesem Code.
+function abschnitt(titel) {
+    return `<div style="margin:18px 0 2px;font-weight:700;">${titel}</div>`;
+}
+
+// Die Reihenfolge folgt dem Vordruck LBV 1211. Antraege von vor der
+// Umstellung haben die neuen Felder nicht - row() laesst leere Zeilen weg.
 function openDetailPanel(d) {
     let title = 'Außerunterrichtliche Veranstaltung';
     let body = '';
-    body += row('Lehrkraft', d.teacher);
-    body += row('Als', d.role);
-    body += row('Klasse(n)', d.class_name);
-    body += row('Begleitperson', d.companion);
-    let dateVal = d.event_date;
-    if (d.event_date_to && d.event_date_to !== d.event_date) {
-        dateVal = `${d.event_date} - ${d.event_date_to}`;
+    body += row('Eingereicht von', d.teacher);
+
+    body += abschnitt('1. Persönliche Angaben');
+    body += row('Personalnummer', d.lbv_personalnummer);
+    body += row('DRM', d.lbv_drm);
+    body += row('Verantwortlich', d.lehrkraft);
+    if (d.begleitpersonen && d.begleitpersonen.length) {
+        body += rowHtml('Begleitpersonen', d.begleitpersonen.map(esc).join('<br>'));
+    } else {
+        body += row('Begleitperson', d.companion);
     }
-    body += row('Datum', dateVal);
+
+    body += abschnitt('2. Angaben zur Dienstreise');
+    body += row('Art', d.role);
     body += row('Veranstaltung', d.event_name);
-    body += row('Ziel / Strecke', d.destination);
-    body += row('Kosten ca.', d.costs);
-    body += row('Verkehrsmittel', d.transport);
-    if (d.start_time) body += row('Beginn', `${d.start_time} Uhr, ${d.start_location||'—'}`);
-    if (d.return_time) body += row('Rückkehr', `${d.return_time} Uhr, ${d.return_location||'—'}`);
+    body += row('Ziel', d.destination);
+    body += row('Klasse(n)', d.class_name);
+    body += row('Schülerzahl', d.schueler_anzahl);
+    body += row('Beginn der Reise', d.beginn);
+    body += row('Ankunft am Ort', d.ankunft);
+    body += row('Abfahrt am Ort', d.abfahrt);
+    body += row('Ende der Reise', d.ende);
+    body += row('Aufenthaltstage', d.aufenthaltstage);
+
+    body += abschnitt('3. Beförderung und 4. Kosten');
+    body += row('Beförderungsmittel', d.befoerderung);
+    body += row('Verkehrsmittel (alt)', d.transport);
+    body += row('Kosten insgesamt', d.lbv_kosten);
+
+    body += abschnitt('Schulintern');
+    body += row('Kosten je Schüler ca.', d.costs);
+    body += row('Treffpunkt Beginn', d.start_location);
+    body += row('Treffpunkt Rückkehr', d.return_location);
     body += rowHtml('Heimfahrt geregelt', badge(d.return_trip_arranged));
     body += row('Aufsicht', d.supervisors);
     body += rowHtml('Einverständniserklärung', d.consent_form ? `<strong>${esc(d.consent_form.toUpperCase())}</strong>` : '—');
-    body += rowHtml('Stundenplan benachrichtigt', badge(d.schedule_notified));
+    // Das Formular fragt es nicht mehr ab; gezeigt wird nur noch ein Haken
+    // aus aelteren Antraegen.
+    if (d.schedule_notified) body += rowHtml('Stundenplan benachrichtigt', badge(1));
 
     const statusColor = d.status === 'approved' ? 'var(--success-color)' : (d.status === 'rejected' ? 'var(--danger-color)' : (d.status === 'query' ? 'var(--warning-color)' : 'var(--text-muted)'));
     const statusText = d.status === 'approved' ? 'GENEHMIGT' : (d.status === 'rejected' ? 'ABGELEHNT' : (d.status === 'query' ? 'RÜCKFRAGE' : 'AUSSTEHEND'));

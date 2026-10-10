@@ -169,7 +169,18 @@ if ($action === 'export') {
     file_put_contents($tmp_dir . "/Krankmeldungen/krankmeldungen_$year.csv", "\xEF\xBB\xBF" . $csv);
 
     // --- 2. Export Extracurricular Events ---
-    $stmt = $conn->prepare("SELECT id, teacher_id, role, class_name, companion, event_date, event_date_to, event_name, destination, aud_type, participating_teacher_id, costs, transport, start_time, start_location, return_time, return_location, return_trip_arranged, supervisors, consent_form, schedule_notified, status, created_at, modified_at, modified_after_approval FROM extracurricular_requests WHERE event_date BETWEEN ? AND ?");
+    // Die Angaben nach Vordruck LBV 1211 haengen hinten an, damit die
+    // vorderen Spalten dieselben bleiben wie in frueheren Archiven. Die
+    // Begleitpersonen stehen in einer eigenen Tabelle und werden mit dem
+    // Antrag geloescht - deshalb hier als eine Spalte.
+    $stmt = $conn->prepare("SELECT id, teacher_id, role, class_name, companion, event_date, event_date_to, event_name, destination, aud_type, participating_teacher_id, costs, transport, start_time, start_location, return_time, return_location, return_trip_arranged, supervisors, consent_form, schedule_notified, status, created_at, modified_at, modified_after_approval,
+               lbv_personalnummer, lbv_drm, lk_nachname, lk_vorname, lk_in_ausbildung,
+               (SELECT GROUP_CONCAT(CONCAT_WS(' ', b.vorname, b.nachname, IF(b.in_ausbildung = 1, '(in Ausbildung)', NULL))
+                                    ORDER BY b.position SEPARATOR ', ')
+                  FROM extracurricular_begleitpersonen b WHERE b.request_id = r.id) AS begleitpersonen,
+               ankunft_datum, ankunft_zeit, abfahrt_datum, abfahrt_zeit, aufenthaltstage, schueler_anzahl,
+               bef_oepnv, bef_reisebus, bef_sonstiges, bef_sonstiges_text, lbv_kosten_eur, lbv_kosten_erlaeuterung
+          FROM extracurricular_requests r WHERE event_date BETWEEN ? AND ?");
     $stmt->execute([$von, $bis]);
     $extra_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
     // Die Kopfzeile kam aus einer festen Liste und passte nicht mehr zu

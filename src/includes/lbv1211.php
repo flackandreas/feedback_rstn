@@ -12,14 +12,20 @@
 
 const LBV_BEGLEITPERSONEN_MAX = 4;
 
-/** Vorschlaege fuer "Art der Veranstaltung", wie sie der Vordruck nennt. */
+/** Vorschlaege fuer "Art der Veranstaltung", wie sie der Kopf des Vordrucks nennt. */
 const LBV_VERANSTALTUNGSARTEN = [
-    'Wandertag',
-    'Schullandheim',
+    'Gedenkstättenfahrt',
+    'Internationale Schülerbegegnung',
+    'Schullandheimaufenthalt',
     'Studien-/Lehrfahrt',
     'Jahresausflug',
+    'Wandertag',
     'Betriebsbesichtigung',
     'Projekttage',
+    'Chor-/Orchester-/Sporttage',
+    'Schulmusik',
+    'Schultheater',
+    'Schulkunst',
 ];
 
 /**
@@ -30,7 +36,7 @@ function lbv_pflichtfelder(): array
 {
     return [
         'lbv_personalnummer' => 'Personalnummer',
-        'lk_nachname' => 'Name der verantwortlichen Lehrkraft',
+        'lk_nachname' => 'Nachname der verantwortlichen Lehrkraft',
         'lk_vorname' => 'Vorname der verantwortlichen Lehrkraft',
         'role' => 'Art der Veranstaltung',
         'destination' => 'Ziel',
@@ -152,7 +158,6 @@ function lbv_eingabe_lesen(array $post): array
     return [
         // 1. Persoenliche Angaben
         'lbv_personalnummer' => $text('lbv_personalnummer', 30),
-        'lbv_drm' => $text('lbv_drm', 30),
         'lk_nachname' => $text('lk_nachname', 100),
         'lk_vorname' => $text('lk_vorname', 100),
         'lk_in_ausbildung' => $haken('lk_in_ausbildung'),
@@ -288,7 +293,7 @@ function lbv_eingabe_pruefen(array $e): array
     // Personen brauchen ihn.
     foreach ($e['begleitpersonen'] as $i => $p) {
         if ($p['teacher_id'] === null && $p['nachname'] === '') {
-            $fehler[] = 'Bei Begleitperson ' . ($i + 1) . ' fehlt der Name.';
+            $fehler[] = 'Bei Begleitperson ' . ($i + 1) . ' fehlt der Nachname.';
         }
     }
 
@@ -309,7 +314,6 @@ function lbv_spalten(array $e): array
 
     return [
         'lbv_personalnummer' => $e['lbv_personalnummer'],
-        'lbv_drm' => $leer_ist_null($e['lbv_drm']),
         'lk_nachname' => $e['lk_nachname'],
         'lk_vorname' => $e['lk_vorname'],
         'lk_in_ausbildung' => $e['lk_in_ausbildung'],

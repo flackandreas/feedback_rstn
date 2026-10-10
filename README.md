@@ -36,7 +36,7 @@ Ein webbasiertes Tool für Lehrkräfte und die Schulleitung der Realschule Titis
 - 🔐 **Rollenbasiertes Login & IServ SSO** – Klassischer Login oder nahtloses Single Sign-On via IServ OpenID Connect (OIDC).
 - 📝 **Krankmeldung** – Schnelle Erfassung von Abwesenheiten inklusive automatischer Benachrichtigung und Admin-Übersicht.
 - 🏖️ **Freistellungsantrag** – Digitale Beantragung von Freistellungen mit Details zu Tagen, Grund und stundenweiser Option.
-- 🚌 **Antrag auf außerunterrichtliche Veranstaltung (AUD)** – Vollständiges digitales Formular für Exkursionen, Studienfahrten und Unterrichtsgänge (inkl. Mehrtages-Zeiträumen, Begleitung, Kosten uvm.).
+- 🚌 **Antrag auf außerunterrichtliche Veranstaltung (AUD)** – Digitales Formular nach dem amtlichen Vordruck **LBV 1211** (Stand 07/20) für Exkursionen, Studienfahrten und Unterrichtsgänge: Personalnummer, bis zu vier Begleitpersonen, Reisezeiten, Beförderungsmittel und Kosten. Jeder Antrag lässt sich als PDF im Originalvordruck ausdrucken – fertig ausgefüllt, ohne bearbeitbare Felder.
 - 📊 **Strukturierte Admin-Verwaltung** – Aufgeteilter Schulleitungsbereich für Übersicht, Krankmeldungen, AUD-Anträge, Lehrerverwaltung, Archiv und Systemsteuerung.
 - 📋 **Slide-In Detailpanel** – Antragsdetails lassen sich in der Admin-Ansicht ohne Seitenwechsel einsehen und bearbeiten.
 - 📅 **Kalender & iCal Feed** – Übersicht über alle genehmigten Anträge und Termine sowie iCal-Feed-Schnittstelle.
@@ -116,7 +116,8 @@ feedback_rstn/
 │   ├── krankmeldung.php        # Krankmeldung einreichen
 │   ├── attest.php              # Attest-Auslieferung mit Berechtigungsprüfung
 │   ├── antrag_freistellung.php # Freistellungsantrag
-│   ├── antrag_ausserunterrichtlich.php # AUD-Antrag
+│   ├── antrag_ausserunterrichtlich.php # AUD-Antrag nach Vordruck LBV 1211
+│   ├── antrag_pdf.php          # AUD-Antrag als PDF im Vordruck LBV 1211
 │   ├── meine_antraege.php      # Eigene Anträge der Lehrkraft
 │   ├── rueckfrage_antwort.php  # Antwort der Lehrkraft auf eine Rückfrage
 │   ├── calendar.php            # Kalenderansicht
@@ -140,11 +141,15 @@ feedback_rstn/
 │   │   ├── auth.php            # Session, Auth-Prüfung, CSRF-Schutz
 │   │   ├── admin_helpers.php   # Hilfsfunktionen für Admin-Auswertungen
 │   │   ├── calendar_helper.php# Kalender-Hilfsfunktionen
+│   │   ├── lbv1211.php         # Felder und Prüfungen des Vordrucks LBV 1211
+│   │   ├── lbv1211_felder.php  # Lage der Felder im Vordruck (Koordinaten)
+│   │   ├── lbv1211_pdf.php     # Eindruck in den Vordruck (FPDI + tFPDF)
 │   │   ├── mailer.php          # PHPMailer Wrapper
 │   │   ├── migrations.php      # Automatische DB-Schema-Migrationen
 │   │   └── twig_setup.php      # Twig-Initialisierung
 │   ├── storage/                # Atteste & SSO-Zwischenspeicher (gitignored)
 │   ├── templates/              # Twig-Templates
+│   ├── vorlagen/               # Vordruck LBV 1211, entschlüsselt (qpdf, siehe lbv1211_pdf.php)
 │   └── vendor/                 # Composer-Abhängigkeiten
 └── db-data/                    # Persistente MariaDB-Daten (gitignored)
 ```
@@ -302,8 +307,8 @@ Wenn das Flag `force_password_change` bei einer Lehrkraft auf `1` steht (z.B. na
 | Dashboard | `/index.php` | Übersicht mit Schnellzugriffen |
 | Krankmeldung | `/krankmeldung.php` | Abwesenheitsmeldung (Zeitraum, Vertretung, Notiz) |
 | Freistellungsantrag | `/antrag_freistellung.php` | Antrag auf Freistellung (Tage, Grund, Stundenweise) |
-| Außerunterrichtliche Veranstaltung | `/antrag_ausserunterrichtlich.php` | Ausflüge, Exkursionen, Studienfahrten |
-| Meine Anträge | `/meine_antraege.php` | Status-Übersicht der eigenen Anträge; Rückfragen der Schulleitung lesen und direkt beantworten |
+| Außerunterrichtliche Veranstaltung | `/antrag_ausserunterrichtlich.php` | Ausflüge, Exkursionen, Studienfahrten nach Vordruck LBV 1211 |
+| Meine Anträge | `/meine_antraege.php` | Status-Übersicht der eigenen Anträge; Rückfragen der Schulleitung lesen und direkt beantworten; AUD-Antrag als PDF |
 | Kalender | `/calendar.php` | Kalenderdarstellung aller relevanten Termine |
 | Passwort ändern | `/change_password.php` | Eigenes Passwort aktualisieren |
 
@@ -313,7 +318,7 @@ Wenn das Flag `force_password_change` bei einer Lehrkraft auf `1` steht (z.B. na
 |---|---|---|
 | Admin-Dashboard | `/admin_dashboard.php` | Hauptansicht mit Kennzahlen, Event-Statistik und Schnellaktionen |
 | Krankmeldungen | `/admin_sick_leaves.php` | Übersicht & Bearbeitung aller Krankmeldungen |
-| Außerunterrichtliche Veranstaltungen | `/admin_aud.php` | Übersicht & Genehmigung aller AUD-Anträge |
+| Außerunterrichtliche Veranstaltungen | `/admin_aud.php` | Übersicht & Genehmigung aller AUD-Anträge, Ausdruck als PDF |
 | Lehrerverwaltung | `/admin_lehrer.php` | Verwaltung von Lehrkraft-Konten & CSV-Import |
 | Archiv | `/admin_archive.php` | Durchsuchbares Archiv vergangener Anträge |
 | System & Migrationen | `/admin_system.php` | Systemstatus, Ausführung von DB-Migrationen |

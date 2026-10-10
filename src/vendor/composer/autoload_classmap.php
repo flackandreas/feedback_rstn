@@ -94,6 +94,8 @@ return array(
     'Safe\\Exceptions\\ZipException' => $vendorDir . '/thecodingmachine/safe/generated/Exceptions/ZipException.php',
     'Safe\\Exceptions\\ZlibException' => $vendorDir . '/thecodingmachine/safe/generated/Exceptions/ZlibException.php',
     'Stringable' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/Stringable.php',
+    'TTFontFile' => $vendorDir . '/setasign/tfpdf/font/unifont/ttfonts.php',
     'UnhandledMatchError' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/UnhandledMatchError.php',
     'ValueError' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/ValueError.php',
+    'tFPDF' => $vendorDir . '/setasign/tfpdf/tfpdf.php',
 );

@@ -31,9 +31,9 @@ function veranstaltung_info(array $r, array $begleitpersonen): array
         trim($vorname . ' ' . $nachname) . ($in_ausbildung ? ' (in Ausbildung)' : '');
 
     $befoerderung = array_filter([
-        $r['bef_oepnv'] ? 'regelmäßig verkehrende Beförderungsmittel' : null,
+        $r['bef_oepnv'] ? 'regelmäßig verkehrendes Beförderungsmittel' : null,
         $r['bef_reisebus'] ? 'Reisebus' : null,
-        $r['bef_sonstiges'] ? 'sonstiges: ' . $r['bef_sonstiges_text'] : null,
+        $r['bef_sonstiges'] ? 'sonstiges Verkehrsmittel: ' . $r['bef_sonstiges_text'] : null,
     ]);
 
     $kosten = '';
@@ -55,7 +55,6 @@ function veranstaltung_info(array $r, array $begleitpersonen): array
         'event_name' => (string) $r['event_name'],
         // Vordruck LBV 1211
         'lbv_personalnummer' => (string) $r['lbv_personalnummer'],
-        'lbv_drm' => (string) $r['lbv_drm'],
         'lehrkraft' => $r['lk_nachname'] ? $person((string) $r['lk_vorname'], (string) $r['lk_nachname'], $r['lk_in_ausbildung']) : '',
         'begleitpersonen' => array_map(static fn (array $p): string => $person($p['vorname'], $p['nachname'], $p['in_ausbildung']), $begleitpersonen),
         'schueler_anzahl' => (string) $r['schueler_anzahl'],
@@ -79,6 +78,8 @@ function veranstaltung_info(array $r, array $begleitpersonen): array
         'status' => $r['status'],
         'verlauf' => $r['verlauf'],
         'gespraech' => $r['gespraech'],
+        // Ohne die Angaben des Vordrucks gibt es keinen Ausdruck (antrag_pdf.php).
+        'lbv_fehlt' => lbv_fehlende_angaben($r),
     ];
 }
 
@@ -94,7 +95,7 @@ $stmt_extra = $conn->query("
            r.start_time, r.start_location, r.return_time, r.return_location,
            r.return_trip_arranged, r.supervisors, r.consent_form, r.schedule_notified,
            r.modified_after_approval, r.modified_at,
-           r.lbv_personalnummer, r.lbv_drm, r.lk_nachname, r.lk_vorname, r.lk_in_ausbildung,
+           r.lbv_personalnummer, r.lk_nachname, r.lk_vorname, r.lk_in_ausbildung,
            r.ankunft_datum, r.ankunft_zeit, r.abfahrt_datum, r.abfahrt_zeit, r.aufenthaltstage, r.schueler_anzahl,
            r.bef_oepnv, r.bef_reisebus, r.bef_sonstiges, r.bef_sonstiges_text,
            r.lbv_kosten_eur, r.lbv_kosten_erlaeuterung

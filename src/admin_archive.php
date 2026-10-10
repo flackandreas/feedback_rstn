@@ -174,7 +174,7 @@ if ($action === 'export') {
     // Begleitpersonen stehen in einer eigenen Tabelle und werden mit dem
     // Antrag geloescht - deshalb hier als eine Spalte.
     $stmt = $conn->prepare("SELECT id, teacher_id, role, class_name, companion, event_date, event_date_to, event_name, destination, aud_type, participating_teacher_id, costs, transport, start_time, start_location, return_time, return_location, return_trip_arranged, supervisors, consent_form, schedule_notified, status, created_at, modified_at, modified_after_approval,
-               lbv_personalnummer, lbv_drm, lk_nachname, lk_vorname, lk_in_ausbildung,
+               lbv_personalnummer, lk_nachname, lk_vorname, lk_in_ausbildung,
                (SELECT GROUP_CONCAT(CONCAT_WS(' ', b.vorname, b.nachname, IF(b.in_ausbildung = 1, '(in Ausbildung)', NULL))
                                     ORDER BY b.position SEPARATOR ', ')
                   FROM extracurricular_begleitpersonen b WHERE b.request_id = r.id) AS begleitpersonen,

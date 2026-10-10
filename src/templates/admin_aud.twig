@@ -191,6 +191,11 @@
                                     {% set statusText = (r.status == 'approved') ? 'GENEHMIGT' : 'ABGELEHNT' %}
                                     <span style="color: {{ statusColor }}; font-weight: 600; font-size: 0.85em;">{{ statusText }}</span>
                                 {% endif %}
+                                {% if r.info.lbv_fehlt is empty %}
+                                    <div style="margin-top: 5px;">
+                                        <a href="/antrag_pdf.php?id={{ r.id }}" target="_blank" rel="noopener" style="font-size: 0.8em;" title="Antrag als PDF (Vordruck LBV 1211)">PDF</a>
+                                    </div>
+                                {% endif %}
                             </td>
                         </tr>
                     {% endfor %}
@@ -267,7 +272,6 @@ function openDetailPanel(d) {
 
     body += abschnitt('1. Persönliche Angaben');
     body += row('Personalnummer', d.lbv_personalnummer);
-    body += row('DRM', d.lbv_drm);
     body += row('Verantwortlich', d.lehrkraft);
     if (d.begleitpersonen && d.begleitpersonen.length) {
         body += rowHtml('Begleitpersonen', d.begleitpersonen.map(esc).join('<br>'));
@@ -320,7 +324,11 @@ function openDetailPanel(d) {
 
     document.getElementById('panel-title').textContent = title;
     document.getElementById('panel-body').innerHTML = body;
-    document.getElementById('panel-actions').innerHTML = '';
+    // Ausdruck nach Vordruck LBV 1211 - oder was dafuer noch fehlt. d.id ist
+    // eine Zahl aus admin_aud.php, die Bezeichnungen gehen ueber esc().
+    document.getElementById('panel-actions').innerHTML = (d.lbv_fehlt && d.lbv_fehlt.length)
+        ? `<span style="font-size:0.85em;color:var(--text-muted);">Kein Ausdruck möglich, es fehlen: ${d.lbv_fehlt.map(esc).join(', ')}. Die Lehrkraft muss den Antrag ergänzen.</span>`
+        : `<a href="/antrag_pdf.php?id=${Number(d.id)}" target="_blank" rel="noopener" class="button-primary" style="text-decoration:none;display:inline-block;">Antrag als PDF</a>`;
 
     const panel = document.getElementById('detail-panel');
     const overlay = document.getElementById('detail-overlay');

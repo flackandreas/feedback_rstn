@@ -18,23 +18,18 @@
         <fieldset class="lbv-abschnitt">
             <legend class="lbv-abschnitt__titel">1. Persönliche Angaben</legend>
 
-            <div class="form-grid-2">
-                <div class="form-group">
-                    <label for="lbv_personalnummer">Personalnummer/Arbeitsgebiet *</label>
-                    <input type="text" id="lbv_personalnummer" name="lbv_personalnummer" value="{{ werte.lbv_personalnummer|default('') }}"
-                           required maxlength="30" autocomplete="off" aria-describedby="pnr_hinweis">
-                    <small class="lbv-hinweis" id="pnr_hinweis">Wird in Ihrem Profil gespeichert und beim nächsten Antrag vorbelegt. Sehen können sie nur Sie und die Schulleitung.</small>
-                </div>
-                <div class="form-group">
-                    <label for="lbv_drm">DRM</label>
-                    <input type="text" id="lbv_drm" name="lbv_drm" value="{{ werte.lbv_drm|default('') }}" maxlength="30">
-                </div>
+            {# "/DRM" steht auf dem Vordruck fest hinter dem Feld. #}
+            <div class="form-group" style="max-width: 420px;">
+                <label for="lbv_personalnummer">Personalnummer/Arbeitsgebiet *</label>
+                <input type="text" id="lbv_personalnummer" name="lbv_personalnummer" value="{{ werte.lbv_personalnummer|default('') }}"
+                       required maxlength="30" autocomplete="off" aria-describedby="pnr_hinweis">
+                <small class="lbv-hinweis" id="pnr_hinweis">Wird in Ihrem Profil gespeichert und beim nächsten Antrag vorbelegt. Sehen können sie nur Sie und die Schulleitung.</small>
             </div>
 
             <p class="lbv-abschnitt__zwischentitel">Verantwortliche Lehrkraft</p>
             <div class="lbv-person">
                 <div class="form-group">
-                    <label for="lk_nachname">Name *</label>
+                    <label for="lk_nachname">Nachname *</label>
                     <input type="text" id="lk_nachname" name="lk_nachname" value="{{ werte.lk_nachname|default('') }}" required maxlength="100">
                 </div>
                 <div class="form-group">
@@ -64,7 +59,7 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="begleit_{{ n }}_nachname">Name</label>
+                        <label for="begleit_{{ n }}_nachname">Nachname</label>
                         <input type="text" id="begleit_{{ n }}_nachname" name="begleit[{{ n }}][nachname]" value="{{ p.nachname }}" maxlength="100" data-nachname>
                     </div>
                     <div class="form-group">
@@ -87,7 +82,7 @@
                 <div class="form-group">
                     <label for="role">Art der Veranstaltung *</label>
                     <input type="text" id="role" name="role" value="{{ werte.role|default('') }}" list="veranstaltungsarten" required maxlength="255"
-                           placeholder="z. B. Wandertag, Schullandheim …">
+                           placeholder="z. B. Wandertag, Schullandheimaufenthalt …">
                     <datalist id="veranstaltungsarten">
                         {% for art in veranstaltungsarten %}<option value="{{ art }}">{% endfor %}
                     </datalist>
@@ -192,18 +187,18 @@
         {# ── 3. Befoerderungsmittel ──────────────────────────────────── #}
         <fieldset class="lbv-abschnitt">
             <legend class="lbv-abschnitt__titel">3. Beförderungsmittel *</legend>
-            <p class="lbv-hinweis" style="margin-top: 0;">Mindestens eines ankreuzen, mehrere sind möglich.</p>
+            <p class="lbv-hinweis" style="margin-top: 0;">Ich beabsichtige, die Dienstreise mit folgendem/n Beförderungsmittel/n durchzuführen – mindestens eines, mehrere sind möglich:</p>
             <label class="lbv-haken">
                 <input type="checkbox" name="bef_oepnv" value="1" data-bef {% if werte.bef_oepnv|default(0) %}checked{% endif %}>
-                regelmäßig verkehrende Beförderungsmittel (Zug, S-Bahn, Bus)
+                mit einem regelmäßig verkehrenden Beförderungsmittel (z. B. S-Bahn, U-Bahn, Zug, Bus)
             </label>
             <label class="lbv-haken">
                 <input type="checkbox" name="bef_reisebus" value="1" data-bef {% if werte.bef_reisebus|default(0) %}checked{% endif %}>
-                Reisebus
+                mit dem Reisebus
             </label>
             <label class="lbv-haken">
                 <input type="checkbox" id="bef_sonstiges" name="bef_sonstiges" value="1" data-bef {% if werte.bef_sonstiges|default(0) %}checked{% endif %}>
-                sonstiges
+                mit einem sonstigen Verkehrsmittel
             </label>
             <div class="form-group" id="bef_sonstiges_feld" style="margin-top: 10px;">
                 <label for="bef_sonstiges_text">Art und Gründe *</label>

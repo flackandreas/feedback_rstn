@@ -143,6 +143,9 @@
                             <td class="karte__aktion">
                                 {%- if r.type == 'Ausflug' %}
                                     <a href="/antrag_ausserunterrichtlich.php?edit_id={{ r.id }}" class="button-secondary" style="padding: 4px 8px; font-size: 0.8em; text-decoration: none;">Bearbeiten</a>
+                                    {# Ausdruck nach Vordruck LBV 1211. Fehlt etwas, fuehrt
+                                       antrag_pdf.php zum Ergaenzen ins Formular. #}
+                                    <a href="/antrag_pdf.php?id={{ r.id }}" target="_blank" rel="noopener" class="button-secondary" style="padding: 4px 8px; font-size: 0.8em; text-decoration: none;" title="Antrag als PDF zum Ausdrucken (Vordruck LBV 1211)">PDF</a>
                                 {%- elseif r.type == 'Krankmeldung' %}
                                     <a href="/krankmeldung.php?id={{ r.id }}" class="button-secondary" style="padding: 4px 8px; font-size: 0.8em; text-decoration: none;">Bearbeiten</a>
                                 {%- endif -%}

@@ -22,7 +22,8 @@ function run_all_migrations() {
         'alter_entscheidungen_nachricht.sql',
         'alter_status_rueckfrage.sql',
         'alter_rueckfrage_antwort.sql',
-        'alter_lbv1211.sql'
+        'alter_lbv1211.sql',
+        'alter_kalender_oeffentlich.sql'
     ];
 
     // Je Sitzung nur einmal pruefen - aber je Stand der Liste. Vorher merkte

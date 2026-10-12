@@ -53,6 +53,9 @@ function veranstaltung_info(array $r, array $begleitpersonen): array
         'role' => (string) $r['role'],
         'companion' => (string) $r['companion'],
         'event_name' => (string) $r['event_name'],
+        'kalender' => $r['kalender_oeffentlich']
+            ? 'für alle Lehrkräfte sichtbar'
+            : 'nur Schulleitung und Lehrkraft',
         // Vordruck LBV 1211
         'lbv_personalnummer' => (string) $r['lbv_personalnummer'],
         'lehrkraft' => $r['lk_nachname'] ? $person((string) $r['lk_vorname'], (string) $r['lk_nachname'], $r['lk_in_ausbildung']) : '',
@@ -98,7 +101,7 @@ $stmt_extra = $conn->query("
            r.lbv_personalnummer, r.lk_nachname, r.lk_vorname, r.lk_in_ausbildung,
            r.ankunft_datum, r.ankunft_zeit, r.abfahrt_datum, r.abfahrt_zeit, r.aufenthaltstage, r.schueler_anzahl,
            r.bef_oepnv, r.bef_reisebus, r.bef_sonstiges, r.bef_sonstiges_text,
-           r.lbv_kosten_eur, r.lbv_kosten_erlaeuterung
+           r.lbv_kosten_eur, r.lbv_kosten_erlaeuterung, r.kalender_oeffentlich
     FROM extracurricular_requests r
     JOIN teachers t ON r.teacher_id = t.id
     ORDER BY r.status IN ('pending', 'query') DESC,

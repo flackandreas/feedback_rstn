@@ -54,11 +54,19 @@ $stmt_exempt->execute($werte);
 $exemptions = $stmt_exempt->fetchAll();
 
 // 3. Genehmigte ausserunterrichtliche Veranstaltungen
+//
+// Hier gibt es eine Ausnahme von der Einschraenkung auf die eigenen Eintraege:
+// Wer beim Antrag "im Schulkalender fuer alle Lehrkraefte sichtbar" angekreuzt
+// hat, zeigt die Veranstaltung allen angemeldeten Lehrkraeften. Ohne den Haken
+// sehen sie nur die Schulleitung und die antragstellende Lehrkraft selbst.
+// Gezeigt wird nur, was ohnehin im Kalendereintrag steht - Name, Klassen,
+// Ziel und Leitung, nicht die Personalnummer und nicht die Begleitpersonen.
+$sichtbarkeit = $istVerwaltung ? '' : ' AND (r.teacher_id = :teacher_id OR r.kalender_oeffentlich = 1)';
 $stmt_extra = $conn->prepare("
     SELECT r.id, r.event_date, r.event_date_to, r.event_name, r.class_name, t.name as teacher_name, r.destination
     FROM extracurricular_requests r
     JOIN teachers t ON r.teacher_id = t.id
-    WHERE r.status = 'approved' {$nurEigene}
+    WHERE r.status = 'approved' {$sichtbarkeit}
 ");
 $stmt_extra->execute($werte);
 $extracurriculars = $stmt_extra->fetchAll();

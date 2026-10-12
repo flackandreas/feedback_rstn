@@ -179,7 +179,8 @@ if ($action === 'export') {
                                     ORDER BY b.position SEPARATOR ', ')
                   FROM extracurricular_begleitpersonen b WHERE b.request_id = r.id) AS begleitpersonen,
                ankunft_datum, ankunft_zeit, abfahrt_datum, abfahrt_zeit, aufenthaltstage, schueler_anzahl,
-               bef_oepnv, bef_reisebus, bef_sonstiges, bef_sonstiges_text, lbv_kosten_eur, lbv_kosten_erlaeuterung
+               bef_oepnv, bef_reisebus, bef_sonstiges, bef_sonstiges_text, lbv_kosten_eur, lbv_kosten_erlaeuterung,
+               kalender_oeffentlich
           FROM extracurricular_requests r WHERE event_date BETWEEN ? AND ?");
     $stmt->execute([$von, $bis]);
     $extra_data = $stmt->fetchAll(PDO::FETCH_ASSOC);

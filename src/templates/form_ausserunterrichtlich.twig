@@ -46,9 +46,14 @@
                 Begleitpersonen
                 <span class="lbv-hinweis">bis zu {{ begleitpersonen|length }} – aus dem Kollegium wählen oder frei eintragen, etwa für Eltern</span>
             </p>
+            {# Eine Zeile steht immer da, weitere kommen mit dem Plus dazu. Zeilen
+               mit Inhalt - beim Bearbeiten oder nach einem Fehler - sind gleich
+               sichtbar. Alle vier stecken im Formular, leere Zeilen faellt der
+               Server heraus; er rueckt die uebrigen nach. #}
             {% for p in begleitpersonen %}
                 {% set n = loop.index %}
-                <div class="lbv-person lbv-person--begleitung" data-begleitung>
+                {% set belegt = (p.teacher_id is not empty) or (p.nachname|default('') != '') or (p.vorname|default('') != '') or p.in_ausbildung|default(0) %}
+                <div class="lbv-person lbv-person--begleitung" data-begleitung {% if n > 1 and not belegt %}hidden{% endif %}>
                     <div class="form-group">
                         <label for="begleit_{{ n }}_wahl">Begleitperson {{ n }}</label>
                         <select id="begleit_{{ n }}_wahl" name="begleit[{{ n }}][teacher_id]" data-wahl>
@@ -66,12 +71,19 @@
                         <label for="begleit_{{ n }}_vorname">Vorname</label>
                         <input type="text" id="begleit_{{ n }}_vorname" name="begleit[{{ n }}][vorname]" value="{{ p.vorname }}" maxlength="100" data-vorname>
                     </div>
-                    <label class="lbv-haken lbv-person__haken">
-                        <input type="checkbox" name="begleit[{{ n }}][in_ausbildung]" value="1" {% if p.in_ausbildung %}checked{% endif %}>
-                        in Ausbildung
-                    </label>
+                    <div class="lbv-person__aktionen">
+                        <label class="lbv-haken">
+                            <input type="checkbox" name="begleit[{{ n }}][in_ausbildung]" value="1" {% if p.in_ausbildung %}checked{% endif %}>
+                            in Ausbildung
+                        </label>
+                        {% if n > 1 %}
+                            <button type="button" class="lbv-entfernen" data-entfernen
+                                    aria-label="Begleitperson {{ n }} entfernen" title="Entfernen">&times;</button>
+                        {% endif %}
+                    </div>
                 </div>
             {% endfor %}
+            <button type="button" class="lbv-plus" id="begleit_plus">+ Weitere Begleitperson</button>
         </fieldset>
 
         {# ── 2. Angaben zur Dienstreise ──────────────────────────────── #}
@@ -91,6 +103,12 @@
                     <label for="event_name">Veranstaltungsname für den Kalender</label>
                     <input type="text" id="event_name" name="event_name" value="{{ werte.event_name|default('') }}" maxlength="255"
                            placeholder="leer = Art der Veranstaltung">
+                    <label class="lbv-haken lbv-haken--unter-feld">
+                        <input type="checkbox" name="kalender_oeffentlich" value="1" aria-describedby="kalender_hinweis"
+                               {% if werte.kalender_oeffentlich|default(0) %}checked{% endif %}>
+                        Im Schulkalender für alle Lehrkräfte sichtbar
+                    </label>
+                    <small class="lbv-hinweis" id="kalender_hinweis">Ohne Haken sehen den Eintrag nur Sie und die Schulleitung. Gilt, sobald der Antrag genehmigt ist.</small>
                 </div>
             </div>
 
@@ -368,6 +386,36 @@ document.addEventListener("DOMContentLoaded", function() {
         if (ende.value) { [ankunft, abfahrt].forEach(function (f) { f.max = ende.value; }); }
         tageVorschlagen();
     }
+
+    // Begleitpersonen: eine Zeile steht da, das Plus holt die naechste
+    // verborgene dazu, das Kreuz leert eine Zeile und blendet sie aus. Der
+    // Server nimmt nur Zeilen mit Inhalt, Luecken sind deshalb kein Problem.
+    var begleitZeilen = Array.from(document.querySelectorAll('[data-begleitung]'));
+    var plus = feld('begleit_plus');
+    function plusAbgleichen() {
+        plus.hidden = !begleitZeilen.some(function (z) { return z.hidden; });
+    }
+    plus.addEventListener('click', function () {
+        var zeile = begleitZeilen.find(function (z) { return z.hidden; });
+        if (!zeile) { return; }
+        zeile.hidden = false;
+        plusAbgleichen();
+        zeile.querySelector('[data-wahl]').focus();
+    });
+    begleitZeilen.forEach(function (zeile) {
+        var entfernen = zeile.querySelector('[data-entfernen]');
+        if (!entfernen) { return; }
+        entfernen.addEventListener('click', function () {
+            zeile.querySelector('[data-wahl]').value = '';
+            zeile.querySelector('[data-nachname]').value = '';
+            zeile.querySelector('[data-vorname]').value = '';
+            zeile.querySelector('input[type="checkbox"]').checked = false;
+            zeile.hidden = true;
+            plusAbgleichen();
+            plus.focus();
+        });
+    });
+    plusAbgleichen();
 
     // Begleitperson aus dem Kollegium: Name und Vorname aus dem Konto
     // vorschlagen, geteilt am letzten Leerzeichen wie im Controller.

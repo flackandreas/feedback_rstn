@@ -166,6 +166,7 @@ function lbv_eingabe_lesen(array $post): array
         // 2. Angaben zur Dienstreise
         'role' => $text('role', 255),
         'event_name' => $text('event_name', 255),
+        'kalender_oeffentlich' => $haken('kalender_oeffentlich'),
         'destination' => $text('destination', 255),
         'schueler_anzahl' => $text('schueler_anzahl', 5),
         'event_date' => $text('event_date', 10),
@@ -321,6 +322,7 @@ function lbv_spalten(array $e): array
         // Der Kalender zeigt den Veranstaltungsnamen. Bleibt er leer, steht
         // dort die Art der Veranstaltung statt einer leeren Zeile.
         'event_name' => $e['event_name'] !== '' ? $e['event_name'] : $e['role'],
+        'kalender_oeffentlich' => $e['kalender_oeffentlich'],
         'destination' => $e['destination'],
         'schueler_anzahl' => (int) $e['schueler_anzahl'],
         'event_date' => $e['event_date'],
@@ -374,6 +376,60 @@ function lbv_begleitpersonen_laden(PDO $conn, array $ids): array
     }
 
     return $je_antrag;
+}
+
+/**
+ * Hat sich am Antrag etwas geaendert, ausser der Sichtbarkeit im Kalender?
+ *
+ * Wer einen genehmigten Antrag aendert, loest die Markierung "nach
+ * Genehmigung geaendert" und eine Mail an die Schulleitung aus. Das Umschalten
+ * des Hakens "im Schulkalender sichtbar" aendert nichts am Antrag selbst und
+ * soll beides nicht ausloesen.
+ *
+ * Verglichen wird, was lbv_spalten() schreibt, ohne den Haken, plus die
+ * Begleitpersonen. Die Datenbank liefert Uhrzeiten mit Sekunden und Betraege
+ * mit zwei Stellen - beides wird vor dem Vergleich auf die Form des Formulars
+ * gebracht, sonst gaelte jedes Speichern als Aenderung.
+ *
+ * @param array<string,mixed> $alt Zeile aus extracurricular_requests
+ * @param array<string,mixed> $neu Spalten, wie lbv_spalten() und der Controller sie schreiben
+ * @param list<array<string,mixed>> $begleitung_alt Zeilen aus extracurricular_begleitpersonen
+ * @param list<array<string,mixed>> $begleitung_neu Begleitpersonen aus dem Formular
+ */
+function lbv_inhalt_geaendert(array $alt, array $neu, array $begleitung_alt, array $begleitung_neu): bool
+{
+    $normal = static function (mixed $wert): string {
+        $wert = trim((string) $wert);
+
+        // 08:00:00 wie 08:00; Betraege wie 360.50 / 360,50 gleich behandeln
+        if (preg_match('/^\d{2}:\d{2}:\d{2}$/', $wert)) {
+            return substr($wert, 0, 5);
+        }
+        if (preg_match('/^\d+\.\d{1,2}$/', $wert)) {
+            return sprintf('%.2f', (float) $wert);
+        }
+
+        return $wert;
+    };
+
+    unset($neu['kalender_oeffentlich']);
+    foreach ($neu as $spalte => $wert) {
+        if (!array_key_exists($spalte, $alt) || $normal($alt[$spalte]) !== $normal($wert)) {
+            return true;
+        }
+    }
+
+    $liste = static fn (array $personen): array => array_map(
+        static fn (array $p): array => [
+            $p['teacher_id'] === null || $p['teacher_id'] === '' ? 0 : (int) $p['teacher_id'],
+            (string) $p['nachname'],
+            (string) $p['vorname'],
+            (int) $p['in_ausbildung'],
+        ],
+        array_values($personen)
+    );
+
+    return $liste($begleitung_alt) !== $liste($begleitung_neu);
 }
 
 /** Ersetzt die Begleitpersonen eines Antrags. */

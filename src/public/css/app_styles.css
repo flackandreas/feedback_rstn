@@ -1968,6 +1968,14 @@ body.dark-mode .rueckfrage-box__eintrag + .rueckfrage-box__eintrag {
     background: var(--bg-main);
 }
 
+/* Die Raster der Formulare wollen mindestens 300 Pixel je Spalte. Im
+   Kasten eines Abschnitts steht auf dem Handy weniger Platz: dann ragten
+   die Felder rechts heraus. */
+.lbv-abschnitt .form-grid-2,
+.lbv-abschnitt .form-grid-3 {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+}
+
 .lbv-abschnitt__titel {
     font-weight: 700;
     padding: 0 6px;
@@ -2020,13 +2028,78 @@ body.dark-mode .rueckfrage-box__eintrag + .rueckfrage-box__eintrag {
     align-items: end;
 }
 
+/* Die letzte Spalte hat feste Breite: in Zeile 2 bis 4 steht neben dem Haken
+   das Kreuz zum Entfernen, in Zeile 1 nicht. Mit "auto" waeren die Spalten
+   je Zeile verschieden breit. */
 .lbv-person--begleitung {
-    grid-template-columns: 1.2fr 1fr 1fr auto;
+    grid-template-columns: 1.2fr 1fr 1fr 175px;
 }
 
 .lbv-person__haken {
     margin-bottom: 18px;
     white-space: nowrap;
+}
+
+/* Haken und Kreuz zum Entfernen einer Begleitperson in einer Zelle. Das
+   Attribut hidden blendet eine Zeile nur aus, wenn display nicht anders
+   gesetzt ist - hier ist es das, deshalb die eigene Regel. */
+.lbv-person__aktionen {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.lbv-person__aktionen .lbv-haken {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.lbv-person[hidden],
+.lbv-plus[hidden] {
+    display: none;
+}
+
+/* Ein Haken unter einem Eingabefeld: .form-group label macht Beschriftungen
+   fett und blockweise, das soll hier nicht gelten. */
+.form-group .lbv-haken {
+    display: flex;
+    margin: 8px 0 0;
+    font-size: 1em;
+    font-weight: normal;
+}
+
+.lbv-entfernen,
+.lbv-plus {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+}
+
+.lbv-entfernen {
+    padding: 2px 10px;
+    font-size: 1.2em;
+    line-height: 1.2;
+}
+
+.lbv-entfernen:hover {
+    background: var(--danger-bg);
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+.lbv-plus {
+    margin: 0 0 10px;
+    padding: 8px 14px;
+    font-size: 0.95em;
+    color: var(--primary-color);
+    border-style: dashed;
+    border-color: var(--primary-color);
+}
+
+.lbv-plus:hover {
+    background: var(--primary-bg-light);
+    color: var(--primary-dark);
 }
 
 /* Beginn, Ankunft, Abfahrt, Ende: je eine Zeile mit Datum und Uhrzeit. */
@@ -2059,7 +2132,8 @@ body.dark-mode .rueckfrage-box__eintrag + .rueckfrage-box__eintrag {
         margin-bottom: 4px;
     }
 
-    .lbv-person__haken {
+    .lbv-person__haken,
+    .lbv-person__aktionen {
         grid-column: 1 / -1;
         margin-bottom: 12px;
     }

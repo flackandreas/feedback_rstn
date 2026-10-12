@@ -103,12 +103,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $conn->beginTransaction();
 
                 // Check ownership and current status
-                $stmt_check = $conn->prepare("SELECT status, modified_after_approval FROM extracurricular_requests WHERE id = ? AND teacher_id = ? FOR UPDATE");
+                $stmt_check = $conn->prepare("SELECT * FROM extracurricular_requests WHERE id = ? AND teacher_id = ? FOR UPDATE");
                 $stmt_check->execute([$edit_id, $user_id]);
                 $ext = $stmt_check->fetch(PDO::FETCH_ASSOC);
 
                 if ($ext) {
-                    $is_modified = ($ext['status'] === 'approved') ? 1 : (int) $ext['modified_after_approval'];
+                    // Ein genehmigter Antrag gilt nach einer Aenderung als geaendert
+                    // und geht mit einer Mail an die Schulleitung. Wer nur den Haken
+                    // "im Schulkalender sichtbar" umschaltet, aendert am Antrag nichts.
+                    $nach_genehmigung_geaendert = $ext['status'] === 'approved'
+                        && lbv_inhalt_geaendert(
+                            $ext,
+                            $spalten,
+                            lbv_begleitpersonen_laden($conn, [$edit_id])[$edit_id] ?? [],
+                            $begleitung
+                        );
+                    $is_modified = $nach_genehmigung_geaendert ? 1 : (int) $ext['modified_after_approval'];
                     $spalten['modified_after_approval'] = $is_modified;
 
                     // Die Spaltennamen stammen aus lbv_spalten(), nicht aus der Anfrage.
@@ -118,13 +128,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         modified_at = CASE WHEN ? = 1 THEN NOW() ELSE modified_at END
                         WHERE id = ? AND teacher_id = ?
                     ");
-                    $stmt->execute([...array_values($spalten), $is_modified, $edit_id, $user_id]);
+                    $stmt->execute([...array_values($spalten), (int) $nach_genehmigung_geaendert, $edit_id, $user_id]);
                     lbv_begleitpersonen_speichern($conn, $edit_id, $begleitung);
                     $profil->execute([$eingabe['lbv_personalnummer'], $user_id]);
                     $conn->commit();
 
                     // Notify admin if approved request was modified
-                    if ($is_modified && $ext['status'] === 'approved') {
+                    if ($nach_genehmigung_geaendert) {
                         require_once __DIR__ . '/includes/mailer.php';
                         require_once __DIR__ . '/includes/mail_texte.php';
                         $stmt_admin = $conn->query("SELECT setting_value FROM app_settings WHERE setting_key = 'report_email'");

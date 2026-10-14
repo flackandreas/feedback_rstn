@@ -28,15 +28,27 @@ services:
     networks:
       - app-network
 
+  # Nur zur Wartung, nie im Dauerbetrieb. Ohne das Profil startet es nicht mit:
+  #   docker compose --profile wartung up -d phpmyadmin
+  #
+  # Bis hierher meldete es sich selbst als root an und lauschte auf allen
+  # Netzwerkadressen - jedes Geraet im Netz hatte damit ohne Passwort vollen
+  # Zugriff auf alle Datenbanken. Jetzt:
+  #   - nur auf dem Rechner selbst erreichbar (127.0.0.1). Von einem anderen
+  #     Geraet aus per SSH-Tunnel:  ssh -L 8080:127.0.0.1:8080 <benutzer>@<server>
+  #   - keine automatische Anmeldung: wer die Seite erreicht, muss Benutzer und
+  #     Passwort der Datenbank kennen.
+  #   - der Port ist einstellbar (PHPMYADMIN_PORT), weil 8080 auf manchem
+  #     Server schon belegt ist.
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
-    restart: always
+    profiles: ["wartung"]
+    # Nach einem Neustart des Rechners bleibt es aus.
+    restart: "no"
     ports:
-      - "8080:80"
+      - "127.0.0.1:${PHPMYADMIN_PORT:-8080}:80"
     environment:
       PMA_HOST: db
-      PMA_USER: root
-      PMA_PASSWORD: db_user
     depends_on:
       - db
     networks:

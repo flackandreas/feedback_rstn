@@ -84,7 +84,7 @@ docker compose up -d --build
 # 4. Datenbank wird via init.sql und automatischen Migrationen initialisiert
 
 # 5. Anwendung im Browser öffnen
-open http://localhost:8080
+open http://localhost:8888
 ```
 
 > **Hinweis:** Beim ersten Start baut Docker das Image und startet den MariaDB-Container. Falls beim ersten Aufruf eine Datenbankverbindung fehlschlägt, kurz ein paar Sekunden warten, bis MariaDB vollständig gestartet ist.
@@ -94,6 +94,35 @@ Um die Container zu stoppen:
 ```bash
 docker compose down
 ```
+
+### Datenbank ansehen (phpMyAdmin)
+
+phpMyAdmin startet nicht mehr automatisch mit, sondern nur bei Bedarf – und ist
+dann nur auf dem Rechner selbst erreichbar, mit Anmeldung:
+
+```bash
+docker compose --profile wartung up -d phpmyadmin
+```
+
+Danach `http://localhost:8080` öffnen und mit Benutzer und Passwort der
+Datenbank anmelden. Läuft das System auf einem Server, führt ein SSH-Tunnel
+dorthin:
+
+```bash
+ssh -L 8080:127.0.0.1:8080 benutzer@server
+```
+
+Ist 8080 belegt, setzt `PHPMYADMIN_PORT` einen anderen Port. Nach getaner Arbeit
+wieder abschalten:
+
+```bash
+docker compose rm -sf phpmyadmin
+```
+
+> **Nach dem Update auf diesen Stand:** Ein schon laufendes phpMyAdmin von
+> früher lässt `docker compose up -d` einfach weiterlaufen – und das meldet sich
+> selbst als root an, für jedes Gerät im Netz. Einmal `docker compose rm -sf
+> phpmyadmin` ausführen.
 
 ---
 
@@ -354,7 +383,7 @@ mm;Maria Musterfrau;maria@schule.de
 - **Statusänderungen**: Bei Genehmigung oder Ablehnung eines Antrags erhält die betroffene Lehrkraft automatisch eine E-Mail-Benachrichtigung.
 - **Tagesreports**: Skript `/cron_report.php` kann per System-Cronjob (z.B. täglich um 07:00 Uhr) aufgerufen werden, um zusammenfassende E-Mail-Berichte an die Schulleitung zu versenden:
   ```bash
-  0 7 * * 1-5 curl -s http://localhost:8080/cron_report.php > /dev/null
+  0 7 * * 1-5 curl -s http://localhost:8888/cron_report.php > /dev/null
   ```
 
 ---

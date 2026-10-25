@@ -1964,10 +1964,6 @@ body.dark-mode .rueckfrage-box__eintrag + .rueckfrage-box__eintrag {
     min-width: 0;
 }
 
-.lbv-abschnitt--intern {
-    background: var(--bg-main);
-}
-
 /* Die Raster der Formulare wollen mindestens 300 Pixel je Spalte. Im
    Kasten eines Abschnitts steht auf dem Handy weniger Platz: dann ragten
    die Felder rechts heraus. */

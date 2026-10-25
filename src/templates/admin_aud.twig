@@ -297,16 +297,20 @@ function openDetailPanel(d) {
     body += row('Verkehrsmittel (alt)', d.transport);
     body += row('Kosten insgesamt', d.lbv_kosten);
 
-    body += abschnitt('Schulintern');
-    body += row('Kosten je Schüler ca.', d.costs);
-    body += row('Treffpunkt Beginn', d.start_location);
-    body += row('Treffpunkt Rückkehr', d.return_location);
-    body += rowHtml('Heimfahrt geregelt', badge(d.return_trip_arranged));
-    body += row('Aufsicht', d.supervisors);
-    body += rowHtml('Einverständniserklärung', d.consent_form ? `<strong>${esc(d.consent_form.toUpperCase())}</strong>` : '—');
-    // Das Formular fragt es nicht mehr ab; gezeigt wird nur noch ein Haken
-    // aus aelteren Antraegen.
-    if (d.schedule_notified) body += rowHtml('Stundenplan benachrichtigt', badge(1));
+    // Das Formular fragt diese Angaben nicht mehr ab. Gezeigt werden sie nur
+    // noch bei aelteren Antraegen, die sie haben - ein leerer Haken hiesse
+    // dort nicht "Nein", sondern "nicht gefragt".
+    if (d.costs || d.start_location || d.return_location || d.return_trip_arranged
+        || d.supervisors || d.consent_form || d.schedule_notified) {
+        body += abschnitt('Frühere Angaben');
+        body += row('Kosten je Schüler ca.', d.costs);
+        body += row('Treffpunkt Beginn', d.start_location);
+        body += row('Treffpunkt Rückkehr', d.return_location);
+        if (d.return_trip_arranged) body += rowHtml('Heimfahrt geregelt', badge(1));
+        body += row('Aufsicht', d.supervisors);
+        if (d.consent_form) body += rowHtml('Einverständniserklärung', `<strong>${esc(d.consent_form.toUpperCase())}</strong>`);
+        if (d.schedule_notified) body += rowHtml('Stundenplan benachrichtigt', badge(1));
+    }
 
     const statusColor = d.status === 'approved' ? 'var(--success-color)' : (d.status === 'rejected' ? 'var(--danger-color)' : (d.status === 'query' ? 'var(--warning-color)' : 'var(--text-muted)'));
     const statusText = d.status === 'approved' ? 'GENEHMIGT' : (d.status === 'rejected' ? 'ABGELEHNT' : (d.status === 'query' ? 'RÜCKFRAGE' : 'AUSSTEHEND'));

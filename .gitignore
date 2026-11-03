@@ -48,3 +48,9 @@ Thumbs.db
 /tmp/
 *.tmp
 *.bak
+
+# Zwischenspeicher von tFPDF: beim ersten Ausdruck nach Vordruck LBV 1211
+# legt es die Schriftmetriken neben die TTF-Dateien. Entsteht im Betrieb.
+src/vendor/setasign/tfpdf/font/unifont/*.mtx.php
+src/vendor/setasign/tfpdf/font/unifont/*.cw.dat
+src/vendor/setasign/tfpdf/font/unifont/*.cw127.php

@@ -90,7 +90,7 @@ $routes = [
 $direkt = [
     'admin_action.php', 'admin_archive.php', 'admin_aud.php', 'admin_dashboard.php',
     'admin_lehrer.php', 'admin_sick_leaves.php', 'admin_system.php',
-    'antrag_ausserunterrichtlich.php', 'antrag_freistellung.php', 'attest.php',
+    'antrag_ausserunterrichtlich.php', 'antrag_freistellung.php', 'antrag_pdf.php', 'attest.php',
     'calendar.php', 'change_password.php', 'dashboard_antraege.php', 'export_sick_leaves.php',
     'healthz.php', 'index.php', 'krankmeldung.php', 'login.php', 'login_sso.php', 'logout.php',
     'meine_antraege.php', 'rueckfrage_antwort.php', 'sso_abmelden.php', 'sso_rueckweg.php', 'sso_start.php',

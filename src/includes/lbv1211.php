@@ -186,12 +186,6 @@ function lbv_eingabe_lesen(array $post): array
         // 4. Voraussichtliche Kosten
         'lbv_kosten_eur' => $text('lbv_kosten_eur', 12),
         'lbv_kosten_erlaeuterung' => $text('lbv_kosten_erlaeuterung', 100),
-        // Schulintern, nicht auf dem Vordruck
-        'costs' => $text('costs', 100),
-        'start_location' => $text('start_location', 255),
-        'return_location' => $text('return_location', 255),
-        'return_trip_arranged' => $haken('return_trip_arranged'),
-        'consent_form' => in_array($post['consent_form'] ?? '', ['ja', 'nein'], true) ? $post['consent_form'] : '',
     ];
 }
 
@@ -304,9 +298,10 @@ function lbv_eingabe_pruefen(array $e): array
 /**
  * Die Spalten, die das Formular schreibt, mit ihren Werten.
  *
- * Nicht darin: aud_type, transport, supervisors und schedule_notified. Das
- * Formular fragt sie nicht mehr ab - stuenden sie im UPDATE, loeschte jedes
- * Bearbeiten die Altwerte.
+ * Nicht darin: aud_type, transport, supervisors, schedule_notified und die
+ * frueheren Angaben "Schulintern" (costs, start_location, return_location,
+ * return_trip_arranged, consent_form). Das Formular fragt sie nicht mehr ab -
+ * stuenden sie im UPDATE, loeschte jedes Bearbeiten die Altwerte.
  */
 function lbv_spalten(array $e): array
 {
@@ -342,11 +337,6 @@ function lbv_spalten(array $e): array
         'bef_sonstiges_text' => $e['bef_sonstiges'] ? $e['bef_sonstiges_text'] : null,
         'lbv_kosten_eur' => $betrag === null ? null : sprintf('%.2f', $betrag),
         'lbv_kosten_erlaeuterung' => $leer_ist_null($e['lbv_kosten_erlaeuterung']),
-        'costs' => $e['costs'],
-        'start_location' => $e['start_location'],
-        'return_location' => $e['return_location'],
-        'return_trip_arranged' => $e['return_trip_arranged'],
-        'consent_form' => $leer_ist_null($e['consent_form']),
     ];
 }
 

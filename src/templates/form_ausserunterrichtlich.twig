@@ -8,8 +8,7 @@
 <p style="color: var(--text-muted); margin-bottom: 20px; font-style: italic;">Nach dem Vordruck LBV 1211. Spätestens 3 Tage vor der Durchführung bei der SL zu stellen.</p>
 
 {# Die Abschnitte folgen dem Vordruck LBV 1211 (Stand 07/20), damit sich
-   Formular und Ausdruck Zeile fuer Zeile vergleichen lassen. Was nur die
-   Schule braucht, steht am Ende unter "Schulintern" und wird nicht gedruckt. #}
+   Formular und Ausdruck Zeile fuer Zeile vergleichen lassen. #}
 <div class="content-box">
     <form method="POST" action="/antrag_ausserunterrichtlich.php">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -250,38 +249,6 @@
             Abschnitt 5 (Erklärungen) unterschreiben Sie auf dem Ausdruck von Hand. Abschnitt 6 ist der Genehmigung
             durch die Schulleitung vorbehalten. Der Schulkopf bleibt für den Schulstempel frei.
         </p>
-
-        {# ── Schulintern ─────────────────────────────────────────────── #}
-        <fieldset class="lbv-abschnitt lbv-abschnitt--intern">
-            <legend class="lbv-abschnitt__titel">Schulintern <span class="lbv-hinweis">– wird nicht gedruckt</span></legend>
-            <div class="form-grid-3">
-                <div class="form-group">
-                    <label for="costs">Kosten je Schülerin/Schüler ca.</label>
-                    <input type="text" id="costs" name="costs" value="{{ werte.costs|default('') }}" maxlength="100" placeholder="z. B. 12 €">
-                </div>
-                <div class="form-group">
-                    <label for="start_location">Treffpunkt bei Beginn</label>
-                    <input type="text" id="start_location" name="start_location" value="{{ werte.start_location|default('') }}" maxlength="255" placeholder="z. B. Schulhof">
-                </div>
-                <div class="form-group">
-                    <label for="return_location">Treffpunkt bei Rückkehr</label>
-                    <input type="text" id="return_location" name="return_location" value="{{ werte.return_location|default('') }}" maxlength="255" placeholder="z. B. Schulhof">
-                </div>
-            </div>
-
-            <label class="lbv-haken">
-                <input type="checkbox" name="return_trip_arranged" value="1" {% if werte.return_trip_arranged|default(0) %}checked{% endif %}>
-                <strong>Die Heimfahrtmöglichkeiten für die Schüler sind geregelt.</strong>
-            </label>
-
-            <div class="form-group" style="margin-top: 15px;">
-                <label>Eine Einverständniserklärung liegt vor</label>
-                <div style="display: flex; gap: 20px; margin-top: 8px;">
-                    <label style="font-weight: normal;"><input type="radio" name="consent_form" value="ja" {% if werte.consent_form|default('') == 'ja' %}checked{% endif %}> Ja</label>
-                    <label style="font-weight: normal;"><input type="radio" name="consent_form" value="nein" {% if werte.consent_form|default('') == 'nein' %}checked{% endif %}> Nein</label>
-                </div>
-            </div>
-        </fieldset>
 
         <div style="margin-top: 30px; text-align: right;">
             {% if edit_request %}

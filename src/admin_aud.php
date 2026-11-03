@@ -70,7 +70,7 @@ function veranstaltung_info(array $r, array $begleitpersonen): array
         'lbv_kosten' => $kosten,
         // Altbestand: das fruehere Freitextfeld fuer die Verkehrsmittel
         'transport' => (string) $r['transport'],
-        // Schulintern
+        // Altbestand: fragt das Formular nicht mehr ab
         'costs' => (string) $r['costs'],
         'start_location' => (string) $r['start_location'],
         'return_location' => (string) $r['return_location'],

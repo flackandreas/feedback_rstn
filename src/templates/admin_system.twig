@@ -187,6 +187,35 @@ WIN;Winter;Bernd;bernd.winter@schule.de</pre>
 </div>
 
 <div class="content-box">
+    <h3 style="border-left: 4px solid #d97706; padding-left: 10px;">Mails an die Schulleitung</h3>
+    <p style="color: var(--text-muted); margin: 4px 0 15px;">
+        An diese Adresse geht ein Hinweis, wenn eine Lehrkraft einen schon genehmigten Ausflug ändert.
+        Antworten auf Rückfragen gehen an die Person, die gefragt hat, und nur dann hierhin, wenn bei ihr
+        keine Adresse hinterlegt ist. Bleibt das Feld leer, gehen diese Hinweise an niemanden.
+    </p>
+
+    <form method="POST" action="/admin_system.php" class="modern-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="action" value="mail_adresse_speichern">
+
+        <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+            <div class="form-group" style="flex: 0 1 380px; margin-bottom: 0;">
+                <label for="report_email" class="form-label">Mail-Adresse</label>
+                <input type="email" name="report_email" id="report_email" maxlength="254"
+                       value="{{ report_email }}" placeholder="schulleitung@…"
+                       class="form-control" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+            </div>
+            <button type="submit" class="button-primary" style="background-color: #d97706; width: auto; padding: 10px 20px;">Speichern</button>
+        </div>
+        {% if report_email is empty %}
+            <p style="color: var(--danger-color); font-size: 0.9em; margin: 10px 0 0 0;">
+                Zurzeit ist keine Adresse eingetragen.
+            </p>
+        {% endif %}
+    </form>
+</div>
+
+<div class="content-box">
     <h3 style="border-left: 4px solid #e67e22; padding-left: 10px;">Jahresabschluss &amp; Archivierung</h3>
     <p style="color: var(--text-muted); font-size: 0.9em;">
         Zeitraum ist das <strong>Schuljahr</strong> vom 1. August bis 31. Juli – ein Kalenderjahr schneidet

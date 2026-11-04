@@ -117,6 +117,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             : 'Die Übersicht der AUD-Tage ist ausgeblendet.');
     }
 
+    // Das Feld stand bis April 2026 auf dem Dashboard und ging beim Umbau
+    // verloren; seitdem liess sich die Adresse nur in der Datenbank aendern.
+    if ($_POST['action'] === 'mail_adresse_speichern') {
+        $adresse = trim((string) ($_POST['report_email'] ?? ''));
+
+        // Leer heisst: keine Hinweise per Mail. Ein Tippfehler dagegen
+        // verschluckte jede Meldung, ohne dass es jemand merkt.
+        if ($adresse !== '' && filter_var($adresse, FILTER_VALIDATE_EMAIL) === false) {
+            zurueck_zur_verwaltung(null, sprintf('„%s“ ist keine gültige Mail-Adresse. Nichts wurde geändert.', $adresse));
+        }
+
+        app_einstellung_setzen($conn, 'report_email', $adresse);
+
+        zurueck_zur_verwaltung($adresse === ''
+            ? 'Die Adresse ist gelöscht. Hinweise gehen jetzt nicht mehr per Mail an die Schulleitung.'
+            : sprintf('Hinweise gehen jetzt an %s.', $adresse));
+    }
+
     zurueck_zur_verwaltung(null, 'Unbekannte Aktion.');
 }
 
@@ -341,6 +359,7 @@ echo $twig->render('admin_system.twig', [
     'portal_aktiv' => sso_aktiv(),
     'calendar_feeds' => $conn->query('SELECT * FROM calendar_feeds ORDER BY name ASC')->fetchAll(),
     'aud_tage_sichtbar' => app_schalter($conn, 'aud_tage_uebersicht', false),
+    'report_email' => app_einstellung($conn, 'report_email'),
     'csrf_token' => $csrf_token,
     'flash_success' => $flash_success,
     'flash_error' => $flash_error,

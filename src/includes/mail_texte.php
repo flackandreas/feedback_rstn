@@ -108,6 +108,39 @@ function mail_text_entscheidung(string $status, string $tabelle, array $antrag, 
 }
 
 /**
+ * Mail an eine Lehrkraft, die einen Ausflug als Begleitperson mitmacht.
+ *
+ * Bisher erfuhr nur die Leitung von der Genehmigung; die Begleitung wusste
+ * nur, was ihr die Kollegin erzaehlte. Abgelehnt wird ihr nur gemeldet, wenn
+ * der Ausflug vorher genehmigt war - sonst hatte sie nie etwas gehoert.
+ *
+ * @param string $status approved | rejected
+ * @param array<string,mixed> $antrag teacher_name, event_name und die Daten des Ausflugs
+ */
+function mail_text_begleitung(string $status, array $antrag, string $begleiter): string
+{
+    $ausflug = "den Ausflug <strong>„" . mail_html($antrag['event_name'] ?? '') . "“</strong> von "
+        . mail_html($antrag['teacher_name'] ?? '');
+
+    $body = "<p>Hallo " . mail_html($begleiter) . ",</p>\n";
+    $body .= "<p>du bist als Begleitperson für $ausflug eingetragen.</p>\n";
+
+    if ($status === 'approved') {
+        $body .= !empty($antrag['modified_after_approval'])
+            ? "<p>Die Schulleitung hat soeben Änderungen daran <strong>genehmigt</strong>. Bitte sieh dir die Angaben noch einmal an.</p>\n"
+            : "<p>Die Schulleitung hat ihn soeben <strong>genehmigt</strong>.</p>\n";
+    } else {
+        $body .= "<p>Die Schulleitung hat ihn soeben <strong>abgelehnt</strong>. Er ist damit nicht mehr genehmigt.</p>\n";
+    }
+
+    $body .= mail_text_antrag_details('extracurricular_requests', $antrag);
+    $body .= mail_link('/meine_antraege.php', 'Zu „Meine Anträge“');
+    $body .= "<p>Viele Grüße,<br>Dein Feedback-System Team</p>\n";
+
+    return $body;
+}
+
+/**
  * Mail an die Schulleitung, wenn eine Lehrkraft auf ihre Rueckfrage antwortet.
  *
  * Frage und Antwort stehen beide drin: wer die Mail liest, soll entscheiden

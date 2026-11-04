@@ -13,35 +13,8 @@ require_admin();
 $conn = db_connect();
 
 // (CSV Import moved to admin_system.php)
-
-
-// Handle Settings update
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
-    $csrf_token = $_POST['csrf_token'] ?? '';
-    if (!verify_csrf_token($csrf_token)) {
-        $_SESSION['flash_error'] = "Sicherheitsfehler: CSRF Token ungültig.";
-    } else {
-        $report_email = $_POST['report_email'] ?? '';
-        $report_time = $_POST['report_time'] ?? '';
-        $report_interval = $_POST['report_interval'] ?? '';
-
-        $stmt = $conn->prepare("UPDATE app_settings SET setting_value = ? WHERE setting_key = ?");
-        $stmt->execute([$report_email, 'report_email']);
-        $stmt->execute([$report_time, 'report_time']);
-        $stmt->execute([$report_interval, 'report_interval']);
-        
-        $_SESSION['flash_success'] = "Bericht-Einstellungen gespeichert.";
-    }
-    header("Location: /admin_dashboard.php");
-    exit;
-}
-
-// Fetch App Settings
-$stmt_settings = $conn->query("SELECT setting_key, setting_value FROM app_settings");
-$app_settings = [];
-while ($row = $stmt_settings->fetch()) {
-    $app_settings[$row['setting_key']] = $row['setting_value'];
-}
+// (Mail-Adresse der Schulleitung ebenfalls: admin_system.php. Das Formular
+// dafuer war hier schon seit April 2026 verschwunden.)
 
 // 2. Exemption requests (Freistellungen)
 $stmt_exempt = $conn->query("
@@ -83,7 +56,6 @@ echo $twig->render('admin_dashboard.twig', [
     'flash_success' => $flash_success,
     'flash_error' => $flash_error,
     'exempt_requests' => $exempt_requests,
-    'app_settings' => $app_settings,
     'current_user_name' => get_current_user_name(),
     'is_admin' => is_current_user_admin(),
     'is_logged_in' => true

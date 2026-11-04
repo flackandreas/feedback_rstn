@@ -8,6 +8,7 @@ require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/migrations.php';
 require_once __DIR__ . '/includes/klassen.php';
+require_once __DIR__ . '/includes/lbv1211.php';
 run_all_migrations();
 
 require_login();
@@ -53,14 +54,28 @@ if (is_current_user_admin()) {
 
     // Extracurricular trips today
     $stmt_extra_today = $conn->query("
-        SELECT t.name, t.kuerzel, r.event_name, r.class_name, r.destination, r.event_date, r.event_date_to
+        SELECT r.id, t.name, t.kuerzel, r.event_name, r.class_name, r.destination, r.event_date, r.event_date_to
         FROM extracurricular_requests r
         JOIN teachers t ON r.teacher_id = t.id
         WHERE r.status = 'approved' AND CURDATE() BETWEEN r.event_date AND IFNULL(r.event_date_to, r.event_date)
     ");
     $extra_today = $stmt_extra_today->fetchAll();
 
-    $total_absent = count($sick_today) + count($exempt_today) + count($extra_today);
+    // Wer den Ausflug begleitet, fehlt an dem Tag genauso wie die Leitung.
+    // Bisher stand hier nur die Leitung - fuer die Vertretung fehlten die
+    // uebrigen Lehrkraefte.
+    $begleitung_today = lbv_begleitende_lehrkraefte($conn, array_column($extra_today, 'id'));
+    $begleitende_today = 0;
+    foreach ($extra_today as &$ex) {
+        $ex['begleitung'] = array_map(
+            static fn (array $t): string => $t['name'] . ' (' . $t['kuerzel'] . ')',
+            $begleitung_today[(int) $ex['id']] ?? []
+        );
+        $begleitende_today += count($ex['begleitung']);
+    }
+    unset($ex);
+
+    $total_absent = count($sick_today) + count($exempt_today) + count($extra_today) + $begleitende_today;
 
     // 3. Fetch today's calendar events (both local absent events & external IServ events)
     require_once __DIR__ . '/includes/calendar_helper.php';
@@ -90,6 +105,7 @@ if (is_current_user_admin()) {
             'type' => 'extra',
             'title' => '🚌 Ausflug (' . $ex['class_name'] . '): ' . $ex['event_name'],
             'details' => 'Ziel: ' . $ex['destination'] . ' - Leitung: ' . $ex['name']
+                . ($ex['begleitung'] !== [] ? ' - Begleitung: ' . implode(', ', $ex['begleitung']) : '')
         ];
     }
 

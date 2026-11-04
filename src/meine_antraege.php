@@ -8,6 +8,7 @@ require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/migrations.php';
 require_once __DIR__ . '/includes/entscheidungen.php';
+require_once __DIR__ . '/includes/lbv1211.php';
 run_all_migrations();
 
 require_login();
@@ -102,6 +103,18 @@ foreach ($requests as &$r) {
 }
 unset($r);
 
+// Ausfluege anderer, bei denen die Lehrkraft als Begleitperson eingetragen
+// ist. Bisher sah sie die nirgends, auch nicht im Kalender. Bearbeiten kann
+// sie nur die Leitung; hier steht der Ausflug nur zum Nachsehen.
+$stmt = $conn->prepare("SELECT r.id, r.event_name, r.class_name, r.destination, r.event_date, r.event_date_to,
+                               r.status, t.name AS leitung, t.kuerzel AS leitung_kuerzel
+                          FROM extracurricular_requests r
+                          JOIN teachers t ON t.id = r.teacher_id
+                         WHERE r.teacher_id <> ? AND " . lbv_begleitet_sql() . " {$beiEntscheidung}
+                         ORDER BY r.event_date DESC");
+$stmt->execute([$user_id, $user_id, $user_id]);
+$begleitungen = $stmt->fetchAll();
+
 require_once __DIR__ . '/includes/twig_setup.php';
 
 // Meldungen der Seiten, die hierher zurueckfuehren: die Antwort auf eine
@@ -114,6 +127,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 
 echo $twig->render('meine_antraege.twig', [
     'requests' => $requests,
+    'begleitungen' => $begleitungen,
     // Fuer das Antwortformular unter einer Rueckfrage.
     'csrf_token' => get_csrf_token(),
     'flash_success' => $flash_success,

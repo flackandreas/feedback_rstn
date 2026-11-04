@@ -9,6 +9,7 @@ require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/mailer.php';
 require_once __DIR__ . '/includes/mail_texte.php';
 require_once __DIR__ . '/includes/entscheidungen.php';
+require_once __DIR__ . '/includes/lbv1211.php';
 
 require_admin(); // Security block
 
@@ -60,7 +61,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $details_query = "";
             if ($table === 'extracurricular_requests') {
                 // modified_after_approval: die Mail sagt dann "die Aenderungen wurden genehmigt".
-                $details_query = "SELECT r.status, r.modified_after_approval, t.email, t.name as teacher_name, r.class_name, r.event_date, r.event_date_to, r.destination
+                $details_query = "SELECT r.status, r.modified_after_approval, t.email, t.name as teacher_name, r.event_name, r.class_name, r.event_date, r.event_date_to, r.destination
                                   FROM extracurricular_requests r 
                                   JOIN teachers t ON r.teacher_id = t.id 
                                   WHERE r.id = ?";
@@ -111,6 +112,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 if (!send_notification_email($request_details['email'], $subject, $body)) {
                     $_SESSION['flash_error'] = "Status gespeichert, aber E-Mail konnte nicht gesendet werden.";
+                }
+            }
+
+            // Begleitende Lehrkraefte erfahren von der Genehmigung - und von
+            // einer Ablehnung nur, wenn der Ausflug vorher genehmigt war.
+            $begleitung_melden = $table === 'extracurricular_requests'
+                && ($status === 'approved' || ($status === 'rejected' && $request_details['status'] === 'approved'));
+
+            if ($begleitung_melden) {
+                $nicht_erreicht = 0;
+                foreach (lbv_begleitende_lehrkraefte($conn, [$request_id])[$request_id] ?? [] as $begleiter) {
+                    if ($begleiter['email'] === null) {
+                        continue;
+                    }
+                    $subject = $status === 'approved'
+                        ? "Ausflug genehmigt, bei dem du Begleitperson bist"
+                        : "Ausflug abgelehnt, bei dem du Begleitperson bist";
+                    if (!send_notification_email($begleiter['email'], $subject, mail_text_begleitung($status, $request_details, $begleiter['name']))) {
+                        $nicht_erreicht++;
+                    }
+                }
+                if ($nicht_erreicht > 0) {
+                    $_SESSION['flash_error'] = isset($_SESSION['flash_error'])
+                        ? "Status gespeichert, aber die E-Mails an die Lehrkraft und an $nicht_erreicht Begleitperson(en) konnten nicht gesendet werden."
+                        : "Status gespeichert, aber die E-Mail an $nicht_erreicht Begleitperson(en) konnte nicht gesendet werden.";
                 }
             }
         } catch (PDOException $e) {

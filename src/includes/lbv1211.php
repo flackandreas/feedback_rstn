@@ -369,6 +369,64 @@ function lbv_begleitpersonen_laden(PDO $conn, array $ids): array
 }
 
 /**
+ * Die Lehrkraefte unter den Begleitpersonen, je Antrag.
+ *
+ * Bisher kamen sie ausser im Antrag nirgends vor: keine Mail, kein Eintrag
+ * unter "Meine Antraege", nicht bei "Heute abwesend". Eltern und andere
+ * Begleiter haben kein Konto und fallen hier weg. Antraege von vor der
+ * Umstellung kennen nur eine Begleitlehrkraft (participating_teacher_id) -
+ * die zaehlt, solange der Antrag keine Begleitpersonen-Zeilen hat.
+ *
+ * @param list<int|string> $ids
+ * @return array<int, list<array{id: int, name: string, kuerzel: string, email: ?string}>>
+ */
+function lbv_begleitende_lehrkraefte(PDO $conn, array $ids): array
+{
+    $ids = array_values(array_unique(array_map('intval', $ids)));
+    if ($ids === []) {
+        return [];
+    }
+
+    $platzhalter = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $conn->prepare("SELECT b.request_id, b.position, t.id, t.name, t.kuerzel, t.email
+                              FROM extracurricular_begleitpersonen b
+                              JOIN teachers t ON t.id = b.teacher_id
+                             WHERE b.request_id IN ($platzhalter)
+                            UNION
+                            SELECT r.id, 1, t.id, t.name, t.kuerzel, t.email
+                              FROM extracurricular_requests r
+                              JOIN teachers t ON t.id = r.participating_teacher_id
+                             WHERE r.id IN ($platzhalter)
+                               AND NOT EXISTS (SELECT 1 FROM extracurricular_begleitpersonen b0 WHERE b0.request_id = r.id)
+                             ORDER BY 1, 2");
+    $stmt->execute(array_merge($ids, $ids));
+
+    $je_antrag = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $t) {
+        $je_antrag[(int) $t['request_id']][] = [
+            'id' => (int) $t['id'],
+            'name' => (string) $t['name'],
+            'kuerzel' => (string) $t['kuerzel'],
+            'email' => $t['email'] !== null && $t['email'] !== '' ? (string) $t['email'] : null,
+        ];
+    }
+
+    return $je_antrag;
+}
+
+/**
+ * SQL-Bedingung "die Lehrkraft begleitet den Antrag r" - dieselbe Regel wie
+ * lbv_begleitende_lehrkraefte(). Beide Platzhalter stehen fuer ihre ID; der
+ * Kalender arbeitet mit benannten, die uebrigen Seiten mit "?".
+ */
+function lbv_begleitet_sql(string $platzhalter_a = '?', string $platzhalter_b = '?'): string
+{
+    return "(EXISTS (SELECT 1 FROM extracurricular_begleitpersonen bg WHERE bg.request_id = r.id AND bg.teacher_id = $platzhalter_a)
+             OR (r.participating_teacher_id = $platzhalter_b
+                 AND NOT EXISTS (SELECT 1 FROM extracurricular_begleitpersonen bg0 WHERE bg0.request_id = r.id)))";
+}
+
+/**
  * Bezeichnungen der Angaben fuer "was wurde geaendert", in der Reihenfolge
  * des Vordrucks. Mehrere Spalten teilen sich eine Bezeichnung - wer die
  * Abfahrt verschiebt, hat "Abfahrt am Ort" geaendert, nicht Datum und Zeit

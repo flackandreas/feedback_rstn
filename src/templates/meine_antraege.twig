@@ -157,4 +157,49 @@
         </div>
     {% endif %}
 </div>
+
+{# Ausfluege anderer, bei denen die Lehrkraft Begleitperson ist. Nur zum
+   Nachsehen: bearbeiten und ausdrucken kann den Antrag nur die Leitung. Eine
+   Rueckfrage richtet sich an die Leitung - fuer die Begleitung ist der
+   Ausflug dann einfach noch nicht entschieden. #}
+{% if begleitungen is not empty %}
+<div class="content-box">
+    <h3 style="margin-top: 0;">Als Begleitperson eingetragen</h3>
+    <div style="overflow-x: auto;">
+        <table class="data-table data-table--karten">
+            <thead>
+                <tr>
+                    <th>Datum</th>
+                    <th>Veranstaltung</th>
+                    <th>Leitung</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in begleitungen %}
+                    {% set statusColor =
+                           (b.status == 'approved') ? 'var(--success-color)'
+                         : (b.status == 'rejected') ? 'var(--danger-color)'
+                         : 'var(--warning-color-dark)' %}
+                    <tr>
+                        <td class="karte__datum" style="font-weight: 500;">
+                            {{ b.event_date|date('d.m.Y') }}{% if b.event_date_to and b.event_date_to != b.event_date %} - {{ b.event_date_to|date('d.m.Y') }}{% endif %}
+                        </td>
+                        <td class="karte__details">
+                            {{ b.event_name }}
+                            <br><span style="color: var(--text-muted); font-size: 0.85em;">{{ b.class_name }}{% if b.destination %} · {{ b.destination }}{% endif %}</span>
+                        </td>
+                        <td class="karte__gesendet" data-label="Leitung">{{ b.leitung }} ({{ b.leitung_kuerzel }})</td>
+                        <td class="karte__status">
+                            <span style="display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.8em; font-weight: 600; color: white; background-color: {{ statusColor }};">
+                                {{ b.status == 'approved' ? 'GENEHMIGT' : (b.status == 'rejected' ? 'ABGELEHNT' : 'AUSSTEHEND') }}
+                            </span>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

@@ -8,6 +8,7 @@ require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/calendar_helper.php';
 require_once __DIR__ . '/includes/klassen.php';
+require_once __DIR__ . '/includes/lbv1211.php';
 
 require_login();
 
@@ -61,15 +62,21 @@ $exemptions = $stmt_exempt->fetchAll();
 // sehen sie nur die Schulleitung und die antragstellende Lehrkraft selbst.
 // Gezeigt wird nur, was ohnehin im Kalendereintrag steht - Name, Klassen,
 // Ziel und Leitung, nicht die Personalnummer und nicht die Begleitpersonen.
-$sichtbarkeit = $istVerwaltung ? '' : ' AND (r.teacher_id = :teacher_id OR r.kalender_oeffentlich = 1)';
+//
+// Begleitende Lehrkraefte sehen den Ausflug auch ohne den Haken: sie sind an
+// dem Tag selbst unterwegs.
+$sichtbarkeit = $istVerwaltung ? '' : ' AND (r.teacher_id = :teacher_id OR r.kalender_oeffentlich = 1 OR '
+    . lbv_begleitet_sql(':begleitung_a', ':begleitung_b') . ')';
 $stmt_extra = $conn->prepare("
     SELECT r.id, r.event_date, r.event_date_to, r.event_name, r.class_name, t.name as teacher_name, r.destination
     FROM extracurricular_requests r
     JOIN teachers t ON r.teacher_id = t.id
     WHERE r.status = 'approved' {$sichtbarkeit}
 ");
-$stmt_extra->execute($werte);
+$stmt_extra->execute($istVerwaltung ? [] : $werte + [':begleitung_a' => $user_id, ':begleitung_b' => $user_id]);
 $extracurriculars = $stmt_extra->fetchAll();
+
+$begleitung = lbv_begleitende_lehrkraefte($conn, array_column($extracurriculars, 'id'));
 
 $events = [];
 
@@ -106,6 +113,7 @@ foreach ($extracurriculars as $ex) {
         'end' => $ex['event_date_to'] ?: $ex['event_date'],
         'title' => '🚌 Ausflug (' . klassen_kurz($ex['class_name']) . '): ' . $ex['event_name'],
         'details' => 'Veranstaltung: ' . $ex['event_name'] . "\nKlasse(n): " . $ex['class_name'] . "\nZiel: " . $ex['destination'] . "\nLeitung: " . $ex['teacher_name']
+            . (in_array((int) $user_id, array_column($begleitung[(int) $ex['id']] ?? [], 'id'), true) ? "\nSie sind als Begleitperson eingetragen." : '')
     ];
 }
 

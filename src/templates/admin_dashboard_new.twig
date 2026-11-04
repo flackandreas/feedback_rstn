@@ -332,6 +332,9 @@
                             <li class="absent-item">
                                 <div class="absent-info">
                                     <div class="absent-name">{{ ex.name }} <span style="font-size: 0.85em; color: var(--text-muted); font-weight: normal;">({{ ex.kuerzel }})</span></div>
+                                    {% if ex.begleitung is not empty %}
+                                        <div class="absent-name" style="font-weight: normal; font-size: 0.9em;">Begleitung: {{ ex.begleitung|join(', ') }}</div>
+                                    {% endif %}
                                     <div class="absent-details">
                                         <strong>Klasse:</strong> {{ ex.class_name }} | <strong>Ziel:</strong> {{ ex.destination }} <br>
                                         <strong>Event:</strong> {{ ex.event_name }}

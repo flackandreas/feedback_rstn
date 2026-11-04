@@ -212,7 +212,8 @@ if ($action === 'export') {
 
     // --- 4. Entscheidungen der Schulleitung (Audit M3) ---
     // Mit art: 'entscheidung' ist ein Schritt der Schulleitung, 'antwort' die
-    // Antwort einer Lehrkraft auf eine Rueckfrage.
+    // Antwort einer Lehrkraft auf eine Rueckfrage, 'aenderung' eine Aenderung
+    // an einem genehmigten Ausflug (in nachricht: was geaendert wurde).
     // Der Abschluss loescht sie mit ihren Antraegen (ON DELETE CASCADE),
     // deshalb gehoeren sie ins Archiv. antrag_id verweist auf die ID in
     // freistellungen_*.csv bzw. veranstaltungen_*.csv.

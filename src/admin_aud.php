@@ -79,6 +79,10 @@ function veranstaltung_info(array $r, array $begleitpersonen): array
         'consent_form' => (string) $r['consent_form'],
         'schedule_notified' => (int) $r['schedule_notified'],
         'status' => $r['status'],
+        // Nach der Genehmigung geaendert und noch nicht wieder entschieden.
+        'geaendert' => $r['geaendert'],
+        'geaendert_am' => $r['geaendert'] ? $datum($r['modified_at']) : '',
+        'aenderung' => $r['aenderung'],
         'verlauf' => $r['verlauf'],
         'gespraech' => $r['gespraech'],
         // Ohne die Angaben des Vordrucks gibt es keinen Ausdruck (antrag_pdf.php).
@@ -91,6 +95,11 @@ function veranstaltung_info(array $r, array $begleitpersonen): array
 // Offene Antraege zuerst, die naechste Veranstaltung oben, darunter die
 // entschiedenen, die juengste zuerst. Frueher sortierte die Liste zuerst nach
 // dem AUD-Tag - das Formular fragt ihn nicht mehr ab.
+//
+// Ein genehmigter Ausflug, den die Lehrkraft danach geaendert hat, zaehlt zu
+// den offenen. Vorher stand er unter den entschiedenen, blass und ohne
+// Hinweis - die Mail an die Schulleitung verwies auf eine Markierung, die es
+// nirgends gab.
 $stmt_extra = $conn->query("
     SELECT r.id, 'Ausflug' as type, r.class_name as class, r.class_name, r.event_date, r.event_date_to, r.destination,
            r.aud_type, r.event_date as date_main, r.status, r.created_at, t.name as teacher_name, t.kuerzel,
@@ -104,8 +113,8 @@ $stmt_extra = $conn->query("
            r.lbv_kosten_eur, r.lbv_kosten_erlaeuterung, r.kalender_oeffentlich
     FROM extracurricular_requests r
     JOIN teachers t ON r.teacher_id = t.id
-    ORDER BY r.status IN ('pending', 'query') DESC,
-             CASE WHEN r.status IN ('pending', 'query') THEN r.event_date END ASC,
+    ORDER BY (r.status IN ('pending', 'query') OR (r.status = 'approved' AND r.modified_after_approval = 1)) DESC,
+             CASE WHEN r.status IN ('pending', 'query') OR (r.status = 'approved' AND r.modified_after_approval = 1) THEN r.event_date END ASC,
              r.event_date DESC, r.created_at DESC
 ");
 $extra_requests = $stmt_extra->fetchAll(PDO::FETCH_ASSOC);
@@ -117,7 +126,12 @@ $ids = array_column($extra_requests, 'id');
 $verlauf = entscheidungen_verlauf($conn, 'extracurricular_requests', $ids);
 $gespraeche = rueckfrage_gespraeche($conn, 'extracurricular_requests', $ids);
 $begleitung = lbv_begleitpersonen_laden($conn, $ids);
+$aenderungen = aenderungen_offen($conn, $ids);
 foreach ($extra_requests as &$r) {
+    $r['geaendert'] = $r['status'] === 'approved' && (int) $r['modified_after_approval'] === 1;
+    // Aenderungen von vor diesem Protokoll haben keinen Eintrag - dann bleibt
+    // es bei der Markierung ohne Liste.
+    $r['aenderung'] = $r['geaendert'] ? ($aenderungen[(int) $r['id']] ?? []) : [];
     $r['verlauf'] = $verlauf[(int) $r['id']] ?? [];
     $r['gespraech'] = $gespraeche[(int) $r['id']] ?? [];
     $r['beantwortet'] = rueckfrage_beantwortet((string) $r['status'], $r['gespraech']);

@@ -92,6 +92,10 @@ function mail_text_entscheidung(string $status, string $tabelle, array $antrag, 
     } elseif ($status === 'query') {
         $body .= "<p>zu deinem Antrag auf $request_type_text gibt es eine <strong>Rückfrage der Schulleitung</strong>.</p>";
         $body .= "<p>Bitte halte kurz Rücksprache mit der Schulleitung.</p>";
+    } elseif ($status === 'approved' && !empty($antrag['modified_after_approval'])) {
+        // Die Schulleitung bestaetigt eine Aenderung an einem schon
+        // genehmigten Ausflug - genehmigt war er vorher auch.
+        $body .= "<p>die Änderungen an deinem Antrag auf $request_type_text wurden soeben <strong>genehmigt</strong>.</p>";
     } else {
         $body .= "<p>dein Antrag auf $request_type_text wurde soeben <strong>{$status_text}</strong>.</p>";
     }
@@ -140,11 +144,24 @@ function mail_text_rueckfrage_antwort(string $tabelle, array $antrag, string $le
 
 /**
  * Mail an die Schulleitung, wenn eine schon genehmigte Veranstaltung geaendert wurde.
+ *
+ * @param list<string> $angaben was geaendert wurde, aus lbv_geaenderte_angaben()
  */
-function mail_text_aenderung_nach_genehmigung(string $lehrkraft, string $veranstaltung, string $klasse): string
+function mail_text_aenderung_nach_genehmigung(string $lehrkraft, string $veranstaltung, string $klasse, array $angaben = []): string
 {
-    return "<h3>Achtung: Änderung!</h3>
+    $body = "<h3>Achtung: Änderung!</h3>
         <p>Der bereits genehmigte Antrag von <strong>" . mail_html($lehrkraft) . "</strong>
-        für die Veranstaltung <strong>" . mail_html($veranstaltung) . "</strong> (Klasse " . mail_html($klasse) . ") wurde nachträglich geändert.</p>
-        <p>Bitte überprüfen Sie die Änderungen im Admin-Dashboard.</p>";
+        für die Veranstaltung <strong>" . mail_html($veranstaltung) . "</strong> (Klasse " . mail_html($klasse) . ") wurde nachträglich geändert.</p>\n";
+
+    if ($angaben !== []) {
+        $body .= "<p>Geändert: " . mail_html(implode(', ', $angaben)) . "</p>\n";
+    }
+
+    // Vorher stand hier "im Admin-Dashboard" - dort war der Antrag aber nicht
+    // markiert. Er steht jetzt oben in der AUD-Uebersicht.
+    $body .= "<p>Der Antrag steht in der AUD-Übersicht oben, mit „Geändert“ markiert. "
+        . "Dort können Sie die Änderung genehmigen, nachfragen oder ablehnen.</p>\n";
+    $body .= mail_link('/admin_aud.php', 'Zur AUD-Übersicht');
+
+    return $body;
 }

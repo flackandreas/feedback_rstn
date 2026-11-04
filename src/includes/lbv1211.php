@@ -369,7 +369,43 @@ function lbv_begleitpersonen_laden(PDO $conn, array $ids): array
 }
 
 /**
- * Hat sich am Antrag etwas geaendert, ausser der Sichtbarkeit im Kalender?
+ * Bezeichnungen der Angaben fuer "was wurde geaendert", in der Reihenfolge
+ * des Vordrucks. Mehrere Spalten teilen sich eine Bezeichnung - wer die
+ * Abfahrt verschiebt, hat "Abfahrt am Ort" geaendert, nicht Datum und Zeit
+ * getrennt. Keine Bezeichnung enthaelt ", ": daran trennt
+ * aenderungen_offen() die gespeicherte Liste wieder auf.
+ */
+const LBV_AENDERUNG_BEZEICHNUNGEN = [
+    'lbv_personalnummer' => 'Personalnummer',
+    'lk_nachname' => 'Name der Lehrkraft',
+    'lk_vorname' => 'Name der Lehrkraft',
+    'lk_in_ausbildung' => 'Name der Lehrkraft',
+    'companion' => 'Begleitpersonen',
+    'participating_teacher_id' => 'Begleitpersonen',
+    'role' => 'Art der Veranstaltung',
+    'event_name' => 'Veranstaltung',
+    'destination' => 'Ziel',
+    'class_name' => 'Klasse(n)',
+    'schueler_anzahl' => 'Schülerzahl',
+    'event_date' => 'Beginn der Reise',
+    'start_time' => 'Beginn der Reise',
+    'ankunft_datum' => 'Ankunft am Ort',
+    'ankunft_zeit' => 'Ankunft am Ort',
+    'abfahrt_datum' => 'Abfahrt am Ort',
+    'abfahrt_zeit' => 'Abfahrt am Ort',
+    'event_date_to' => 'Ende der Reise',
+    'return_time' => 'Ende der Reise',
+    'aufenthaltstage' => 'Aufenthaltstage',
+    'bef_oepnv' => 'Beförderungsmittel',
+    'bef_reisebus' => 'Beförderungsmittel',
+    'bef_sonstiges' => 'Beförderungsmittel',
+    'bef_sonstiges_text' => 'Beförderungsmittel',
+    'lbv_kosten_eur' => 'Kosten',
+    'lbv_kosten_erlaeuterung' => 'Kosten',
+];
+
+/**
+ * Was sich am Antrag geaendert hat, ausser der Sichtbarkeit im Kalender.
  *
  * Wer einen genehmigten Antrag aendert, loest die Markierung "nach
  * Genehmigung geaendert" und eine Mail an die Schulleitung aus. Das Umschalten
@@ -381,12 +417,17 @@ function lbv_begleitpersonen_laden(PDO $conn, array $ids): array
  * mit zwei Stellen - beides wird vor dem Vergleich auf die Form des Formulars
  * gebracht, sonst gaelte jedes Speichern als Aenderung.
  *
+ * Frueher stand hier nur ja oder nein. Die Schulleitung bekam dann die Mail
+ * "wurde nachtraeglich geaendert" und musste den ganzen Antrag mit ihrer
+ * Erinnerung vergleichen.
+ *
  * @param array<string,mixed> $alt Zeile aus extracurricular_requests
  * @param array<string,mixed> $neu Spalten, wie lbv_spalten() und der Controller sie schreiben
  * @param list<array<string,mixed>> $begleitung_alt Zeilen aus extracurricular_begleitpersonen
  * @param list<array<string,mixed>> $begleitung_neu Begleitpersonen aus dem Formular
+ * @return list<string> Bezeichnungen aus LBV_AENDERUNG_BEZEICHNUNGEN, leer wenn nichts geaendert wurde
  */
-function lbv_inhalt_geaendert(array $alt, array $neu, array $begleitung_alt, array $begleitung_neu): bool
+function lbv_geaenderte_angaben(array $alt, array $neu, array $begleitung_alt, array $begleitung_neu): array
 {
     $normal = static function (mixed $wert): string {
         $wert = trim((string) $wert);
@@ -403,9 +444,10 @@ function lbv_inhalt_geaendert(array $alt, array $neu, array $begleitung_alt, arr
     };
 
     unset($neu['kalender_oeffentlich']);
+    $geaendert = [];
     foreach ($neu as $spalte => $wert) {
         if (!array_key_exists($spalte, $alt) || $normal($alt[$spalte]) !== $normal($wert)) {
-            return true;
+            $geaendert[] = LBV_AENDERUNG_BEZEICHNUNGEN[$spalte] ?? $spalte;
         }
     }
 
@@ -419,7 +461,18 @@ function lbv_inhalt_geaendert(array $alt, array $neu, array $begleitung_alt, arr
         array_values($personen)
     );
 
-    return $liste($begleitung_alt) !== $liste($begleitung_neu);
+    if ($liste($begleitung_alt) !== $liste($begleitung_neu)) {
+        $geaendert[] = 'Begleitpersonen';
+    }
+
+    // In der Reihenfolge des Vordrucks, jede Bezeichnung einmal. Eine Spalte
+    // ohne Bezeichnung steht mit ihrem Namen am Ende.
+    $reihenfolge = array_flip(array_values(array_unique(LBV_AENDERUNG_BEZEICHNUNGEN)));
+    $geaendert = array_values(array_unique($geaendert));
+    usort($geaendert, static fn (string $a, string $b): int =>
+        ($reihenfolge[$a] ?? PHP_INT_MAX) <=> ($reihenfolge[$b] ?? PHP_INT_MAX));
+
+    return $geaendert;
 }
 
 /** Ersetzt die Begleitpersonen eines Antrags. */

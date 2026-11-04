@@ -13,8 +13,8 @@ function get_pending_counts($conn) {
     $stmt1 = $conn->query("SELECT COUNT(*) FROM exemption_requests WHERE status = 'pending' OR status = 'query'");
     $exemption_count = (int)$stmt1->fetchColumn();
 
-    // Count pending AUDs
-    $stmt2 = $conn->query("SELECT COUNT(*) FROM extracurricular_requests WHERE status = 'pending' OR status = 'query'");
+    // Count pending AUDs - dazu genehmigte, die die Lehrkraft danach geaendert hat
+    $stmt2 = $conn->query("SELECT COUNT(*) FROM extracurricular_requests WHERE status = 'pending' OR status = 'query' OR (status = 'approved' AND modified_after_approval = 1)");
     $aud_count = (int)$stmt2->fetchColumn();
 
     // Count unseen sick leaves (safely catch if table/column does not exist yet)

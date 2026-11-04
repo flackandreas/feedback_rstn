@@ -9,7 +9,8 @@
  * dort.
  *
  * Antworten stehen in derselben Tabelle wie die Entscheidungen, mit
- * art = 'antwort'. So ergibt sich je Antrag ein Verlauf in der richtigen
+ * art = 'antwort', Aenderungen an einem genehmigten Ausflug mit
+ * art = 'aenderung'. So ergibt sich je Antrag ein Verlauf in der richtigen
  * Reihenfolge, der mit dem Antrag geloescht und archiviert wird.
  */
 
@@ -66,6 +67,118 @@ function antwort_protokollieren(PDO $conn, string $tabelle, int $antrag_id, stri
 }
 
 /**
+ * Haelt fest, dass die Lehrkraft einen genehmigten Ausflug geaendert hat,
+ * und was.
+ *
+ * Der Status bleibt 'approved' - die Markierung "nach Genehmigung geaendert"
+ * steht am Antrag selbst (modified_after_approval). Der Eintrag sagt der
+ * Schulleitung, welche Angaben betroffen sind. Mit art = 'aenderung' faellt
+ * er aus dem Wortwechsel der Rueckfragen heraus.
+ *
+ * @param list<string> $angaben Bezeichnungen aus lbv_geaenderte_angaben()
+ */
+function aenderung_protokollieren(PDO $conn, int $antrag_id, array $angaben): void
+{
+    $conn->prepare(
+        "INSERT INTO antrag_entscheidungen (veranstaltung_id, art, status_vorher, status_neu, nachricht, entschieden_von, entschieden_von_name)
+         VALUES (?, 'aenderung', 'approved', 'approved', ?, ?, ?)"
+    )->execute([$antrag_id, implode(', ', $angaben), get_current_user_id(), mb_substr(entscheidung_bearbeiter(), 0, 255)]);
+}
+
+/**
+ * Was die Lehrkraft seit der letzten Entscheidung der Schulleitung an einem
+ * Ausflug geaendert hat - fuer die Markierung in der AUD-Uebersicht.
+ *
+ * Aendert sie zweimal, steht beides darin. Genehmigt die Schulleitung die
+ * Aenderung, beginnt die Liste von vorn.
+ *
+ * @param list<int|string> $ids
+ * @return array<int, list<string>> Antrags-ID => Bezeichnungen der Angaben
+ */
+function aenderungen_offen(PDO $conn, array $ids): array
+{
+    $ids = array_values(array_unique(array_map('intval', $ids)));
+    if ($ids === []) {
+        return [];
+    }
+
+    $stmt = $conn->prepare(
+        "SELECT veranstaltung_id AS antrag_id, art, nachricht
+           FROM antrag_entscheidungen
+          WHERE veranstaltung_id IN (" . implode(',', array_fill(0, count($ids), '?')) . ")
+            AND art IN ('entscheidung', 'aenderung')
+          ORDER BY entschieden_am, id"
+    );
+    $stmt->execute($ids);
+
+    $offen = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $e) {
+        $id = (int) $e['antrag_id'];
+        if ($e['art'] === 'entscheidung') {
+            unset($offen[$id]);
+            continue;
+        }
+        $offen[$id] = array_values(array_unique([
+            ...($offen[$id] ?? []),
+            ...array_filter(explode(', ', (string) $e['nachricht']), static fn (string $s): bool => $s !== ''),
+        ]));
+    }
+
+    return $offen;
+}
+
+/**
+ * Bringt der Person, die gefragt hat, die Antwort auf ihre Rueckfrage.
+ *
+ * Hat ihr Konto keine Adresse oder gibt es das Konto nicht mehr, geht die
+ * Mail an die Adresse fuer Berichte aus der Systemverwaltung. Die Antwort
+ * ist an dieser Stelle schon gespeichert; scheitert die Mail, meldet das nur
+ * der Rueckgabewert.
+ *
+ * Gebraucht von rueckfrage_antwort.php und vom Formular des Ausflugs, wenn
+ * die Lehrkraft die Rueckfrage mit einer Aenderung am Antrag beantwortet.
+ *
+ * @param array<string,mixed> $antrag Eckdaten fuer mail_text_antrag_details()
+ * @return bool false, wenn die Mail nicht verschickt werden konnte
+ */
+function rueckfrage_antwort_melden(PDO $conn, string $tabelle, int $antrag_id, array $antrag, string $antwort): bool
+{
+    require_once __DIR__ . '/mailer.php';
+    require_once __DIR__ . '/mail_texte.php';
+
+    try {
+        $frage = rueckfrage_letzte($conn, $tabelle, $antrag_id);
+
+        $empfaenger = '';
+        if ($frage !== null && $frage['von_id'] !== null) {
+            $stmt = $conn->prepare('SELECT email FROM teachers WHERE id = ?');
+            $stmt->execute([$frage['von_id']]);
+            $empfaenger = trim((string) $stmt->fetchColumn());
+        }
+        if ($empfaenger === '') {
+            $empfaenger = trim((string) $conn->query("SELECT setting_value FROM app_settings WHERE setting_key = 'report_email'")->fetchColumn());
+        }
+
+        if ($empfaenger === '') {
+            return true;
+        }
+
+        $lehrkraft = entscheidung_bearbeiter();
+        $art = $tabelle === 'extracurricular_requests' ? 'außerunterrichtliche Veranstaltung' : 'Freistellung';
+
+        return send_notification_email(
+            $empfaenger,
+            "Antwort auf Rückfrage ($art): $lehrkraft",
+            mail_text_rueckfrage_antwort($tabelle, $antrag, $lehrkraft, $frage, $antwort)
+        );
+    } catch (Throwable $e) {
+        error_log('rueckfrage_antwort_melden: ' . $e->getMessage());
+
+        return false;
+    }
+}
+
+/**
  * Verlauf der Entscheidungen je Antrag, fuer die Detailansicht der Schulleitung.
  *
  * @param list<int|string> $ids
@@ -80,7 +193,7 @@ function entscheidungen_verlauf(PDO $conn, string $tabelle, array $ids): array
 
     $spalte = entscheidung_spalte($tabelle);
     $stmt = $conn->prepare(
-        "SELECT $spalte AS antrag_id, art, status_neu, entschieden_von_name, entschieden_am
+        "SELECT $spalte AS antrag_id, art, status_neu, nachricht, entschieden_von_name, entschieden_am
            FROM antrag_entscheidungen
           WHERE $spalte IN (" . implode(',', array_fill(0, count($ids), '?')) . ")
           ORDER BY entschieden_am, id"
@@ -92,7 +205,12 @@ function entscheidungen_verlauf(PDO $conn, string $tabelle, array $ids): array
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $e) {
         // Eine Antwort setzt den Status zwar auf 'pending', "offen" waere hier
         // aber das falsche Wort: es war die Lehrkraft, nicht die Schulleitung.
-        $wort = $e['art'] === 'antwort' ? 'beantwortet' : ($woerter[$e['status_neu']] ?? $e['status_neu']);
+        // Eine Aenderung nach der Genehmigung laesst den Status stehen.
+        $wort = match ($e['art']) {
+            'antwort' => 'beantwortet',
+            'aenderung' => 'geändert (' . $e['nachricht'] . ')',
+            default => $woerter[$e['status_neu']] ?? $e['status_neu'],
+        };
         $verlauf[(int) $e['antrag_id']][] = date('d.m.Y H:i', strtotime($e['entschieden_am']))
             . ' · ' . $wort
             . ' · ' . $e['entschieden_von_name'];

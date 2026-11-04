@@ -12,16 +12,24 @@ require_once __DIR__ . '/includes/entscheidungen.php';
 
 require_admin(); // Security block
 
+// Zurueck auf die Seite, von der die Entscheidung kam. Ausfluege werden in
+// der AUD-Uebersicht entschieden, Freistellungen in admin_dashboard.php.
+// Vorher fuehrte jede Entscheidung nach admin_dashboard.php - wer einen
+// Ausflug genehmigte, stand danach in der Liste der Freistellungen.
+$request_type = is_string($_POST['type'] ?? null) ? $_POST['type'] : '';
+$zurueck = $request_type === 'ausflug' ? '/admin_aud.php' : '/admin_dashboard.php';
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $csrf_token = $_POST['csrf_token'] ?? '';
-    
+
     if (!verify_csrf_token($csrf_token)) {
-        header("Location: /admin_dashboard.php?error=csrf");
+        // Als Meldung statt ?error=csrf - die AUD-Uebersicht liest den Parameter nicht.
+        $_SESSION['flash_error'] = "Sicherheitsfehler: Bitte Aktion erneut ausführen.";
+        header("Location: $zurueck");
         exit;
     }
 
     $request_id = (int) ($_POST['id'] ?? 0);
-    $request_type = $_POST['type'] ?? '';
     $action = $_POST['action'] ?? '';
 
     if ($request_id > 0 && in_array($request_type, ['ausflug', 'freistellung']) && in_array($action, ['approve', 'reject', 'query'])) {
@@ -42,7 +50,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION['flash_error'] = $rueckfrage === ''
                     ? "Bitte die Rückfrage formulieren. Der Antrag ist unverändert."
                     : "Die Rückfrage ist zu lang (höchstens 2000 Zeichen). Der Antrag ist unverändert.";
-                header("Location: /admin_dashboard.php");
+                header("Location: $zurueck");
                 exit;
             }
         }
@@ -51,7 +59,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // First, get teacher email, name, and request details
             $details_query = "";
             if ($table === 'extracurricular_requests') {
-                $details_query = "SELECT r.status, t.email, t.name as teacher_name, r.class_name, r.event_date, r.event_date_to, r.destination 
+                // modified_after_approval: die Mail sagt dann "die Aenderungen wurden genehmigt".
+                $details_query = "SELECT r.status, r.modified_after_approval, t.email, t.name as teacher_name, r.class_name, r.event_date, r.event_date_to, r.destination
                                   FROM extracurricular_requests r 
                                   JOIN teachers t ON r.teacher_id = t.id 
                                   WHERE r.id = ?";
@@ -68,7 +77,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             if (!$request_details) {
                 $_SESSION['flash_error'] = "Antrag nicht gefunden.";
-                header("Location: /admin_dashboard.php");
+                header("Location: $zurueck");
                 exit;
             }
 
@@ -113,6 +122,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
-header("Location: /admin_dashboard.php");
+header("Location: $zurueck");
 exit;
 ?>

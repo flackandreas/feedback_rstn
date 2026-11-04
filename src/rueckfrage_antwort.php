@@ -17,8 +17,6 @@
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/entscheidungen.php';
-require_once __DIR__ . '/includes/mailer.php';
-require_once __DIR__ . '/includes/mail_texte.php';
 require_once __DIR__ . '/includes/rate_limit.php';
 
 require_login();
@@ -122,36 +120,7 @@ try {
 $meldung = 'Ihre Antwort ist bei der Schulleitung. Der Antrag steht wieder auf „Ausstehend“.';
 
 // Die Mail geht an die Person, die gefragt hat - sie wartet auf die Antwort.
-// Hat ihr Konto keine Adresse oder gibt es das Konto nicht mehr, an die
-// Adresse fuer Berichte aus der Systemverwaltung. Die Antwort ist an dieser
-// Stelle schon gespeichert; scheitert die Mail, wird das nur gemeldet.
-try {
-    $frage = rueckfrage_letzte($conn, $tabelle, $antrag_id);
-
-    $empfaenger = '';
-    if ($frage !== null && $frage['von_id'] !== null) {
-        $stmt = $conn->prepare('SELECT email FROM teachers WHERE id = ?');
-        $stmt->execute([$frage['von_id']]);
-        $empfaenger = trim((string) $stmt->fetchColumn());
-    }
-    if ($empfaenger === '') {
-        $empfaenger = trim((string) $conn->query("SELECT setting_value FROM app_settings WHERE setting_key = 'report_email'")->fetchColumn());
-    }
-
-    if ($empfaenger !== '') {
-        $lehrkraft = entscheidung_bearbeiter();
-        $art = $tabelle === 'extracurricular_requests' ? 'außerunterrichtliche Veranstaltung' : 'Freistellung';
-        $gesendet = send_notification_email(
-            $empfaenger,
-            "Antwort auf Rückfrage ($art): $lehrkraft",
-            mail_text_rueckfrage_antwort($tabelle, $antrag, $lehrkraft, $frage, $antwort)
-        );
-        if (!$gesendet) {
-            $meldung .= ' Die Benachrichtigung per Mail konnte allerdings nicht versendet werden.';
-        }
-    }
-} catch (Throwable $e) {
-    error_log('rueckfrage_antwort: Benachrichtigung fehlgeschlagen: ' . $e->getMessage());
+if (!rueckfrage_antwort_melden($conn, $tabelle, $antrag_id, $antrag, $antwort)) {
     $meldung .= ' Die Benachrichtigung per Mail konnte allerdings nicht versendet werden.';
 }
 

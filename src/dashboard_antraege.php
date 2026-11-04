@@ -23,8 +23,9 @@ if (is_current_user_admin()) {
     $stmt_sick_count = $conn->query("SELECT COUNT(*) FROM sick_leave_reports WHERE is_seen = 0");
     $unread_sick = $stmt_sick_count->fetchColumn();
 
-    // Pending extracurricular
-    $stmt_aud_count = $conn->query("SELECT COUNT(*) FROM extracurricular_requests WHERE status = 'pending'");
+    // Pending extracurricular - dazu genehmigte, die die Lehrkraft danach
+    // geaendert hat. Auch sie warten auf die Schulleitung.
+    $stmt_aud_count = $conn->query("SELECT COUNT(*) FROM extracurricular_requests WHERE status = 'pending' OR (status = 'approved' AND modified_after_approval = 1)");
     $pending_aud = $stmt_aud_count->fetchColumn();
 
     // Pending exemptions

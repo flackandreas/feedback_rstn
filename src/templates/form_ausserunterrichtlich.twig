@@ -13,6 +13,31 @@
     <form method="POST" action="/antrag_ausserunterrichtlich.php">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
+        {# Offene Rueckfrage der Schulleitung. Wer den Antrag daraufhin aendert
+           oder hier etwas schreibt, gibt ihn mit dem Speichern zurueck - wie
+           mit einer Antwort unter "Meine Antraege". Aeltere Rueckfragen haben
+           keinen Text, dann bleibt es beim Hinweis. #}
+        {% if rueckfrage is not null %}
+            <div class="rueckfrage-box" style="margin: 0 0 20px 0;">
+                <div class="rueckfrage-box__kopf">Rückfrage der Schulleitung</div>
+                {% for n in rueckfrage %}
+                    <div class="rueckfrage-box__eintrag{{ n.art == 'antwort' ? ' rueckfrage-box__eintrag--antwort' : '' }}">
+                        <div class="rueckfrage-box__text">{{ n.text }}</div>
+                        <div class="rueckfrage-box__von">{{ n.art == 'antwort' ? 'Ihre Antwort' : n.von }}, {{ n.am }}</div>
+                    </div>
+                {% else %}
+                    <div class="rueckfrage-box__text">Bitte Rücksprache mit der Schulleitung halten.</div>
+                {% endfor %}
+                <div class="rueckfrage-box__formular">
+                    <label for="rueckfrage_nachricht" class="rueckfrage-box__label">Nachricht an die Schulleitung (freiwillig)</label>
+                    <textarea id="rueckfrage_nachricht" name="rueckfrage_nachricht" rows="3" maxlength="2000">{{ werte.rueckfrage_nachricht|default('') }}</textarea>
+                    <div class="rueckfrage-box__fuss">
+                        <span>Ändern Sie den Antrag unten oder schreiben Sie hier. Mit dem Speichern geht er an die Schulleitung zurück, sie sieht, welche Angaben Sie geändert haben.</span>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
         {# ── 1. Persoenliche Angaben ─────────────────────────────────── #}
         <fieldset class="lbv-abschnitt">
             <legend class="lbv-abschnitt__titel">1. Persönliche Angaben</legend>
@@ -253,7 +278,7 @@
         <div style="margin-top: 30px; text-align: right;">
             {% if edit_request %}
                 <input type="hidden" name="edit_id" value="{{ edit_request.id }}">
-                <button type="submit" class="button-primary">Änderungen speichern</button>
+                <button type="submit" class="button-primary">{{ rueckfrage is not null ? 'Speichern und an die Schulleitung zurückgeben' : 'Änderungen speichern' }}</button>
             {% else %}
                 <button type="submit" class="button-primary">Antrag einreichen</button>
             {% endif %}

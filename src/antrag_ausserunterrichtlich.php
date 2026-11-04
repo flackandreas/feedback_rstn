@@ -12,6 +12,7 @@ require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/klassen.php';
 require_once __DIR__ . '/includes/lbv1211.php';
+require_once __DIR__ . '/includes/entscheidungen.php';
 require_once __DIR__ . '/includes/twig_setup.php';
 
 require_login();
@@ -51,6 +52,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             static fn (string $k): bool => $k !== ''
         ));
         $eingabe = lbv_eingabe_lesen($_POST);
+        // Nur bei einem Antrag auf Rueckfrage im Formular: was die Lehrkraft
+        // der Schulleitung zu ihrer Aenderung schreibt. Dieselbe Grenze wie
+        // fuer die Rueckfrage selbst (admin_action.php).
+        $rueckfrage_nachricht = is_string($_POST['rueckfrage_nachricht'] ?? null)
+            ? mb_substr(trim(str_replace(["\r\n", "\r"], "\n", $_POST['rueckfrage_nachricht'])), 0, 2000)
+            : '';
 
         try {
             $conn = db_connect();
@@ -75,7 +82,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION['flash_error'] = implode(' ', $fehler);
                 $_SESSION['antrag_entwurf'] = [
                     'edit_id' => $edit_id,
-                    'werte' => $eingabe + ['class_names' => $class_names],
+                    'werte' => $eingabe + ['class_names' => $class_names, 'rueckfrage_nachricht' => $rueckfrage_nachricht],
                 ];
                 header("Location: $formular");
                 exit;
@@ -111,15 +118,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     // Ein genehmigter Antrag gilt nach einer Aenderung als geaendert
                     // und geht mit einer Mail an die Schulleitung. Wer nur den Haken
                     // "im Schulkalender sichtbar" umschaltet, aendert am Antrag nichts.
-                    $nach_genehmigung_geaendert = $ext['status'] === 'approved'
-                        && lbv_inhalt_geaendert(
-                            $ext,
-                            $spalten,
-                            lbv_begleitpersonen_laden($conn, [$edit_id])[$edit_id] ?? [],
-                            $begleitung
-                        );
+                    $geaendert = lbv_geaenderte_angaben(
+                        $ext,
+                        $spalten,
+                        lbv_begleitpersonen_laden($conn, [$edit_id])[$edit_id] ?? [],
+                        $begleitung
+                    );
+                    $nach_genehmigung_geaendert = $ext['status'] === 'approved' && $geaendert !== [];
                     $is_modified = $nach_genehmigung_geaendert ? 1 : (int) $ext['modified_after_approval'];
                     $spalten['modified_after_approval'] = $is_modified;
+
+                    // Steht der Antrag auf Rueckfrage, beantwortet die Lehrkraft
+                    // sie oft gleich im Formular - "bitte Kosten ergaenzen".
+                    // Vorher blieb er dann auf Rueckfrage stehen, und die
+                    // Schulleitung erfuhr nichts davon. Jetzt gilt eine Aenderung
+                    // oder eine Nachricht als Antwort: der Antrag geht zurueck,
+                    // wie nach einer Antwort unter "Meine Antraege".
+                    $antwort = null;
+                    if ($ext['status'] === 'query' && ($geaendert !== [] || $rueckfrage_nachricht !== '')) {
+                        $antwort = ($rueckfrage_nachricht !== '' ? $rueckfrage_nachricht : 'Ich habe den Antrag überarbeitet.')
+                            . ($geaendert !== [] ? "\n\nGeändert im Antrag: " . implode(', ', $geaendert) : '');
+                    }
 
                     // Die Spaltennamen stammen aus lbv_spalten(), nicht aus der Anfrage.
                     $setzen = implode(', ', array_map(static fn (string $s): string => "$s = ?", array_keys($spalten)));
@@ -131,6 +150,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $stmt->execute([...array_values($spalten), (int) $nach_genehmigung_geaendert, $edit_id, $user_id]);
                     lbv_begleitpersonen_speichern($conn, $edit_id, $begleitung);
                     $profil->execute([$eingabe['lbv_personalnummer'], $user_id]);
+                    if ($nach_genehmigung_geaendert) {
+                        aenderung_protokollieren($conn, $edit_id, $geaendert);
+                    }
+                    if ($antwort !== null) {
+                        $conn->prepare("UPDATE extracurricular_requests SET status = 'pending' WHERE id = ? AND status = 'query'")
+                            ->execute([$edit_id]);
+                        antwort_protokollieren($conn, 'extracurricular_requests', $edit_id, $antwort);
+                    }
                     $conn->commit();
 
                     // Notify admin if approved request was modified
@@ -142,12 +169,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                         if ($admin_email) {
                             $admin_subject = "Änderung an bereits genehmigtem Antrag (ID " . $edit_id . ")";
-                            $admin_body = mail_text_aenderung_nach_genehmigung((string) get_current_user_name(), (string) $spalten['event_name'], (string) $spalten['class_name']);
+                            $admin_body = mail_text_aenderung_nach_genehmigung((string) get_current_user_name(), (string) $spalten['event_name'], (string) $spalten['class_name'], $geaendert);
                             send_notification_email($admin_email, $admin_subject, $admin_body);
                         }
                     }
 
-                    $_SESSION['flash_success'] = "Ihr Antrag wurde erfolgreich aktualisiert.";
+                    if ($antwort !== null) {
+                        $_SESSION['flash_success'] = 'Ihre Änderungen sind gespeichert und liegen der Schulleitung vor. Der Antrag steht wieder auf „Ausstehend“.';
+                        if (!rueckfrage_antwort_melden($conn, 'extracurricular_requests', $edit_id, $spalten, $antwort)) {
+                            $_SESSION['flash_success'] .= ' Die Benachrichtigung per Mail konnte allerdings nicht versendet werden.';
+                        }
+                    } elseif ($ext['status'] === 'query') {
+                        $_SESSION['flash_success'] = 'Gespeichert. Die Rückfrage ist noch offen - ändern Sie den Antrag oder schreiben Sie der Schulleitung eine Nachricht.';
+                    } else {
+                        $_SESSION['flash_success'] = "Ihr Antrag wurde erfolgreich aktualisiert.";
+                    }
+                    // Zurueck dorthin, wo "Bearbeiten" steht - dort ist auch der neue Status zu sehen.
+                    $ziel = '/meine_antraege.php';
                 } else {
                     $conn->rollBack();
                     $_SESSION['flash_error'] = "Antrag konnte nicht gefunden werden oder fehlende Berechtigung.";
@@ -177,7 +215,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     // Post/Redirect/Get pattern
-    header("Location: /antrag_ausserunterrichtlich.php");
+    header("Location: " . ($ziel ?? '/antrag_ausserunterrichtlich.php'));
     exit;
 }
 
@@ -195,6 +233,12 @@ if ($edit_id) {
         exit;
     }
 }
+
+// Steht der Antrag auf Rueckfrage, zeigt das Formular sie oben an - wer
+// den Antrag daraufhin aendert, soll sehen, was gefragt war.
+$rueckfrage = ($edit_request && $edit_request['status'] === 'query')
+    ? (rueckfrage_gespraeche($conn, 'extracurricular_requests', [$edit_id])[$edit_id] ?? [])
+    : null;
 
 // Was das Formular zeigt: beim Bearbeiten der gespeicherte Antrag, sonst
 // die Vorbelegung aus dem Profil. Name und Vorname kommen aus dem Konto -
@@ -268,6 +312,7 @@ echo $twig->render('form_ausserunterrichtlich.twig', [
     'flash_error' => $flash_error,
     'requests' => $requests,
     'edit_request' => $edit_request,
+    'rueckfrage' => $rueckfrage,
     'werte' => $werte,
     'begleitpersonen' => $begleitpersonen,
     // Begleitperson kann jede Lehrkraft sein, nur nicht die antragstellende.

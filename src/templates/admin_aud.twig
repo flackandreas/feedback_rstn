@@ -141,13 +141,23 @@
                 </thead>
                 <tbody>
                     {% for r in extra_requests %}
-                        <tr style="{{ (r.status != 'pending' and r.status != 'query') ? 'opacity: 0.65;' : '' }} cursor:pointer;"
+                        {# Blass sind nur entschiedene Antraege. Ein genehmigter, den
+                           die Lehrkraft danach geaendert hat, wartet auf die Schulleitung. #}
+                        <tr style="{{ (r.status != 'pending' and r.status != 'query' and not r.geaendert) ? 'opacity: 0.65;' : '' }} cursor:pointer;"
                             class="detail-row"
                             data-info="{{ r.info|json_encode|e('html_attr') }}"
                             title="Klicken für Details">
                             {% if aud_tage_sichtbar %}<td><strong style="color: var(--primary-color);">{{ r.aud_type|default('-') }}</strong></td>{% endif %}
                             <td style="font-weight: 600;">
                                 {{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span>
+                                {% if r.geaendert %}
+                                    <div style="margin-top: 4px;">
+                                        <span class="badge" style="background-color: #8e44ad; color: white; font-size: 0.7em; padding: 2px 5px; border-radius: 3px;">GEÄNDERT{% if r.modified_at %} (am {{ r.modified_at|date('d.m.Y') }}){% endif %}</span>
+                                        {% if r.aenderung is not empty %}
+                                            <div style="font-size: 0.8em; font-weight: normal; color: var(--text-muted); margin-top: 2px;">{{ r.aenderung|join(', ') }}</div>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
                                 {% if r.beantwortet %}
                                     <div style="margin-top: 4px;">
                                         <span class="badge" style="background-color: var(--primary-color); color: white; font-size: 0.7em; padding: 2px 5px; border-radius: 3px;">RÜCKFRAGE BEANTWORTET</span>
@@ -164,8 +174,11 @@
                             <td>{{ r.class_name }}</td>
                             <td>{{ r.destination }}</td>
                             <td onclick="event.stopPropagation();">
-                                {% if r.status == 'pending' %}
-                                    <form method="POST" action="/admin_action.php" style="display:inline-block; margin:0;" class="admin-action-form">
+                                {# Eine Aenderung nach der Genehmigung entscheidet die
+                                   Schulleitung wie einen offenen Antrag: genehmigen
+                                   nimmt die Markierung weg. #}
+                                {% if r.status == 'pending' or r.geaendert %}
+                                    <form method="POST" action="/admin_action.php" style="display:inline-block; margin:0;" class="admin-action-form"{% if r.geaendert %} data-aenderung="1"{% endif %}>
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                         <input type="hidden" name="id" value="{{ r.id }}">
                                         <input type="hidden" name="type" value="ausflug">
@@ -315,6 +328,11 @@ function openDetailPanel(d) {
     const statusColor = d.status === 'approved' ? 'var(--success-color)' : (d.status === 'rejected' ? 'var(--danger-color)' : (d.status === 'query' ? 'var(--warning-color)' : 'var(--text-muted)'));
     const statusText = d.status === 'approved' ? 'GENEHMIGT' : (d.status === 'rejected' ? 'ABGELEHNT' : (d.status === 'query' ? 'RÜCKFRAGE' : 'AUSSTEHEND'));
     body += rowHtml('Status', `<span style="color:${statusColor};font-weight:700;">${statusText}</span>`);
+    if (d.geaendert) {
+        body += rowHtml('Nach Genehmigung geändert',
+            `<strong style="color:#8e44ad;">${esc(d.geaendert_am || 'ja')}</strong>`
+            + (d.aenderung && d.aenderung.length ? `<br>${d.aenderung.map(esc).join(', ')}` : ''));
+    }
     // Rueckfragen und Antworten in ihrer Reihenfolge. Die Texte kommen aus
     // Formularen und gehen nur ueber esc() ins Panel.
     if (d.gespraech && d.gespraech.length) {
@@ -363,9 +381,12 @@ document.addEventListener("DOMContentLoaded", function() {
         button.addEventListener('click', function(e) {
             const form = this.closest('form');
             form.querySelector('.action-input').value = 'approve';
+            const aenderung = form.dataset.aenderung === '1';
             Swal.fire({
-                title: 'Genehmigen?',
-                text: "Soll dieser Antrag wirklich genehmigt werden?",
+                title: aenderung ? 'Änderung genehmigen?' : 'Genehmigen?',
+                text: aenderung
+                    ? 'Der Ausflug bleibt genehmigt, mit den geänderten Angaben. Die Lehrkraft bekommt eine Mail.'
+                    : "Soll dieser Antrag wirklich genehmigt werden?",
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: 'var(--success-color)',
@@ -381,7 +402,9 @@ document.addEventListener("DOMContentLoaded", function() {
             form.querySelector('.action-input').value = 'reject';
             Swal.fire({
                 title: 'Ablehnen?',
-                text: "Soll dieser Antrag wirklich abgelehnt werden?",
+                text: form.dataset.aenderung === '1'
+                    ? 'Abgelehnt wird der ganze Ausflug, nicht nur die Änderung. Soll er wirklich abgelehnt werden?'
+                    : "Soll dieser Antrag wirklich abgelehnt werden?",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: 'var(--danger-color)',

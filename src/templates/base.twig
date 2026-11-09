@@ -92,7 +92,10 @@
       }
     </script>
 </head>
-<body>
+<body{% if demo %} class="ist-demo"{% endif %}>
+{% if demo %}
+<div class="demo-band" role="note">Demo mit erfundenen Daten – bitte nichts Echtes eintragen. Wird jede Nacht zurückgesetzt.</div>
+{% endif %}
 
 {% if is_logged_in %}
 <div class="app-layout" id="appLayout">

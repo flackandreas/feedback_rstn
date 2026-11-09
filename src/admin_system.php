@@ -120,6 +120,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     // Das Feld stand bis April 2026 auf dem Dashboard und ging beim Umbau
     // verloren; seitdem liess sich die Adresse nur in der Datenbank aendern.
     if ($_POST['action'] === 'mail_adresse_speichern') {
+        // In der offenen Demo teilen sich alle Besucher eine Schule. Eine
+        // geaenderte Adresse leitete die Hinweise aller auf ein fremdes
+        // Postfach um.
+        if (demo_aktiv()) {
+            zurueck_zur_verwaltung(null, 'In der Demo lässt sich die Adresse nicht ändern.');
+        }
+
         $adresse = trim((string) ($_POST['report_email'] ?? ''));
 
         // Leer heisst: keine Hinweise per Mail. Ein Tippfehler dagegen

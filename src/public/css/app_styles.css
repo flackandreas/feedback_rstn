@@ -2140,3 +2140,15 @@ body.dark-mode .rueckfrage-box__eintrag + .rueckfrage-box__eintrag {
         margin-bottom: 10px;
     }
 }
+
+/* ---------------------------------------------------------------------
+   Oeffentliche Demo (SCHULOS_DEMO=1): Hinweisband am unteren Rand.
+   Unten statt oben, damit Kopfleiste und Seitenleiste unveraendert bleiben.
+   --------------------------------------------------------------------- */
+body.ist-demo { padding-bottom: 34px; }
+.demo-band {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10000;
+    padding: 7px 16px; text-align: center;
+    background: #fef3c7; color: #78350f; border-top: 1px solid #f59e0b;
+    font: 600 13px/1.4 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+}

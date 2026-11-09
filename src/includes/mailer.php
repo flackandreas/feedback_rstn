@@ -52,7 +52,15 @@ function send_notification_email($to, $subject, $body) {
         $mail->SMTPAuth   = $config['auth'];
         $mail->Username   = $config['username'];
         $mail->Password   = $config['password'];
-        $mail->SMTPSecure = $config['encryption'] === 'ssl' ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
+        // "keine": unverschluesselt, etwa fuer das Demo-Postfach (Mailpit) im
+        // internen Containernetz. Ohne SMTPAutoTLS=false wuerde PHPMailer
+        // trotzdem STARTTLS versuchen, sobald der Server es anbietet.
+        if ($config['encryption'] === 'keine') {
+            $mail->SMTPSecure  = '';
+            $mail->SMTPAutoTLS = false;
+        } else {
+            $mail->SMTPSecure = $config['encryption'] === 'ssl' ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
+        }
         $mail->Port       = $config['port'];
         $mail->CharSet    = 'UTF-8';
 

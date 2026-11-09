@@ -21,6 +21,8 @@
  */
 
 /** Unterverzeichnisse, die vergeben werden duerfen. */
+require_once __DIR__ . '/demo.php';
+
 const ABLAGE_BEREICHE = ['atteste'];
 
 /** Endungen, die vergeben werden duerfen. */
@@ -72,6 +74,13 @@ function ablage_zufallsname($endung) {
  * oder null, wenn das Verschieben scheitert.
  */
 function ablage_speichern($tmpName, $bereich, $endung) {
+    // Oeffentliche Demo: keine grossen Dateien auf dem Heimserver.
+    if (demo_aktiv() && (int) @filesize($tmpName) > DEMO_UPLOAD_GRENZE) {
+        error_log('Ablage: Upload in der Demo ueber 5 MB abgewiesen.');
+
+        return null;
+    }
+
     $verzeichnis = ablage_verzeichnis($bereich);
     $name = ablage_zufallsname($endung);
 

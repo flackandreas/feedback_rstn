@@ -142,6 +142,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             : sprintf('Hinweise gehen jetzt an %s.', $adresse));
     }
 
+    // Grenzen fuer "Kind krank" (alter_kind_krank.sql). In Baden-Wuerttemberg
+    // 10 Arbeitstage je Kind und hoechstens 25 im Jahr - einstellbar, weil
+    // sich die Werte schon mehrfach geaendert haben. Das System warnt nur.
+    if ($_POST['action'] === 'kind_krank_grenzen') {
+        $je_kind = trim((string) ($_POST['je_kind'] ?? ''));
+        $hoechstens = trim((string) ($_POST['hoechstens'] ?? ''));
+        if (!ctype_digit($je_kind) || !ctype_digit($hoechstens) || (int) $je_kind < 1
+            || (int) $hoechstens < (int) $je_kind || (int) $hoechstens > 366) {
+            zurueck_zur_verwaltung(null, 'Bitte ganze Zahlen eintragen: je Kind mindestens 1, zusammen mindestens so viele wie je Kind. Nichts wurde geändert.');
+        }
+
+        app_einstellung_setzen($conn, 'kind_krank_tage_je_kind', (string) (int) $je_kind);
+        app_einstellung_setzen($conn, 'kind_krank_tage_hoechstens', (string) (int) $hoechstens);
+
+        zurueck_zur_verwaltung(sprintf('„Kind krank“: %d Arbeitstage je Kind, zusammen höchstens %d. Für Alleinerziehende gilt das Doppelte.', $je_kind, $hoechstens));
+    }
+
     zurueck_zur_verwaltung(null, 'Unbekannte Aktion.');
 }
 
@@ -367,6 +384,8 @@ echo $twig->render('admin_system.twig', [
     'calendar_feeds' => $conn->query('SELECT * FROM calendar_feeds ORDER BY name ASC')->fetchAll(),
     'aud_tage_sichtbar' => app_schalter($conn, 'aud_tage_uebersicht', false),
     'report_email' => app_einstellung($conn, 'report_email'),
+    'kind_krank_je_kind' => app_einstellung($conn, 'kind_krank_tage_je_kind', '10'),
+    'kind_krank_hoechstens' => app_einstellung($conn, 'kind_krank_tage_hoechstens', '25'),
     'csrf_token' => $csrf_token,
     'flash_success' => $flash_success,
     'flash_error' => $flash_error,

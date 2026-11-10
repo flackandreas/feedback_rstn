@@ -36,7 +36,7 @@ $werte = $istVerwaltung ? [] : [':teacher_id' => $user_id];
 
 // 1. Krankmeldungen
 $stmt_sick = $conn->prepare("
-    SELECT r.id, r.date_from, r.date_to, r.notes, t.name as teacher_name
+    SELECT r.id, r.date_from, r.date_to, r.notes, r.art, t.name as teacher_name
     FROM sick_leave_reports r
     JOIN teachers t ON r.teacher_id = t.id
     WHERE 1 = 1 {$nurEigene}
@@ -87,8 +87,9 @@ foreach ($sick_leaves as $s) {
         'type' => 'sick',
         'start' => $s['date_from'],
         'end' => $s['date_to'],
-        'title' => '🤒 Krankmeldung: ' . $s['teacher_name'],
-        'details' => 'Krankmeldung für ' . $s['teacher_name'] . ($s['notes'] ? "\nNotizen: " . $s['notes'] : '')
+        'title' => ($s['art'] === 'kind' ? '🧒 Kind krank: ' : '🤒 Krankmeldung: ') . $s['teacher_name'],
+        'details' => ($s['art'] === 'kind' ? 'Betreuung eines kranken Kindes: ' : 'Krankmeldung für ') . $s['teacher_name']
+            . ($s['notes'] ? "\nNotizen: " . $s['notes'] : '')
     ];
 }
 

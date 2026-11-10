@@ -275,6 +275,9 @@
                             <li class="absent-item">
                                 <div class="absent-info">
                                     <div class="absent-name">{{ s.name }} <span style="font-size: 0.85em; color: var(--text-muted); font-weight: normal;">({{ s.kuerzel }})</span></div>
+                                    {% if s.art == 'kind' %}
+                                        <div class="absent-details"><strong>Kind krank</strong></div>
+                                    {% endif %}
                                     {% if s.notes %}
                                         <div class="absent-details"><em>Notizen:</em> {{ s.notes }}</div>
                                     {% endif %}

@@ -85,7 +85,8 @@
                 <span class="badge-count">{{ sick_leaves_new|length }}</span>
             {% endif %}
         </h3>
-        {% if sick_leaves_new|length > 0 %}
+        {# "Kind krank" wird einzeln genehmigt, mit Blick auf die bisherigen Tage. #}
+        {% if sick_leaves_new|filter(r => r.art != 'kind')|length > 0 %}
             <form method="POST" action="/admin_sick_leaves.php" class="confirm-all-form" style="margin: 0;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="action" value="mark_all_seen">
@@ -117,6 +118,7 @@
                             <td style="font-size: 0.85em; color: var(--text-muted);">{{ r.created_at|date('d.m.y H:i') }}</td>
                             <td style="font-weight: 600;">
                                 {{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span>
+                                {{ include('partials/_kind_krank_hinweis.twig') }}
                                 {% if r.modified_at %}
                                     <div style="margin-top: 4px;">
                                         <span class="badge" style="background-color: #8e44ad; color: white; font-size: 0.7em; padding: 2px 5px; border-radius: 3px;">GEÄNDERT (am {{ r.modified_at|date('d.m.Y') }})</span>
@@ -145,7 +147,11 @@
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="action" value="mark_seen">
                                     <input type="hidden" name="id" value="{{ r.id }}">
-                                    <button type="submit" class="action-btn btn-seen" title="Als gelesen markieren">Gelesen</button>
+                                    {% if r.art == 'kind' %}
+                                        <button type="submit" class="action-btn btn-seen" title="Sonderurlaub „Kind krank“ genehmigen">Genehmigen</button>
+                                    {% else %}
+                                        <button type="submit" class="action-btn btn-seen" title="Als gelesen markieren">Gelesen</button>
+                                    {% endif %}
                                 </form>
                             </td>
                         </tr>
@@ -188,6 +194,7 @@
                             <td style="font-size: 0.85em; color: var(--text-muted);">{{ r.created_at|date('d.m.y H:i') }}</td>
                             <td style="font-weight: 600;">
                                 {{ r.teacher_name }} <span style="font-size: 0.8em; color: var(--text-muted);">({{ r.kuerzel }})</span>
+                                {{ include('partials/_kind_krank_hinweis.twig') }}
                                 {% if r.modified_at %}
                                     <div style="margin-top: 4px;">
                                         <span class="badge" style="background-color: #8e44ad; color: white; font-size: 0.7em; padding: 2px 5px; border-radius: 3px;">GEÄNDERT (am {{ r.modified_at|date('d.m.Y') }})</span>
@@ -217,6 +224,103 @@
             </table>
         </div>
     {% endif %}
+</div>
+
+{# =====================================================================
+   SECTION: Kind krank im Kalenderjahr
+   Sonderurlaub nach Paragraf 29 Abs. 2 AzUVO. Das Kontingent gilt je Kind und
+   Kalenderjahr in Arbeitstagen - deshalb hier getrennt von den eigenen
+   Krankheitstagen der Lehrkraft.
+   ===================================================================== #}
+<div class="content-box" id="kind-krank" style="border-top: 4px solid var(--warning-color-dark); margin-top: 25px;">
+    <div class="section-header">
+        <h3 style="margin: 0; display: flex; align-items: center;">Kind krank {{ jahr }}</h3>
+        <form method="GET" action="/admin_sick_leaves.php#kind-krank" style="margin: 0;">
+            <label for="kind_jahr" style="font-weight: 600;">Kalenderjahr:</label>
+            <select id="kind_jahr" name="jahr" onchange="this.form.submit()" style="padding: 6px 10px; width: auto; margin-left: 6px;">
+                {% for j in kind_jahre %}
+                    <option value="{{ j }}" {{ j == jahr ? 'selected' : '' }}>{{ j }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.9em; margin: 10px 0 15px;">
+        Gezählt werden Arbeitstage je Kind: Montag bis Freitag ohne Feiertage. Bei Teilzeit lässt sich die Zahl
+        je Meldung korrigieren, ein leeres Feld zählt wieder automatisch. Diese Tage sind keine Krankheitstage
+        der Lehrkraft und erscheinen nicht unter „Vergangene Krankmeldungen“.
+    </p>
+
+    {% if kind_uebersicht is empty %}
+        <p style="color: var(--text-muted); margin: 0 0 5px;">Keine Meldungen „Kind krank“ in {{ jahr }}.</p>
+    {% endif %}
+
+    {% for l in kind_uebersicht %}
+        <div style="padding: 15px; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+                <h4 style="margin: 0; font-size: 1.05em;">
+                    {{ l.name }} ({{ l.kuerzel }})
+                    {% if l.alleinerziehend %}<span style="font-weight: normal; font-size: 0.85em; color: var(--text-muted);">· alleinerziehend</span>{% endif %}
+                </h4>
+                <span style="font-weight: 600; color: {{ l.gesamt > l.grenzen.hoechstens ? 'var(--danger-color)' : 'var(--text-dark)' }};">
+                    zusammen {{ l.gesamt }} von {{ l.grenzen.hoechstens }} Arbeitstagen
+                </span>
+            </div>
+            <div style="margin-bottom: 10px; font-size: 0.9em;">
+                {% for k in l.kinder %}
+                    <span style="display: inline-block; margin: 0 12px 4px 0; color: {{ k.ueber ? 'var(--danger-color)' : 'inherit' }};">
+                        <strong>{{ k.name }}</strong>: {{ k.tage }} von {{ l.grenzen.je_kind }}{% if k.ueber %} – über der Grenze{% endif %}
+                    </span>
+                {% endfor %}
+            </div>
+
+            <table class="data-table simple" style="font-size: 0.9em;">
+                <thead>
+                    <tr>
+                        <th>Von</th>
+                        <th>Bis</th>
+                        <th>Kind</th>
+                        <th>Arbeitstage {{ jahr }}</th>
+                        <th>Status</th>
+                        <th>Zeugnis</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in l.meldungen %}
+                        <tr>
+                            <td>{{ m.date_from|date('d.m.Y') }}</td>
+                            <td>{{ m.date_to|date('d.m.Y') }}</td>
+                            <td>{{ m.kind }}</td>
+                            <td>
+                                <form method="POST" action="/admin_sick_leaves.php" style="margin: 0; display: flex; gap: 6px; align-items: center;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="action" value="arbeitstage_setzen">
+                                    <input type="hidden" name="id" value="{{ m.id }}">
+                                    <input type="hidden" name="jahr" value="{{ jahr }}">
+                                    <input type="number" name="arbeitstage" min="0" max="366" style="width: 70px; padding: 4px 6px;"
+                                           value="{{ m.automatisch ? '' : m.arbeitstage }}" placeholder="{{ m.tage }}"
+                                           aria-label="Arbeitstage für {{ m.kind }} ab {{ m.date_from|date('d.m.Y') }}">
+                                    <button type="submit" class="button-secondary" style="padding: 3px 8px; font-size: 0.85em;">Speichern</button>
+                                </form>
+                                <span style="font-size: 0.8em; color: var(--text-muted);">{{ m.automatisch ? 'automatisch: ' ~ m.tage : 'korrigiert' }}</span>
+                            </td>
+                            <td>
+                                {% if m.is_seen %}
+                                    genehmigt{% if m.seen_at %} am {{ m.seen_at|date('d.m.Y') }}{% endif %}
+                                {% else %}
+                                    <span style="color: var(--warning-color-dark); font-weight: 600;">offen</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if m.attachment_path %}
+                                    <a href="/attest.php?id={{ m.id }}" target="_blank">Ansehen</a>
+                                {% else %}-{% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endfor %}
 </div>
 
 {# =====================================================================
@@ -313,7 +417,7 @@
         const form = event.target.closest('form');
         Swal.fire({
             title: 'Alle Krankmeldungen als gelesen markieren?',
-            text: "Hiermit werden alle neuen Krankmeldungen in die laufende bzw. vergangene Liste verschoben.",
+            text: "Hiermit werden alle neuen Krankmeldungen in die laufende bzw. vergangene Liste verschoben. „Kind krank“ bleibt offen und wird einzeln genehmigt.",
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: 'var(--primary-color)',

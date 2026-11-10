@@ -7,6 +7,7 @@
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/ablage.php';
+require_once __DIR__ . '/includes/kind_krank.php';
 require_once __DIR__ . '/includes/twig_setup.php';
 require_once __DIR__ . '/includes/migrations.php';
 run_all_migrations();
@@ -49,7 +50,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $date_to = $_POST['date_to'] ?? '';
         $notes = trim($_POST['notes'] ?? '');
         $material_link = trim($_POST['material_link'] ?? '');
-        
+
+        // "Mein Kind ist krank" (alter_kind_krank.sql). Die beiden Haken sind
+        // die Voraussetzungen aus Paragraf 29 Abs. 2 AzUVO und Paragraf 45
+        // SGB V. Gespeichert wird nichts davon - ohne sie geht die Meldung
+        // nicht durch, jede gespeicherte hatte sie also.
+        $art = ($_POST['art'] ?? '') === 'kind' ? 'kind' : 'eigene';
+        $kind = $art === 'kind'
+            ? mb_substr(trim((string) preg_replace('/\s+/u', ' ', (string) ($_POST['kind'] ?? ''))), 0, 50)
+            : null;
+        $alleinerziehend = $art === 'kind' && !empty($_POST['alleinerziehend']) ? 1 : 0;
+        $was = $art === 'kind' ? 'Ihre Meldung „Kind krank“' : 'Ihre Krankmeldung';
+        $datum_gueltig = static function (string $d): bool {
+            $t = DateTimeImmutable::createFromFormat('!Y-m-d', $d);
+            return $t !== false && $t->format('Y-m-d') === $d;
+        };
+
         // Handle file upload
         $attachment_path = null;
         $attachment_fehler = false;
@@ -103,8 +119,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
         
+        $fehler = null;
         if (empty($date_from) || empty($date_to)) {
-            $_SESSION['flash_error'] = "Bitte füllen Sie den Zeitraum der Krankmeldung aus.";
+            $fehler = "Bitte füllen Sie den Zeitraum der Krankmeldung aus.";
+        } elseif (!$datum_gueltig($date_from) || !$datum_gueltig($date_to) || $date_to < $date_from) {
+            // Die Arbeitstage fuer "Kind krank" zaehlen vom ersten bis zum
+            // letzten Tag - ein Ende vor dem Beginn ergaebe null Tage.
+            $fehler = "Bitte prüfen Sie den Zeitraum: Das Ende darf nicht vor dem Beginn liegen.";
+        } elseif ($art === 'kind' && $kind === '') {
+            $fehler = "Bitte geben Sie den Vornamen oder ein Kürzel des Kindes an. "
+                . "Die Tage werden je Kind gezählt.";
+        } elseif ($art === 'kind' && (empty($_POST['unter_12']) || empty($_POST['keine_andere_person']))) {
+            $fehler = "Für „Kind krank“ müssen beide Voraussetzungen bestätigt sein. "
+                . "Trifft eine nicht zu, sprechen Sie bitte mit der Schulleitung.";
+        }
+
+        if ($fehler !== null) {
+            $_SESSION['flash_error'] = $fehler;
+            // Ein schon abgelegtes Attest gehoert jetzt zu keiner Meldung.
+            if ($attachment_path !== null) {
+                ablage_loeschen($attachment_path);
+            }
         } elseif (!isset($_SESSION['flash_error'])) {
             try {
                 if ($post_edit_id) {
@@ -118,25 +153,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         $vorher->execute([$post_edit_id, $user_id]);
                         $altesAttest = $vorher->fetchColumn();
 
-                        $stmt = $conn->prepare("UPDATE sick_leave_reports SET date_from = ?, date_to = ?, notes = ?, material_link = ?, attachment_path = ?, modified_at = NOW(), is_seen = 0, seen_at = NULL WHERE id = ? AND teacher_id = ?");
-                        $stmt->execute([$date_from, $date_to, $notes, $material_link, $attachment_path, $post_edit_id, $user_id]);
+                        // arbeitstage = NULL: Mit neuen Daten passt eine Korrektur
+                        // der Schulleitung nicht mehr; sie sieht die Meldung ohnehin
+                        // wieder als neu (is_seen = 0).
+                        $stmt = $conn->prepare("UPDATE sick_leave_reports SET date_from = ?, date_to = ?, notes = ?, material_link = ?, attachment_path = ?, art = ?, kind = ?, alleinerziehend = ?, arbeitstage = NULL, modified_at = NOW(), is_seen = 0, seen_at = NULL WHERE id = ? AND teacher_id = ?");
+                        $stmt->execute([$date_from, $date_to, $notes, $material_link, $attachment_path, $art, $kind, $alleinerziehend, $post_edit_id, $user_id]);
 
                         if (is_string($altesAttest) && $altesAttest !== '' && $altesAttest !== $attachment_path) {
                             ablage_loeschen($altesAttest);
                         }
                     } else {
-                        $stmt = $conn->prepare("UPDATE sick_leave_reports SET date_from = ?, date_to = ?, notes = ?, material_link = ?, modified_at = NOW(), is_seen = 0, seen_at = NULL WHERE id = ? AND teacher_id = ?");
-                        $stmt->execute([$date_from, $date_to, $notes, $material_link, $post_edit_id, $user_id]);
+                        $stmt = $conn->prepare("UPDATE sick_leave_reports SET date_from = ?, date_to = ?, notes = ?, material_link = ?, art = ?, kind = ?, alleinerziehend = ?, arbeitstage = NULL, modified_at = NOW(), is_seen = 0, seen_at = NULL WHERE id = ? AND teacher_id = ?");
+                        $stmt->execute([$date_from, $date_to, $notes, $material_link, $art, $kind, $alleinerziehend, $post_edit_id, $user_id]);
                     }
-                    $_SESSION['flash_success'] = "Ihre Krankmeldung wurde erfolgreich aktualisiert."
+                    $_SESSION['flash_success'] = "$was wurde erfolgreich aktualisiert."
                         . ($attachment_fehler ? " Der Anhang konnte allerdings nicht gespeichert "
                             . "werden - bitte reichen Sie ihn nach oder wenden Sie sich an die "
                             . "Administration." : "");
                 } else {
                     // Insert
-                    $stmt = $conn->prepare("INSERT INTO sick_leave_reports (teacher_id, date_from, date_to, notes, material_link, attachment_path) VALUES (?, ?, ?, ?, ?, ?)");
-                    $stmt->execute([$user_id, $date_from, $date_to, $notes, $material_link, $attachment_path]);
-                    $_SESSION['flash_success'] = "Ihre Krankmeldung wurde erfolgreich übermittelt."
+                    $stmt = $conn->prepare("INSERT INTO sick_leave_reports (teacher_id, date_from, date_to, notes, material_link, attachment_path, art, kind, alleinerziehend) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    $stmt->execute([$user_id, $date_from, $date_to, $notes, $material_link, $attachment_path, $art, $kind, $alleinerziehend]);
+                    $_SESSION['flash_success'] = "$was wurde erfolgreich übermittelt."
                         . ($attachment_fehler ? " Der Anhang konnte allerdings nicht gespeichert "
                             . "werden - bitte reichen Sie ihn nach oder wenden Sie sich an die "
                             . "Administration." : "");
@@ -151,9 +189,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
-$stmt = $conn->prepare("SELECT id, date_from, date_to, attachment_path, created_at FROM sick_leave_reports WHERE teacher_id = ? ORDER BY created_at DESC LIMIT 5");
+$stmt = $conn->prepare("SELECT id, date_from, date_to, attachment_path, created_at, art, kind, is_seen FROM sick_leave_reports WHERE teacher_id = ? ORDER BY created_at DESC LIMIT 5");
 $stmt->execute([$user_id]);
 $requests = $stmt->fetchAll();
+
+// Was die Lehrkraft in diesem Kalenderjahr schon fuer ihre Kinder genommen hat.
+$jahr = (int) date('Y');
+$kind_konto = kind_krank_uebersicht($conn, $jahr, (int) $user_id)[0] ?? null;
 
 $csrf_token = get_csrf_token();
 $flash_success = $_SESSION['flash_success'] ?? null;
@@ -166,6 +208,10 @@ echo $twig->render('form_krankmeldung.twig', [
     'flash_error' => $flash_error,
     'requests' => $requests,
     'editing_request' => $editing_request,
+    'jahr' => $jahr,
+    'kind_konto' => $kind_konto,
+    'kind_grenzen' => kind_krank_grenzen($conn, false),
+    'kind_vorschlaege' => kind_krank_vorschlaege($conn, (int) $user_id),
     'current_user_name' => get_current_user_name(),
     'is_admin' => is_current_user_admin(),
     'is_logged_in' => true

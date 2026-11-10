@@ -36,7 +36,7 @@ if (is_current_user_admin()) {
     // 2. Fetch today's absent teachers
     // Sick today
     $stmt_sick_today = $conn->query("
-        SELECT t.name, t.kuerzel, s.notes, s.date_from, s.date_to
+        SELECT t.name, t.kuerzel, s.notes, s.date_from, s.date_to, s.art
         FROM sick_leave_reports s
         JOIN teachers t ON s.teacher_id = t.id
         WHERE CURDATE() BETWEEN s.date_from AND s.date_to
@@ -86,7 +86,9 @@ if (is_current_user_admin()) {
     foreach ($sick_today as $s) {
         $events[] = [
             'type' => 'sick',
-            'title' => '🤒 Krank: ' . $s['name'] . ' (' . $s['kuerzel'] . ')',
+            // Fuer die Vertretung zaehlt nur, dass die Lehrkraft fehlt. Wer
+            // das Kind ist, steht unter Krankmeldungen.
+            'title' => ($s['art'] === 'kind' ? '🧒 Kind krank: ' : '🤒 Krank: ') . $s['name'] . ' (' . $s['kuerzel'] . ')',
             'details' => $s['notes'] ? 'Notizen: ' . $s['notes'] : ''
         ];
     }

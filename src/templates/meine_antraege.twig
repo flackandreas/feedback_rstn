@@ -49,6 +49,7 @@
                              : (r.status == 'eingegangen') ? 'var(--warning-color-dark)'
                              : (r.status == 'approved')    ? 'var(--success-color)'
                              : (r.status == 'gelesen')     ? 'var(--primary-color)'
+                             : (r.status == 'genehmigt')   ? 'var(--success-color)'
                              : (r.status == 'query')       ? 'var(--warning-color)'
                              : 'var(--danger-color)' %}
 
@@ -58,6 +59,7 @@
                             {%- elseif r.status == 'rejected' %}ABGELEHNT
                             {%- elseif r.status == 'eingegangen' %}EINGEGANGEN
                             {%- elseif r.status == 'gelesen' %}GELESEN
+                            {%- elseif r.status == 'genehmigt' %}GENEHMIGT
                             {%- elseif r.status == 'query' %}RÜCKFRAGE
                             {%- else %}{{ r.status|upper }}{% endif %}
                         {% endset %}
@@ -127,7 +129,7 @@
                                 <span style="display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.8em; font-weight: 600; color: white; background-color: {{ statusColor }};">
                                     {{ statusText|trim }}
                                 </span>
-                                {% if r.status == 'gelesen' %}
+                                {% if r.status in ['gelesen', 'genehmigt'] %}
                                     {# Ohne Zeitpunkt: die Meldung wurde vor der Einfuehrung
                                        dieser Spalte gelesen. Lieber nichts zeigen als ein
                                        erfundenes Datum. #}
@@ -146,7 +148,7 @@
                                     {# Ausdruck nach Vordruck LBV 1211. Fehlt etwas, fuehrt
                                        antrag_pdf.php zum Ergaenzen ins Formular. #}
                                     <a href="/antrag_pdf.php?id={{ r.id }}" target="_blank" rel="noopener" class="button-secondary" style="padding: 4px 8px; font-size: 0.8em; text-decoration: none;" title="Antrag als PDF zum Ausdrucken (Vordruck LBV 1211)">PDF</a>
-                                {%- elseif r.type == 'Krankmeldung' %}
+                                {%- elseif r.type in ['Krankmeldung', 'Kind krank'] %}
                                     <a href="/krankmeldung.php?id={{ r.id }}" class="button-secondary" style="padding: 4px 8px; font-size: 0.8em; text-decoration: none;">Bearbeiten</a>
                                 {%- endif -%}
                             </td>

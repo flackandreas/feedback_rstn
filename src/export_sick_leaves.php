@@ -28,10 +28,13 @@ if (!$teacher) {
 }
 
 // Fetch old records
+//
+// Nur die eigenen Krankheitstage. "Kind krank" ist Sonderurlaub und gehoert
+// weder in diese Summe noch zum Betrieblichen Eingliederungsmanagement.
 $stmt_r = $conn->prepare("
-    SELECT date_from, date_to, notes 
-    FROM sick_leave_reports 
-    WHERE teacher_id = ? AND date_to < DATE_SUB(CURDATE(), INTERVAL 2 DAY)
+    SELECT date_from, date_to, notes
+    FROM sick_leave_reports
+    WHERE teacher_id = ? AND art = 'eigene' AND date_to < DATE_SUB(CURDATE(), INTERVAL 2 DAY)
     ORDER BY date_from DESC
 ");
 $stmt_r->execute([$teacher_id]);

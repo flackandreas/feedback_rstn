@@ -1,0 +1,14 @@
+{# "Kind krank" in den Listen der Krankmeldungen: welches Kind, wie viele
+   Arbeitstage, und wo das Kind im Jahr damit steht. Erwartet r aus
+   admin_sick_leaves.php. #}
+{% if r.art == 'kind' %}
+    <div style="margin-top: 4px; font-weight: normal; font-size: 0.85em;">
+        <span class="badge" style="background-color: var(--warning-color-dark); color: white; font-size: 0.8em; padding: 2px 6px; border-radius: 3px;">KIND KRANK{% if r.seen_at %} · GENEHMIGT{% endif %}</span>
+        {{ r.kind }} · {{ r.tage }} Arbeitstag{{ r.tage == 1 ? '' : 'e' }}
+        {% if r.konto %}
+            <br><span style="color: {{ r.konto.ueber ? 'var(--danger-color)' : 'var(--text-muted)' }};">
+                {{ r.konto.jahr }} zusammen {{ r.konto.tage }} von {{ r.konto.je_kind }} Tagen{% if r.konto.ueber %} – über der Grenze{% endif %}
+            </span>
+        {% endif %}
+    </div>
+{% endif %}

@@ -221,6 +221,34 @@ WIN;Winter;Bernd;bernd.winter@schule.de</pre>
 </div>
 
 <div class="content-box">
+    <h3 style="border-left: 4px solid #b45309; padding-left: 10px;">Kind krank</h3>
+    <p style="color: var(--text-muted); margin: 4px 0 15px;">
+        Wie viele Arbeitstage im Kalenderjahr eine Lehrkraft für die Betreuung eines kranken Kindes nehmen kann,
+        in Baden-Württemberg für Beamte nach § 29 Abs. 2 AzUVO. Für Alleinerziehende gilt das Doppelte.
+        Das System warnt beim Überschreiten nur, die Entscheidung bleibt bei der Schulleitung.
+    </p>
+
+    <form method="POST" action="/admin_system.php" class="modern-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="action" value="kind_krank_grenzen">
+
+        <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+            <div class="form-group" style="flex: 0 1 180px; margin-bottom: 0;">
+                <label for="kk_je_kind" class="form-label">Tage je Kind</label>
+                <input type="number" name="je_kind" id="kk_je_kind" min="1" max="366" required value="{{ kind_krank_je_kind }}"
+                       class="form-control" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+            </div>
+            <div class="form-group" style="flex: 0 1 180px; margin-bottom: 0;">
+                <label for="kk_hoechstens" class="form-label">Höchstens zusammen</label>
+                <input type="number" name="hoechstens" id="kk_hoechstens" min="1" max="366" required value="{{ kind_krank_hoechstens }}"
+                       class="form-control" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;">
+            </div>
+            <button type="submit" class="button-primary" style="background-color: #b45309; width: auto; padding: 10px 20px;">Speichern</button>
+        </div>
+    </form>
+</div>
+
+<div class="content-box">
     <h3 style="border-left: 4px solid #e67e22; padding-left: 10px;">Jahresabschluss &amp; Archivierung</h3>
     <p style="color: var(--text-muted); font-size: 0.9em;">
         Zeitraum ist das <strong>Schuljahr</strong> vom 1. August bis 31. Juli – ein Kalenderjahr schneidet

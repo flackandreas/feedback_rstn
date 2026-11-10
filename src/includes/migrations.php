@@ -23,7 +23,8 @@ function run_all_migrations() {
         'alter_status_rueckfrage.sql',
         'alter_rueckfrage_antwort.sql',
         'alter_lbv1211.sql',
-        'alter_kalender_oeffentlich.sql'
+        'alter_kalender_oeffentlich.sql',
+        'alter_kind_krank.sql'
     ];
 
     // Je Sitzung nur einmal pruefen - aber je Stand der Liste. Vorher merkte

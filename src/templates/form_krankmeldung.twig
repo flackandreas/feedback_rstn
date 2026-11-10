@@ -1,33 +1,95 @@
 {% extends "base.twig" %}
 
 {% block content %}
+{# "Mein Kind ist krank" laeuft ueber dieselbe Seite: morgens geht es in beiden
+   Faellen um die Vertretung. Gezaehlt wird es getrennt (includes/kind_krank.php). #}
+{% set art = editing_request ? editing_request.art|default('eigene') : 'eigene' %}
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <h2>{% if editing_request %}Krankmeldung bearbeiten{% else %}Krankmeldung{% endif %}</h2>
     <a href="/index.php" class="button-secondary" style="text-decoration:none;">&larr; Zurück</a>
 </div>
 
 <div class="content-box">
-    <div class="status info" style="margin-bottom: 20px;">
-        <strong>Hinweis:</strong> Ab dem 3. Krankheitstag bitten wir um das Hochladen oder Nachreichen einer Arbeitsunfähigkeitsbescheinigung (AU).
-    </div>
-
     <form method="POST" action="/krankmeldung.php" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         {% if editing_request %}
             <input type="hidden" name="edit_id" value="{{ editing_request.id }}">
         {% endif %}
 
+        <fieldset class="meldeart">
+            <legend class="meldeart__titel">Wer ist krank?</legend>
+            <label class="meldeart__wahl">
+                <input type="radio" name="art" value="eigene" {{ art != 'kind' ? 'checked' : '' }}>
+                Ich bin krank
+            </label>
+            <label class="meldeart__wahl">
+                <input type="radio" name="art" value="kind" {{ art == 'kind' ? 'checked' : '' }}>
+                Mein Kind ist krank
+            </label>
+        </fieldset>
+
+        <div class="status info" style="margin-bottom: 20px;" data-nur-art="eigene">
+            <strong>Hinweis:</strong> Ab dem 3. Krankheitstag bitten wir um das Hochladen oder Nachreichen einer Arbeitsunfähigkeitsbescheinigung (AU).
+        </div>
+        {# Paragraf 29 Abs. 2 AzUVO: Zeugnis auf Verlangen, stets bei mehr als einer Woche. #}
+        <div class="status info" style="margin-bottom: 20px;" data-nur-art="kind">
+            <strong>Hinweis:</strong> Ein ärztliches Zeugnis für Ihr Kind brauchen Sie, wenn die Schulleitung es verlangt,
+            und immer, wenn die Erkrankung voraussichtlich länger als eine Woche dauert.
+            Die Tage zählen nicht als Ihre eigenen Krankheitstage.
+        </div>
+
         <div class="form-grid-2">
             <div class="form-group">
-                <label for="date_from">Voraussichtlich Krank von *</label>
+                <label for="date_from">Von *</label>
                 <input type="date" id="date_from" name="date_from" required value="{{ editing_request ? editing_request.date_from : 'now'|date('Y-m-d') }}">
             </div>
 
             <div class="form-group">
-                <label for="date_to">Bis (geschätzt) *</label>
+                <label for="date_to">Bis (voraussichtlich) *</label>
                 <input type="date" id="date_to" name="date_to" required value="{{ editing_request ? editing_request.date_to : '+2 days'|date('Y-m-d') }}">
             </div>
         </div>
+
+        <fieldset class="kind-felder" data-nur-art="kind">
+            <div class="form-group">
+                <label for="kind">Kind (Vorname oder Kürzel) *</label>
+                <input type="text" id="kind" name="kind" maxlength="50" list="kind_vorschlaege" autocomplete="off"
+                       value="{{ editing_request ? editing_request.kind : '' }}" aria-describedby="kind_hinweis">
+                <datalist id="kind_vorschlaege">
+                    {% for k in kind_vorschlaege %}<option value="{{ k }}">{% endfor %}
+                </datalist>
+                <small class="lbv-hinweis" id="kind_hinweis">Nur damit die Tage je Kind gezählt werden. Bitte jedes Mal gleich schreiben.</small>
+            </div>
+
+            <label class="lbv-haken">
+                <input type="checkbox" name="unter_12" value="1" {{ editing_request and art == 'kind' ? 'checked' : '' }}>
+                Mein Kind ist unter 12 Jahre alt oder behindert und auf Hilfe angewiesen. *
+            </label>
+            <label class="lbv-haken">
+                <input type="checkbox" name="keine_andere_person" value="1" {{ editing_request and art == 'kind' ? 'checked' : '' }}>
+                Keine andere Person in meinem Haushalt kann die Betreuung übernehmen. *
+            </label>
+            <label class="lbv-haken">
+                <input type="checkbox" name="alleinerziehend" value="1" {{ editing_request and editing_request.alleinerziehend ? 'checked' : '' }}>
+                Ich bin alleinerziehend <span class="lbv-hinweis" style="display: inline; margin: 0;">(freiwillig – dann gilt die doppelte Zahl an Tagen)</span>
+            </label>
+
+            {# Was in diesem Kalenderjahr schon genommen ist. Ohne Meldung gelten die
+               normalen Grenzen; der Haken "alleinerziehend" bei einer Meldung
+               verdoppelt sie. #}
+            {% set grenzen = kind_konto ? kind_konto.grenzen : kind_grenzen %}
+            <div class="kind-konto">
+                <strong>Ihre Tage {{ jahr }}:</strong>
+                {% if kind_konto %}
+                    {% for k in kind_konto.kinder %}
+                        {{ k.name }} {{ k.tage }} von {{ grenzen.je_kind }}{% if not loop.last %} · {% endif %}
+                    {% endfor %}
+                    – zusammen {{ kind_konto.gesamt }} von {{ grenzen.hoechstens }} Arbeitstagen.
+                {% else %}
+                    noch keine. Je Kind sind es bis zu {{ grenzen.je_kind }} Arbeitstage im Jahr, zusammen bis zu {{ grenzen.hoechstens }}.
+                {% endif %}
+            </div>
+        </fieldset>
 
         <div class="form-group" style="margin-top: 15px;">
             <label for="material_link">Link zum Vertretungsmaterial (z.B. Nextcloud, Mebis) - Optional</label>
@@ -38,9 +100,12 @@
             <label for="notes">Zusätzliche Notizen (Optional)</label>
             <textarea id="notes" name="notes" rows="3" placeholder="z.B. Klassenbuch liegt im Fach.">{{ editing_request ? editing_request.notes : '' }}</textarea>
         </div>
-        
+
         <div class="form-group" style="margin-top: 15px;">
-            <label for="attachment">Arbeitsunfähigkeitsbescheinigung (AU) - PDF, JPG, PNG (Optional)</label>
+            <label for="attachment">
+                <span data-nur-art="eigene">Arbeitsunfähigkeitsbescheinigung (AU)</span><span data-nur-art="kind">Ärztliches Zeugnis für das Kind</span>
+                - PDF, JPG, PNG (Optional)
+            </label>
             {% if editing_request and editing_request.attachment_path %}
                 <p style="font-size: 0.9em; margin-bottom: 5px;">Eine Datei wurde bereits hochgeladen: <a href="/attest.php?id={{ editing_request.id }}" target="_blank">Datei ansehen</a>. Laden Sie hier eine neue Datei hoch, um sie zu ersetzen.</p>
             {% endif %}
@@ -68,9 +133,10 @@
             <thead>
                 <tr>
                     <th>Eingereicht am</th>
+                    <th>Art</th>
                     <th>Von</th>
                     <th>Bis</th>
-                    <th>AU hochgeladen</th>
+                    <th>Nachweis hochgeladen</th>
                     <th>Aktion</th>
                 </tr>
             </thead>
@@ -78,6 +144,13 @@
                 {% for r in requests %}
                     <tr>
                         <td style="color: var(--text-muted);">{{ r.created_at|date('d.m.Y') }}</td>
+                        <td>
+                            {% if r.art == 'kind' %}
+                                Kind krank ({{ r.kind }}){% if r.is_seen %}, genehmigt{% endif %}
+                            {% else %}
+                                Eigene
+                            {% endif %}
+                        </td>
                         <td>{{ r.date_from|date('d.m.Y') }}</td>
                         <td>{{ r.date_to|date('d.m.Y') }}</td>
                         <td>{% if r.attachment_path %}Ja{% else %}Nein{% endif %}</td>
@@ -88,4 +161,29 @@
         </table>
     {% endif %}
 </div>
+
+<script>
+// Zeigt je nach Auswahl die passenden Hinweise und Felder. Ohne Skript bleibt
+// alles sichtbar; der Server prueft die Angaben ohnehin.
+(function () {
+    const form = document.querySelector('form[action="/krankmeldung.php"]');
+    const kind = document.getElementById('kind');
+
+    function umschalten() {
+        const art = form.querySelector('input[name="art"]:checked').value;
+        form.querySelectorAll('[data-nur-art]').forEach(function (el) {
+            el.hidden = el.dataset.nurArt !== art;
+        });
+        kind.required = art === 'kind';
+        form.querySelectorAll('input[name="unter_12"], input[name="keine_andere_person"]').forEach(function (el) {
+            el.required = art === 'kind';
+        });
+    }
+
+    form.querySelectorAll('input[name="art"]').forEach(function (el) {
+        el.addEventListener('change', umschalten);
+    });
+    umschalten();
+})();
+</script>
 {% endblock %}

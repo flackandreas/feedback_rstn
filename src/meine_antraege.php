@@ -72,8 +72,12 @@ $sql_exempt = "SELECT id, 'Freistellung' AS type, reason AS details, date_from A
                  FROM exemption_requests
                 WHERE teacher_id = ? {$beiEntscheidung}";
 
-$sql_sick = "SELECT id, 'Krankmeldung' AS type, notes AS details, date_from AS date_main,
-                    date_to AS date_end, IF(is_seen = 1, 'gelesen', 'eingegangen') AS status,
+// "Kind krank" ist dagegen Sonderurlaub - den genehmigt die Schulleitung.
+// Derselbe Vermerk heisst dort deshalb "genehmigt".
+$sql_sick = "SELECT id, IF(art = 'kind', 'Kind krank', 'Krankmeldung') AS type,
+                    IF(art = 'kind', CONCAT('Kind: ', COALESCE(kind, ''), IF(COALESCE(notes, '') <> '', CONCAT(' – ', notes), '')), notes) AS details,
+                    date_from AS date_main, date_to AS date_end,
+                    IF(is_seen = 1, IF(art = 'kind', 'genehmigt', 'gelesen'), 'eingegangen') AS status,
                     seen_at, created_at, modified_at, 0 AS modified_after_approval
                FROM sick_leave_reports
               WHERE teacher_id = ? {$beiMeldung}";
